@@ -23,12 +23,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Lenonss/DSH_VsCodeMode.git",
-    "directory": "packages/dsh-code-studio"
+    "url": "git+https://github.com/hh5631/dsh-code-studio.git"
   },
-  "homepage": "https://github.com/Lenonss/DSH_VsCodeMode",
+  "homepage": "https://github.com/hh5631/dsh-code-studio#readme",
   "bugs": {
-    "url": "https://github.com/Lenonss/DSH_VsCodeMode/issues"
+    "url": "https://github.com/hh5631/dsh-code-studio/issues"
   },
   "type": "module",
   "engines": {

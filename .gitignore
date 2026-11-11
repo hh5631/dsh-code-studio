@@ -40,3 +40,4 @@ tests/fixtures/*.xml
 
 # apply-patches.mjs 备份文件
 *.bak-patch-*
+*.tgz

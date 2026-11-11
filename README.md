@@ -25,6 +25,22 @@
 
 Agent 编辑采集、累计差异基线、Keep/Undo、差异装饰、审查浮层、差异历史与回滚入口；多编辑分组/浮动编辑窗口；额外的大纲、诊断窗口、会话体积和会话列表状态入口。Git 仓库修改差异独立保留。
 
+## 安装
+
+构建产物（`lib/`）不随仓库提交，所以推荐安装预构建 tarball：
+
+```sh
+dsh plugin --profile web add https://github.com/hh5631/dsh-code-studio/releases/latest/download/dsh-code-studio.tgz
+```
+
+也可以从源码安装（需要本地完成一次构建）：
+
+```sh
+git clone https://github.com/hh5631/dsh-code-studio.git
+cd dsh-code-studio && npm install && npm run build
+dsh plugin --profile web add link:$PWD
+```
+
 ## 构建
 
 ```sh
