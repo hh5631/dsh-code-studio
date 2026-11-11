@@ -1,6 +1,7 @@
 import React from 'react'
 import type { SettingsBridge, SettingsScopeLike } from '../compat.js'
 import { TYPOGRAPHY_DEFAULTS, typographyOf, type Typography } from '../../shared/typography.js'
+import { UpdateCheck } from './UpdateCheck.js'
 import '../styles/minimal.css'
 
 const FONTS = ['SF Mono', 'Menlo', 'Monaco', 'JetBrains Mono', 'Fira Code', 'PingFang SC', 'Kaiti SC', 'Microsoft YaHei', 'system-ui']
@@ -76,5 +77,6 @@ export function EditorSettings({ bridge }: { bridge: SettingsBridge }): React.Re
     section('编辑器', [['editorFontFamily', '编辑器字体'], ['editorFontSize', '编辑器字号'], ['editorLineHeight', '编辑器行高']]),
     section('插件界面', [['uiFontFamily', '界面字体'], ['uiFontSize', '界面字号']]),
     React.createElement('p', { className: 'cstudio-settings-hint' }, '修改后离开输入框即可保存。留空恢复默认；字体须已安装在当前设备。'),
-    React.createElement('p', { role: 'status', className: 'cstudio-settings-result' }, disabled ? '设置服务暂不可用' : message))
+    React.createElement('p', { role: 'status', className: 'cstudio-settings-result' }, disabled ? '设置服务暂不可用' : message),
+    React.createElement(UpdateCheck))
 }
