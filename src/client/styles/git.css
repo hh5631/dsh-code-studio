@@ -1,18 +1,18 @@
 /* 源代码管理：与原生文件树共用右侧容器。 */
 .cstudio-git-panel { display:flex; flex-direction:column; height:100%; min-height:0; min-width:0; color:var(--dsw-alias-label-primary); font:inherit; }
-.cstudio-git-panel button { min-width:0; border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; border-radius:5px; }
+.cstudio-git-panel button { min-width:0; border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; border-radius:var(--dsw-radius-sm,4px); }
 .cstudio-git-panel button:hover { background:var(--dsw-alias-interactive-bg-hover); }
 .cstudio-git-panel button:disabled { cursor:default; opacity:.45; }
 .cstudio-git-panel button:focus-visible { outline:2px solid var(--cstudio-accent); outline-offset:-2px; }
 .cstudio-git-panel svg { flex:none; }
-.cstudio-git-heading { display:flex; align-items:center; gap:8px; min-height:42px; padding:6px 12px; border-bottom:1px solid var(--cstudio-border); }
+.cstudio-git-heading { display:flex; align-items:center; gap:6px; min-height:34px; padding:4px 8px; }
 .cstudio-git-heading>svg { color:var(--cstudio-muted); }
 .cstudio-git-branch { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
 .cstudio-git-panel .cstudio-git-refresh { display:grid; place-items:center; width:26px; height:26px; color:var(--cstudio-muted); }
-.cstudio-git-views { display:flex; gap:16px; min-height:36px; padding:0 12px; border-bottom:1px solid var(--cstudio-border); }
-.cstudio-git-views button { display:flex; align-items:center; gap:6px; border-radius:0; border-bottom:2px solid transparent; color:var(--cstudio-muted); }
-.cstudio-git-views button[aria-selected=true] { color:var(--dsw-alias-label-primary); border-bottom-color:var(--cstudio-accent); }
-.cstudio-git-views button>span { padding:0 5px; border-radius:8px; font-size:.8em; background:var(--dsw-alias-interactive-bg-hover); font-variant-numeric:tabular-nums; }
+.cstudio-git-views { display:flex; gap:4px; min-height:32px; padding:2px 8px 6px; border-bottom:.5px solid var(--cstudio-border); }
+.cstudio-git-views button { display:flex; align-items:center; gap:5px; padding:0 7px; color:var(--cstudio-muted); }
+.cstudio-git-views button[aria-selected=true] { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
+.cstudio-git-views button>span { font-size:.8em; color:var(--cstudio-muted); font-variant-numeric:tabular-nums; }
 .cstudio-git-changes { flex:1; min-height:0; overflow:auto; padding:6px 4px 16px; }
 .cstudio-git-group { margin:0 0 6px; }
 .cstudio-git-panel .cstudio-git-group-heading { display:flex; align-items:center; gap:5px; width:100%; min-height:30px; padding:4px 5px; color:var(--cstudio-muted); font-size:.9em; text-align:left; }
@@ -30,9 +30,7 @@
 .cstudio-git-row[data-git-tone=added] { color:var(--cstudio-git-added); }
 .cstudio-git-row[data-git-tone=renamed] { color:var(--cstudio-git-renamed); }
 .cstudio-git-row[data-git-tone=deleted],.cstudio-git-row[data-git-tone=conflict] { color:var(--cstudio-git-conflict); }
-.cstudio-git-empty { display:flex; flex:1; flex-direction:column; justify-content:center; align-items:center; gap:12px; min-height:140px; padding:24px 18px; text-align:center; color:var(--cstudio-muted); }
-.cstudio-git-empty>svg { opacity:.55; }
-.cstudio-git-empty p { margin:0; overflow-wrap:anywhere; line-height:1.7; }
+.cstudio-git-empty { margin:0; padding:16px 10px; color:var(--cstudio-muted); overflow-wrap:anywhere; }
 .cstudio-git-panel .cstudio-git-more { width:100%; margin-top:6px; padding:6px; color:var(--cstudio-muted); font-size:.9em; }
 .cstudio-git-error { padding:10px 12px; color:var(--cstudio-git-conflict); overflow-wrap:anywhere; font-size:.9em; }
 .cstudio-git-history { flex:1; min-height:0; overflow:auto; padding:6px 12px 16px; }

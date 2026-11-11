@@ -1,43 +1,46 @@
-.cstudio-native-file { --cstudio-git-modified:#9a6700; --cstudio-git-added:#1a7f37; --cstudio-git-renamed:#2864bc; --cstudio-git-conflict:#cf222e; }
-body[data-ds-dark-theme] .cstudio-native-file { --cstudio-git-modified:#e2b35c; --cstudio-git-added:#73c991; --cstudio-git-renamed:#75beff; --cstudio-git-conflict:#f48771; }
-.cstudio-native-panel-tools { display:flex; flex:none; padding-left:6px; border-left:1px solid var(--cstudio-border); }
-.cstudio-workspace-switches { display:flex; align-items:center; gap:3px; }
-.cstudio-workspace-switches button { display:grid; place-items:center; flex:none; width:30px; height:30px; padding:0; border:0; border-radius:6px; cursor:pointer; color:var(--cstudio-muted); background:transparent; }
-.cstudio-workspace-switches button:hover { background:var(--dsw-alias-interactive-bg-hover); }
-.cstudio-workspace-switches>button[aria-pressed=true],.cstudio-files-switch[data-active] button { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
-.cstudio-workspace-switches button:focus-visible { outline:2px solid var(--cstudio-accent); outline-offset:-2px; }
-.cstudio-files-switch { position:relative; display:inline-flex; }
-.cstudio-files-switch [data-files-navigator-toggle]>svg { visibility:hidden; }
-.cstudio-folder-glyph { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; color:var(--cstudio-muted); }
-.cstudio-files-switch[data-active] .cstudio-folder-glyph { color:var(--dsw-alias-label-primary); }
+[data-cstudio-workspace-tree] {
+  --cstudio-border:var(--dsw-alias-border-l3, #e8eaed);
+  --cstudio-muted:var(--dsw-alias-label-secondary, #61666b);
+  --cstudio-accent:var(--dsw-alias-brand-primary, #4d6bfe);
+  --cstudio-git-modified:#9a6700; --cstudio-git-added:#1a7f37; --cstudio-git-renamed:#2864bc; --cstudio-git-conflict:#cf222e; }
+body[data-ds-dark-theme] [data-cstudio-workspace-tree] { --cstudio-git-modified:#e2b35c; --cstudio-git-added:#73c991; --cstudio-git-renamed:#75beff; --cstudio-git-conflict:#f48771; }
+.cstudio-native-panel-tools, .cstudio-workspace-switches { display:flex; flex:none; align-items:center; gap:4px; }
+.cstudio-workspace-switches button {
+  display:inline-flex; flex:none; align-items:center; justify-content:center;
+  width:28px; height:28px; padding:6px; border:0; border-radius:var(--dsw-radius-sm, 4px);
+  color:var(--dsw-alias-label-secondary); background:transparent; cursor:pointer;
+}
+.cstudio-workspace-switches button svg { width:15px; height:15px; }
+.cstudio-workspace-switches button:is(:hover,[aria-pressed=true]) { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
+.cstudio-workspace-switches button:focus-visible { outline:2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset:-2px; }
 /* 仅替换导航内容，保留原生容器、宽度、拖拽边与文件树节点。 */
-.cstudio-native-file [data-files-body]:has(>.cstudio-side-panel) { position:relative; overflow:hidden; padding:0; margin:0; scrollbar-gutter:auto; }
-.cstudio-native-file [data-files-body]:has(>.cstudio-side-panel)>:not(.cstudio-side-panel) { display:none; }
-.cstudio-side-panel { height:100%; min-height:0; min-width:0; display:flex; flex-direction:column; font-family:var(--cstudio-ui-font,inherit); font-size:var(--cstudio-ui-size,13px); line-height:1.5; }
-.cstudio-native-file [data-cstudio-git]>div>button { color:var(--cstudio-git-modified); }
-.cstudio-native-file [data-cstudio-git=added]>div>button { color:var(--cstudio-git-added); }
-.cstudio-native-file [data-cstudio-git=renamed]>div>button { color:var(--cstudio-git-renamed); }
-.cstudio-native-file [data-cstudio-git=deleted]>div>button,.cstudio-native-file [data-cstudio-git=conflict]>div>button { color:var(--cstudio-git-conflict); }
-.cstudio-native-file [data-cstudio-git]>div>button>span { color:inherit; }
+[data-cstudio-workspace-tree] [data-files-body]:has(>.cstudio-side-panel) { position:relative; overflow:hidden; padding:0; margin:0; scrollbar-gutter:auto; }
+[data-cstudio-workspace-tree] [data-files-body]:has(>.cstudio-side-panel)>:not(.cstudio-side-panel) { display:none; }
+.cstudio-side-panel { height:100%; min-height:0; min-width:0; display:flex; flex-direction:column; font-family:var(--cstudio-ui-font,inherit); font-size:var(--cstudio-ui-size,var(--dsh-content-font-size-secondary,13px)); line-height:1.5; }
+[data-cstudio-workspace-tree] [data-cstudio-git]>div>button { color:var(--cstudio-git-modified); }
+[data-cstudio-workspace-tree] [data-cstudio-git=added]>div>button { color:var(--cstudio-git-added); }
+[data-cstudio-workspace-tree] [data-cstudio-git=renamed]>div>button { color:var(--cstudio-git-renamed); }
+[data-cstudio-workspace-tree] [data-cstudio-git=deleted]>div>button,[data-cstudio-workspace-tree] [data-cstudio-git=conflict]>div>button { color:var(--cstudio-git-conflict); }
+[data-cstudio-workspace-tree] [data-cstudio-git]>div>button>span { color:inherit; }
 /* 搜索复用已有内容检索，收敛输入框、过滤项和结果的样式。 */
-.cstudio-native-file .cstudio-side-panel .edrv-search-panel { display:flex; flex-direction:column; flex:1; min-height:0; padding:12px 10px; gap:8px; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-qrow { padding:0; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-input { width:100%; min-width:0; height:32px; box-sizing:border-box; padding:6px 9px; border:1px solid var(--dsw-alias-border-l2); border-radius:6px; background:var(--dsw-alias-bg-base); color:var(--dsw-alias-label-primary); font:inherit; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-input:focus { border-color:var(--cstudio-accent); outline:1px solid var(--cstudio-accent); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-opts { display:flex; align-items:center; gap:4px; padding:0; }
-.cstudio-native-file .cstudio-side-panel :is(.edrv-search-opt,.edrv-search-toggle) { display:inline-flex; justify-content:center; align-items:center; height:26px; min-width:26px; border:0; border-radius:4px; background:transparent; color:var(--cstudio-muted); font-size:.9em; cursor:pointer; }
-.cstudio-native-file .cstudio-side-panel :is(.edrv-search-opt,.edrv-search-toggle):hover,.cstudio-native-file .cstudio-side-panel .edrv-search-opt.on { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-spacer { flex:1; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-field { width:100%; height:30px; font:inherit; padding:4px 8px; background:var(--dsw-alias-bg-base); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-results { flex:1; min-height:0; overflow:auto; padding:0; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-summary { font-size:.85em; padding:2px 0; color:var(--cstudio-muted); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-file { padding:7px 2px; gap:5px; font:inherit; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-fname { font-size:1em; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-fdir { font-size:.8em; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-chev { display:flex; flex:none; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-line { padding:4px 3px; gap:8px; min-height:26px; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-ln { font-size:.8em; min-width:23px; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-text { font-size:.9em; font-family:var(--cstudio-code-font,ui-monospace,monospace); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-hit { color:inherit; background:color-mix(in srgb,var(--cstudio-git-modified) 20%,transparent); }
-.cstudio-native-file .cstudio-side-panel .edrv-search-line.alt { background:none; }
-.cstudio-native-file .cstudio-side-panel .edrv-search-empty { padding:24px 4px; font-size:1em; text-align:center; line-height:1.7; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-panel { display:flex; flex-direction:column; flex:1; min-height:0; padding:8px; gap:6px; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-qrow { padding:0; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-input { width:100%; min-width:0; height:30px; box-sizing:border-box; padding:4px 8px; border:.5px solid var(--dsw-alias-border-l2); border-radius:var(--dsw-radius-sm,4px); background:var(--dsw-alias-bg-base); color:var(--dsw-alias-label-primary); font:inherit; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-input:focus { border-color:var(--cstudio-accent); outline:1px solid var(--cstudio-accent); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-opts { display:flex; align-items:center; gap:4px; padding:0; }
+[data-cstudio-workspace-tree] .cstudio-side-panel :is(.edrv-search-opt,.edrv-search-toggle) { display:inline-flex; justify-content:center; align-items:center; height:26px; min-width:26px; border:0; border-radius:4px; background:transparent; color:var(--cstudio-muted); font-size:.9em; cursor:pointer; }
+[data-cstudio-workspace-tree] .cstudio-side-panel :is(.edrv-search-opt,.edrv-search-toggle):hover,[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-opt.on { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-spacer { flex:1; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-field { width:100%; height:30px; font:inherit; padding:4px 8px; background:var(--dsw-alias-bg-base); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-results { flex:1; min-height:0; overflow:auto; padding:0; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-summary { font-size:.85em; padding:2px 0; color:var(--cstudio-muted); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-file { padding:7px 2px; gap:5px; font:inherit; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-fname { font-size:1em; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-fdir { font-size:.8em; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-chev { display:flex; flex:none; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-line { padding:4px 3px; gap:8px; min-height:26px; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-ln { font-size:.8em; min-width:23px; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-text { font-size:.9em; font-family:var(--cstudio-code-font,ui-monospace,monospace); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-hit { color:inherit; background:color-mix(in srgb,var(--cstudio-git-modified) 20%,transparent); }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-line.alt { background:none; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-empty { padding:24px 4px; font-size:1em; text-align:center; line-height:1.7; }

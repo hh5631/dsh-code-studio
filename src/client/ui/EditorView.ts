@@ -78,6 +78,9 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   const host = React.useRef<HTMLDivElement>(null), root = React.useRef<HTMLDivElement>(null)
   const editor = React.useRef<any>(null), keeper = React.useRef<any>(null)
   const bound = React.useRef<string | null>(null)
+  const lastLoad = React.useRef<{ path: string; revision?: number } | null>(null)
+  const onDocumentLoad = React.useRef(props.onDocumentLoad)
+  onDocumentLoad.current = props.onDocumentLoad
   const pendingLine = React.useRef<{ path: string; line: number; column: number } | null>(null)
   const latest = React.useRef({ active, tabs, visible: props.visible !== false })
   latest.current = { active, tabs, visible: props.visible !== false }
@@ -202,7 +205,9 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   }, [cwd, workspace, scope])
   React.useEffect(() => {
     let alive = true
-    void loadMonaco(() => {}).then((value: any) => { if (alive) setMonaco(value) }).catch((cause: unknown) => { if (alive) setError(String(cause)) })
+    void loadMonaco(() => {}).then((value: any) => { if (alive) setMonaco(value) }).catch((cause: unknown) => {
+      if (alive) { setError(String(cause)); onDocumentLoad.current?.(false) }
+    })
     return () => { alive = false }
   }, [])
   React.useLayoutEffect(() => {
@@ -232,16 +237,23 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     }
   }, [monaco, workspace, persist])
   React.useEffect(() => {
+    if (typeof props.wordWrap === 'boolean') editor.current?.updateOptions({ wordWrap: props.wordWrap ? 'on' : 'off' })
+  }, [props.wordWrap, ready])
+  React.useEffect(() => {
     const instance = editor.current
     if (!instance || !monaco) return
     let alive = true
     if (bound.current) { const old = workspace.documents.get(bound.current); if (old) old.view = instance.saveViewState() }
     keeper.current?.save?.(); setActiveEditorPath(active)
     if (!active) { instance.setModel(null); bound.current = null; return }
+    const reportLoad = onDocumentLoad.current
     const cached = workspace.documents.has(active)
+    const reload = props.documentRevision !== undefined && lastLoad.current?.path === active
+      && lastLoad.current.revision !== props.documentRevision
+    lastLoad.current = { path: active, revision: props.documentRevision }
     if (!cached) { instance.setModel(null); bound.current = null }
     setLoading(!cached); setError(''); setLarge(false)
-    void workspace.load(active, monaco).then(entry => {
+    void workspace.load(active, monaco, reload).then(entry => {
       if (!alive) return
       keeper.current.bind(scope, active, entry.model); bound.current = active
       if (entry.view) instance.restoreViewState(entry.view)
@@ -249,15 +261,16 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
       if (jump?.path === active) {
         instance.setPosition({ lineNumber: jump.line, column: jump.column }); instance.revealLineInCenter(jump.line); instance.focus(); pendingLine.current = null
       }
-      setLoading(false); void workspace.refresh(active, monaco)
+      setLoading(false); reportLoad?.(true); void workspace.refresh(active, monaco)
     }).catch(cause => {
       if (!alive) return
-      instance.setModel(null); bound.current = null; setLoading(false)
-      if (cause?.code === 'file-too-large') setLarge(true)
-      else setError(String(cause))
+      setLoading(false)
+      if (!cached || cause?.code === 'file-too-large') { instance.setModel(null); bound.current = null }
+      if (cause?.code === 'file-too-large') { setLarge(true); reportLoad?.(true) }
+      else { setError(String(cause)); reportLoad?.(false) }
     })
     return () => { alive = false }
-  }, [active, monaco, ready, scope, workspace])
+  }, [active, monaco, ready, scope, workspace, props.documentRevision])
   React.useEffect(() => {
     const focus = () => {
       const current = latest.current
@@ -369,6 +382,6 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
         void workspace.reload(active).then(() => setError(''))
       }) : null,
       button('关闭提示', '×', () => { setError(''); workspace.error = ''; workspace.notify() })) : null,
-    React.createElement('div', { className: 'cstudio-minimal-status' }, React.createElement('span', { title: active || '' }, active || '未打开文件'), React.createElement('span', null, large ? '大文件只读预览' : status?.conflict ? '外部修改冲突' : status?.saving ? '正在保存' : status?.dirty ? '未保存' : active ? '已保存' : '')),
+    (!props.nativeDocument || large || status?.conflict || status?.saving || status?.dirty) ? React.createElement('div', { className: 'cstudio-minimal-status' }, React.createElement('span', { title: active || '' }, props.nativeDocument ? null : active || '未打开文件'), React.createElement('span', null, large ? '大文件只读预览' : status?.conflict ? '外部修改冲突' : status?.saving ? '正在保存' : status?.dirty ? '未保存' : active ? '已保存' : '')) : null,
     React.createElement(CommandPalette, { sessionId }))
 }

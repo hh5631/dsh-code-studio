@@ -77,9 +77,25 @@
 
 /* 原生文件资源布局：上方统一文件路径，编辑内容旁复用原生文件树。 */
 .cstudio-native-file { isolation: isolate; }
-.cstudio-native-header { display: flex; flex: none; align-items: center; gap: 8px; min-height: 40px; padding: 4px 10px 4px 16px; border-bottom: 1px solid var(--cstudio-border); }
+.cstudio-native-header { box-sizing: border-box; display: flex; flex: none; align-items: center; gap: 4px; height: 38px; padding: 0 6px 0 16px; border-bottom: .5px solid var(--cstudio-border); }
 .cstudio-native-path { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--cstudio-muted); }
 .cstudio-native-actions { display: flex; flex: none; }
 .cstudio-native-actions .cstudio-minimal-tools button { min-width: 30px; width: auto; padding: 5px 8px; }
 .cstudio-native-content { isolation: isolate; position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; }
 .cstudio-native-content > .cstudio-minimal { isolation: isolate; flex: 1; min-width: 0; height: auto; }
+.cstudio-document-editor { flex: 1; min-width: 0; min-height: 0; white-space: normal; }
+[data-textpreview-body]:has(> .cstudio-preview-overlay) { position: relative; }
+[data-textpreview-body]:has(> .cstudio-preview-overlay > .cstudio-git-diff) { overflow: hidden; }
+.cstudio-preview-overlay {
+  --cstudio-surface: var(--dsw-alias-bg-base, #fff);
+  --cstudio-border: var(--dsw-alias-border-l3, #e8eaed);
+  --cstudio-accent: var(--dsw-alias-brand-primary, #4d6bfe);
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  font-family: var(--cstudio-ui-font, var(--dsw-font-family, sans-serif)); white-space: normal;
+}
+.cstudio-preview-overlay > * { pointer-events: auto; }
+.cstudio-preview-overlay button {
+  border: 0; border-radius: var(--dsw-radius-sm, 4px); padding: 4px 8px;
+  background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; cursor: pointer;
+}
+.cstudio-preview-message { position: absolute; bottom: 8px; left: 8px; right: 8px; }

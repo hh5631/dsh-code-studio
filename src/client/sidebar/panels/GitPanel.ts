@@ -99,16 +99,16 @@ function GitBody({ ctx, store }: { ctx: GitContext; store: GitStore }): React.Re
       collapsed[id] ? null : React.createElement(React.Fragment, null, list.slice(0, limit).map(row),
         list.length > limit ? React.createElement('button', { className: 'cstudio-git-more', type: 'button', onClick: () => setLimits(value => ({ ...value, [id]: limit + 200 })) }, `显示其余 ${list.length - limit} 项`) : null))
   }
-  const empty = (icon: 'branch' | 'check' | 'commit', text: string) => React.createElement('div', { className: 'cstudio-git-empty', role: 'status' }, React.createElement(StudioIcon, { name: icon, size: 28 }), React.createElement('p', null, text))
+  const empty = (text: string) => React.createElement('p', { className: 'cstudio-git-empty', role: 'status' }, text)
   let body: React.ReactNode
-  if (state.phase === 'idle' || state.phase === 'loading') body = empty('branch', store.cwd ? '正在读取仓库…' : '打开工作区文件后查看 Git')
-  else if (state.phase === 'error') body = empty('branch', state.error.includes('不是 Git 仓库') ? '此文件不在 Git 仓库中' : state.error)
-  else if (view === 'history') body = history.loading || history.root !== root ? empty('commit', '正在读取提交…')
-    : history.error ? empty('commit', history.error)
-    : !history.commits.length ? empty('commit', '还没有提交记录')
+  if (state.phase === 'idle' || state.phase === 'loading') body = empty(store.cwd ? '正在读取仓库…' : '打开工作区文件后查看 Git')
+  else if (state.phase === 'error') body = empty(state.error.includes('不是 Git 仓库') ? '此文件不在 Git 仓库中' : state.error)
+  else if (view === 'history') body = history.loading || history.root !== root ? empty('正在读取提交…')
+    : history.error ? empty(history.error)
+    : !history.commits.length ? empty('还没有提交记录')
     : React.createElement('div', { className: 'cstudio-git-history' }, history.commits.map(commit => React.createElement('div', { key: commit.hash, className: 'cstudio-git-commit', title: `${commit.subject}\n${commit.hash}` },
       React.createElement(StudioIcon, { name: 'commit' }), React.createElement('div', null, React.createElement('span', { className: 'cstudio-git-subject' }, commit.subject), React.createElement('code', null, commit.hash.slice(0, 8))))))
-  else if (!changes.length) body = empty('check', '工作区干净')
+  else if (!changes.length) body = empty('工作区干净')
   else body = React.createElement('div', { className: 'cstudio-git-changes' },
     group('staged', '已暂存', changes.filter(change => change.staged)),
     group('unstaged', '修改', changes.filter(change => !change.staged && change.status !== '?')),

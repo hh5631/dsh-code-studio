@@ -78,7 +78,7 @@ export interface SidebarRightTabsLike {
 /** sidebarRight 服务的最小结构面（openTab 页路由 + openResource 资源路由 + 可选查询/定向打开）。 */
 export interface SidebarRightServiceLike {
   openTab: (kind: string, options?: { params?: unknown }) => void
-  openResource?: (address: string, options?: { params?: unknown; kind?: string }) => void
+  openResource?: (address: string, options?: { params?: unknown; kind?: string; paneId?: string; replaceTab?: string }) => void
   /** 挂载会话的激活 Tab（判读编辑 Tab 是否已激活；无 seat 时 undefined）。 */
   active?: () => { kind?: string } | undefined
   /** 向指定会话的停靠面打开页类型（store 未 adopt 时 no-op）。 */
@@ -377,6 +377,7 @@ export function registerOfficialFileClaim(options: {
   tabs: SidebarRightTabsLike
   slots: SlotsLike
   renderTab: unknown
+  useDocumentRenderer?: (address: string) => boolean
 }): (() => void) | null {
   const { tabs, slots, renderTab } = options
   let typeDisposer: (() => void) | null = null
@@ -391,7 +392,7 @@ export function registerOfficialFileClaim(options: {
       canOpen: (address: string) => {
         const parsed = parseOfficialFileAddress(address)
         if (parsed === null) return false
-        return !deferToOfficial(parsed.path) && !inNativePath(parsed.path)
+        return !deferToOfficial(parsed.path) && !inNativePath(parsed.path) && !options.useDocumentRenderer?.(address)
       },
       title: (address: string) => officialFileTitle(address),
     })

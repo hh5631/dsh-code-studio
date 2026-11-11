@@ -37,10 +37,12 @@ import { setupExtOpen } from './externalOpen.js'
 import { SIDEBAR_PLUGIN, registerSlotSafely, settingsBridge } from './compat.js'
 import { clientSummary } from './compatSummary.js'
 import { detectSidebarService, hasSideRoute, installSideEditor, routeSideEditor, setEnsureSideEditor, SIDEBAR_INSTALL_CMD } from './sidebarBridge.js'
-import { detectOfficial, installOfficial, registerOfficialFileClaim, registerWorkspaceFilesClaim, buildFileAddress, setEditorTabScope } from './officialSidebar.js'
+import { detectOfficial, installOfficial, registerOfficialFileClaim, registerWorkspaceFilesClaim, buildFileAddress, parseOfficialFileAddress, setEditorTabScope } from './officialSidebar.js'
+import { installDocumentRenderer, type DocumentPreviewsLike } from './documentRenderer.js'
 import { setNativeCsv, setNativeOpenHandler, resetNativeOpen } from './nativeOpenStore.js'
 import { SideEditorTab } from './ui/SideEditorTab.js'
-import { NativeFileTab, LegacyEditorRedirect } from './ui/NativeFileTab.js'
+import { NativeDocumentEditor, NativeFileTab, LegacyEditorRedirect } from './ui/NativeFileTab.js'
+import { NativePreviewTools } from './ui/NativePreviewTools.js'
 import { createAddToConversation } from './addToConversation.js'
 import type { SkillCatalog } from '../shared/skillCatalog.js'
 
@@ -325,15 +327,34 @@ export async function apply(ctx: any): Promise<void> {
       return true
     } catch { return false }
   }
-  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(NativeFileTab, Object.assign({}, props, { schedule, openWorkspaceFiles, addToConversation, sidebarPanels, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions, readSessionScope: () => readSessionScope(ctx) }))
+  let documentPreviews = ctx.get('documentPreviews') as DocumentPreviewsLike | undefined
+  let documentRenderer: ReturnType<typeof installDocumentRenderer> = null
+  const useDocumentRenderer = (address: string): boolean => {
+    const file = parseOfficialFileAddress(address)
+    return !!file?.sessionId && documentRenderer?.matches(file.path) === true
+  }
+  const editorProps = { schedule, openWorkspaceFiles, addToConversation, sidebarPanels, fileMenuItems,
+    officialMenus: menuBridge, forge, fileOpeners: registry, sessions, readSessionScope: () => readSessionScope(ctx) }
+  registerSlotSafely(ctx, { name: 'sidebar.right.tab.document.actions', id: 'dsh-code-studio/tools', order: 90 },
+    (props: unknown) => React.createElement(NativePreviewTools, {
+      ...props as Pick<React.ComponentProps<typeof NativePreviewTools>, 'absolutePath' | 'sessionId'>,
+      sessions, service: officialService?.service,
+    }))
+  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(NativeFileTab, { ...props, ...editorProps, useDocumentRenderer })
+  const disposeDocumentRenderer = () => { documentRenderer?.dispose(); documentRenderer = null }
+  ctx.effect(() => disposeDocumentRenderer, 'code-studio: native document renderer lifetime')
   /** 官方 file 地址认领同步：自动/代码工作台 档认领（原生文件资源中编辑），其余交官方查看器。 */
   const syncFileClaim = (): void => {
     const official = officialService
     const want = official !== undefined && shouldClaimFiles(selected)
+    if (want && !documentRenderer && documentPreviews) {
+      documentRenderer = installDocumentRenderer(documentPreviews, ctx.slots, (props: React.ComponentProps<typeof NativeDocumentEditor>) =>
+        React.createElement(NativeDocumentEditor, { ...props, ...editorProps }))
+    } else if (!want) disposeDocumentRenderer()
     if (want && claimDisposer === null && official) {
       // 文本资源在原生文件页签内直接编辑，原生文件树与编辑区同屏。
       const renderTab = officialRenderTab
-      const disposer = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab })
+      const disposer = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab, useDocumentRenderer })
       const workspaceDisposer = registerWorkspaceFilesClaim({ tabs: official.tabs, slots: ctx.slots,
         renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true }), icon: IconFolderOpenOutline16 })
       if (disposer !== null || workspaceDisposer !== null) claimDisposer = ctx.effect(() => () => {
@@ -346,6 +367,11 @@ export async function apply(ctx: any): Promise<void> {
       claimDisposer = null
     }
   }
+  if (typeof ctx.inject === 'function') ctx.inject(['documentPreviews'], (scope: any) => {
+    documentPreviews = scope.get('documentPreviews') as DocumentPreviewsLike
+    syncFileClaim()
+    scope.effect(() => () => { documentPreviews = undefined; disposeDocumentRenderer() })
+  })
   const legacyDefaults = defaultKeybindings()
   let officialReady = false
   /**

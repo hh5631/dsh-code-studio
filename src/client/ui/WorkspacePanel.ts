@@ -6,6 +6,7 @@ import { SearchPanel } from '../sidebar/panels/SearchPanel.js'
 import { gitDecorations, absolutePath, repositoryDirectory } from '../state/gitPaths.js'
 import { useGitStore } from '../state/gitStore.js'
 import { StudioIcon } from './StudioIcon.js'
+import { IconSearchOutline16 } from './icons.js'
 import '../styles/workspace.css'
 
 export type WorkspaceView = 'files' | 'git' | 'search'
@@ -21,6 +22,7 @@ interface Props {
   useTabInfo?: () => any
   factory?: (name: string, props: any) => React.ReactNode
   toolbarTarget: HTMLElement | null
+  nativeContent?: HTMLElement | null
   onOpen(address: string): void
   onOpenPath(path: string, line?: number, column?: number): void
   editorActions: React.MutableRefObject<EditorPanelActions | null>
@@ -29,13 +31,13 @@ interface Props {
 }
 const modes = new Map<string, WorkspaceView>()
 const treeScroll = new Map<string, number>()
+const treeOwners = new WeakMap<HTMLElement, object>()
 
 export function WorkspacePanel(props: Props): React.ReactElement {
   const [view, setView] = React.useState<WorkspaceView>(() => modes.get(props.paneKey) ?? 'files')
   const [open, setOpen] = React.useState(false)
   const [body, setBody] = React.useState<HTMLElement | null>(null)
   const treeHost = React.useRef<HTMLSpanElement>(null)
-  const controls = React.useRef<HTMLDivElement>(null)
   const scriptedClick = React.useRef(false)
   const { store, snapshot } = useGitStore(repositoryDirectory(props.cwd, props.path), props.visible, props.scope)
   const decorations = React.useMemo(() => snapshot.data ? gitDecorations(snapshot.data.root, snapshot.data.changes) : new Map(), [snapshot.data])
@@ -43,15 +45,14 @@ export function WorkspacePanel(props: Props): React.ReactElement {
   decorationRef.current = decorations
 
   const choose = React.useCallback((next: WorkspaceView) => {
-    const body = treeHost.current?.querySelector<HTMLElement>('[data-files-body]')
     if (view === 'files' && next !== 'files' && body) treeScroll.set(props.paneKey, body.scrollTop)
     modes.set(props.paneKey, next); setView(next)
-  }, [props.paneKey, view])
+  }, [body, props.paneKey, view])
   React.useLayoutEffect(() => {
     const saved = treeScroll.get(props.paneKey)
     if (view === 'files' && body && saved !== undefined) body.scrollTop = saved
   }, [view, body, props.paneKey])
-  const nativeButton = () => controls.current?.querySelector<HTMLButtonElement>('[data-files-navigator-toggle]')
+  const nativeButton = () => props.toolbarTarget?.querySelector<HTMLButtonElement>('[data-files-navigator-toggle]')
   const setShown = (shown: boolean) => {
     const button = nativeButton()
     if (!button || (button.getAttribute('aria-expanded') === 'true') === shown) return
@@ -66,31 +67,83 @@ export function WorkspacePanel(props: Props): React.ReactElement {
     return () => { if (props.actions.current === handle) props.actions.current = null }
   })
 
-  const decorate = () => {
-    if (!treeHost.current || !props.cwd) return
-    for (const row of Array.from(treeHost.current.querySelectorAll<HTMLElement>('[data-files-path]'))) {
+  const decorate = React.useCallback((tree: HTMLElement | null) => {
+    if (!tree || !props.cwd) return
+    for (const row of Array.from(tree.querySelectorAll<HTMLElement>('[data-files-path]'))) {
       const path = row.getAttribute('data-files-path')
       const tone = path ? decorationRef.current.get(absolutePath(props.cwd, path)) : undefined
       if (tone) row.setAttribute('data-cstudio-git', tone)
       else row.removeAttribute('data-cstudio-git')
     }
-  }
-  React.useLayoutEffect(decorate, [decorations, props.cwd])
+  }, [props.cwd])
+  React.useLayoutEffect(() => decorate(body), [body, decorations, decorate])
   React.useEffect(() => {
+    const owner = props.nativeContent ?? treeHost.current
+    const toolbar = props.toolbarTarget
+    const useNativeTree = props.nativeContent !== undefined
+    const ownership = {}
+    let tree: HTMLElement | null = null
     let frame: number | undefined
+    let live = true, replaying = false, navigation = 0
+    const openFile = (event: MouseEvent) => {
+      const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-files-entry="file"] > div > button') : null
+      const prepare = props.beforeNavigate.current
+      if (!button || !prepare || replaying || event.defaultPrevented) return
+      event.preventDefault(); event.stopPropagation()
+      const request = ++navigation
+      void prepare().then(ready => {
+        if (!ready || !live || request !== navigation || !tree?.contains(button)) return
+        replaying = true
+        try { button.click() } finally { replaying = false }
+      }).catch(() => {})
+    }
+    const onToggle = (event: MouseEvent) => {
+      if (!scriptedClick.current && event.target instanceof Element && event.target.closest('[data-files-navigator-toggle]')) {
+        modes.set(props.paneKey, 'files'); setView('files')
+      }
+    }
+    const detachTree = () => {
+      if (tree && treeOwners.get(tree) === ownership) {
+        tree.removeAttribute('data-cstudio-workspace-tree')
+        tree.querySelectorAll('[data-cstudio-git]').forEach(row => row.removeAttribute('data-cstudio-git'))
+        treeOwners.delete(tree)
+      }
+      tree?.removeEventListener('click', openFile, true)
+      treeObserver.disconnect()
+    }
     const sync = () => {
-      const next = treeHost.current?.querySelector<HTMLElement>('[data-files-body]') ?? null
-      setBody(previous => previous === next ? previous : next)
+      const nextTree = owner?.querySelector<HTMLElement>('[data-files-navigator]') ?? null
+      if (tree !== nextTree) {
+        detachTree()
+        tree = nextTree
+        if (tree) {
+          treeOwners.set(tree, ownership)
+          tree.setAttribute('data-cstudio-workspace-tree', '')
+          treeObserver.observe(tree, { childList: true, subtree: true })
+          if (useNativeTree) tree.addEventListener('click', openFile, true)
+        }
+      }
+      setBody(tree?.querySelector<HTMLElement>('[data-files-body]') ?? null)
       setOpen(nativeButton()?.getAttribute('aria-expanded') === 'true')
-      decorate()
+      decorate(tree)
     }
     const schedule = () => { if (frame === undefined) frame = requestAnimationFrame(() => { frame = undefined; sync() }) }
-    const treeObserver = new MutationObserver(schedule), toggleObserver = new MutationObserver(schedule)
-    if (treeHost.current) treeObserver.observe(treeHost.current, { childList: true, subtree: true })
-    if (controls.current) toggleObserver.observe(controls.current, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-expanded'] })
+    const treeObserver = new MutationObserver(schedule)
+    const ownerObserver = new MutationObserver(schedule)
+    const toggleObserver = new MutationObserver(schedule)
+    if (owner) ownerObserver.observe(owner, { childList: true, subtree: !useNativeTree })
+    if (toolbar) {
+      toolbar.addEventListener('click', onToggle, true)
+      toggleObserver.observe(toolbar, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-expanded'] })
+    }
     sync()
-    return () => { treeObserver.disconnect(); toggleObserver.disconnect(); if (frame !== undefined) cancelAnimationFrame(frame) }
-  }, [props.toolbarTarget, props.cwd])
+    return () => {
+      live = false
+      detachTree(); ownerObserver.disconnect(); toggleObserver.disconnect()
+      toolbar?.removeEventListener('click', onToggle, true)
+      if (frame !== undefined) cancelAnimationFrame(frame)
+    }
+  }, [props.toolbarTarget, props.nativeContent, props.paneKey, props.beforeNavigate, decorate])
 
   const ctx = {
     sessionId: props.sessionId, cwd: props.cwd, scope: props.scope, visible: props.visible,
@@ -103,18 +156,19 @@ export function WorkspacePanel(props: Props): React.ReactElement {
       if (method === 'git.discard') props.editorActions.current?.refreshFile()
     },
   }
-  const tools = React.createElement('div', { ref: controls, className: 'cstudio-workspace-switches', role: 'toolbar', 'aria-label': '右侧面板' },
-    React.createElement('span', { className: 'cstudio-files-switch', 'data-active': open && view === 'files' ? '' : undefined,
-      onClickCapture: (event: React.MouseEvent) => {
-        if (scriptedClick.current) return
-        if (view !== 'files') { choose('files'); if (open) { event.preventDefault(); event.stopPropagation() } }
-      } }, props.factory?.('sidebar.files.navigator.toggle', { useTabInfo: props.useTabInfo }),
-      React.createElement('span', { className: 'cstudio-folder-glyph' }, React.createElement(StudioIcon, { name: 'folder', size: 18 }))),
-    ...(['git', 'search'] as const).map(mode => React.createElement('button', { key: mode, type: 'button', title: mode === 'git' ? 'Git' : '搜索', 'aria-label': mode === 'git' ? 'Git' : '搜索', 'aria-pressed': open && view === mode,
-      onClick: () => { if (open && view === mode) setShown(false); else show(mode) } }, React.createElement(StudioIcon, { name: mode === 'git' ? 'branch' : 'search', size: 18 }))))
+  const tools = React.createElement(React.Fragment, null,
+    props.nativeContent === undefined ? props.factory?.('sidebar.files.navigator.toggle', { useTabInfo: props.useTabInfo }) : null,
+    props.cwd ? React.createElement('div', { className: 'cstudio-workspace-switches', role: 'group', 'aria-label': '工作区工具' },
+      ...(['git', 'search'] as const).map(mode => {
+        const label = mode === 'git' ? 'Git' : '搜索'
+        const icon = mode === 'git' ? React.createElement(StudioIcon, { name: 'branch', size: 15 }) : React.createElement(IconSearchOutline16, { size: 15 })
+        return React.createElement('button', { key: mode, type: 'button', title: label, 'aria-label': label,
+          'aria-pressed': open && view === mode, onClick: () => show(open && view === mode ? 'files' : mode) }, icon)
+      })) : null)
   return React.createElement(React.Fragment, null,
     props.toolbarTarget ? createPortal(tools, props.toolbarTarget) : null,
-    React.createElement('span', { ref: treeHost, style: { display: 'contents' } }, props.factory?.('sidebar.files.navigator', { useTabInfo: props.useTabInfo, page: false, onOpen: props.onOpen })),
+    props.nativeContent === undefined ? React.createElement('span', { ref: treeHost, style: { display: 'contents' } },
+      props.factory?.('sidebar.files.navigator', { useTabInfo: props.useTabInfo, page: false, onOpen: props.onOpen })) : null,
     body && view !== 'files' ? createPortal(React.createElement('section', { className: 'cstudio-side-panel', role: 'region', 'aria-label': view === 'git' ? 'Git 面板' : '搜索面板' },
       view === 'git' ? React.createElement(GitPanel, { ctx }) : React.createElement(SearchPanel, { ctx, key: props.scope })), body) : null)
 }
