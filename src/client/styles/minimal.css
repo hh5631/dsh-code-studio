@@ -65,11 +65,6 @@
 .cstudio-setting-input > span { font-size: .85em; color: var(--dsw-alias-label-secondary, #61666b); }
 .cstudio-settings-hint { margin: 24px 0 0; font-size: .9em; }
 .cstudio-settings-result { min-height: 1.5em; font-size: .9em; color: var(--dsw-alias-label-secondary, #61666b); }
-.cstudio-update-row, .cstudio-update-links { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:6px 0; }
-.cstudio-update-row > span { flex:1 1 220px; color:var(--dsw-alias-label-secondary, #61666b); }
-.cstudio-update-row > button { padding:5px 10px; border:.5px solid var(--dsw-alias-border-l2, #e8eaed); border-radius:var(--dsw-radius-sm, 4px); color:inherit; background:transparent; font:inherit; cursor:pointer; }
-.cstudio-update-row > button:hover:not(:disabled) { background:var(--dsw-alias-interactive-bg-hover); }
-.cstudio-update-row > button:disabled { opacity:.55; cursor:default; }
 @media(max-width:600px) { .cstudio-settings { padding: 20px 16px; } .cstudio-setting-row { gap: 12px; } }
 @media(prefers-reduced-motion:reduce) { .cstudio-minimal * { scroll-behavior: auto !important; } }
 

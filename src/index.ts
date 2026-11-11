@@ -1,6 +1,5 @@
 /** dsh-code-studio Host composition. @author ddj 2026年09月28号 */
 import { registerRoutes } from './routes.js'
-import { installReleaseCheck } from './release-check.mjs'
 import { handleRpc, integrationBaseUrlOf } from './rpc.js'
 import { newSearcher } from './search/orchestrator.js'
 import { newContentSearcher } from './search/content.js'
@@ -122,7 +121,6 @@ export async function apply(ctx: Ctx, config?: unknown): Promise<void> {
     }
   }
   registerRoutes(ctx, config, dispatch, noteWarning)
-  installReleaseCheck(ctx, new URL('../package.json', import.meta.url))
   installIsolation(ctx)
   await installMcpRuntime(ctx)
   ctx.effect(mountInbox, 'code-studio:open-inbox')
