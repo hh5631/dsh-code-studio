@@ -1,0 +1,109 @@
+.cstudio-git-diff {
+  --diff-muted: var(--dsw-alias-label-secondary, #61666b);
+  --diff-line: var(--dsw-alias-border-l3, #e8eaed);
+  --diff-soft: var(--dsw-alias-bg-layer-1, #f7f8fa);
+  --diff-hover: var(--dsw-alias-interactive-bg-hover, #f2f3f5);
+  --diff-code: var(--cstudio-code-font, var(--dsw-font-family-code, ui-monospace, monospace));
+  --diff-add: var(--dsw-alias-state-success-primary, #1a7f37);
+  --diff-remove: var(--dsw-alias-state-error-primary, #b23838);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--cstudio-ui-size, var(--dsh-content-font-size-secondary, 13px));
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+.cstudio-diff-toolbar, .cstudio-diff-part-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  min-width: 0;
+  padding: 4px 8px;
+}
+.cstudio-diff-toolbar { min-height: 38px; border-bottom: .5px solid var(--diff-line); }
+.cstudio-diff-title, .cstudio-diff-part-tools > span {
+  flex: 1;
+  min-width: 0;
+  color: var(--diff-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cstudio-diff-modes { display: inline-flex; gap: 2px; }
+.cstudio-git-diff :is(.cstudio-diff-toolbar, .cstudio-diff-part-tools) button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--dsw-radius-sm, 4px);
+  background: transparent;
+  color: var(--diff-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.cstudio-git-diff :is(.cstudio-diff-toolbar, .cstudio-diff-part-tools) button:is(:hover:not(:disabled),[aria-pressed=true],.cstudio-diff-apply) {
+  color: inherit;
+  background: var(--diff-hover);
+}
+.cstudio-git-diff button:disabled { opacity: .5; cursor: default; }
+.cstudio-git-diff :is(button, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--cstudio-accent, #4d6bfe);
+  outline-offset: -2px;
+}
+.cstudio-diff-labels {
+  flex: none;
+  padding: 5px 10px;
+  color: var(--diff-muted);
+  border-bottom: .5px solid var(--diff-line);
+}
+.cstudio-diff-labels.cstudio-diff-split { padding-inline: 0; }
+.cstudio-diff-labels.cstudio-diff-split > span { padding-inline: 10px; }
+.cstudio-diff-scroll, .cstudio-diff-raw { flex: 1; min-height: 0; overflow: auto; margin: 0; }
+.cstudio-diff-raw { padding: 12px; font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code); }
+.cstudio-diff-range {
+  padding: 4px 8px;
+  color: var(--diff-muted);
+  background: var(--diff-soft);
+  font: .9em/1.5 var(--diff-code);
+  overflow-wrap: anywhere;
+}
+.cstudio-diff-row { font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code); tab-size: 4; }
+.cstudio-diff-unified { display: grid; grid-template-columns: 4.5ch 4.5ch 2ch minmax(0, 1fr); }
+.cstudio-diff-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cstudio-diff-split > :nth-child(2) { border-left: .5px solid var(--diff-line); }
+.cstudio-diff-cell { display: grid; grid-template-columns: 4.5ch 2ch minmax(0, 1fr); }
+.cstudio-diff-row [data-gap] { background: var(--diff-soft); }
+.cstudio-diff-row[data-tone=add], .cstudio-diff-cell[data-tone=add] { background: color-mix(in srgb, var(--diff-add) 11%, transparent); }
+.cstudio-diff-row[data-tone=remove], .cstudio-diff-cell[data-tone=remove] { background: color-mix(in srgb, var(--diff-remove) 11%, transparent); }
+.cstudio-diff-row code {
+  min-width: 0;
+  padding-right: 8px;
+  font: inherit;
+  background: transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cstudio-diff-number, .cstudio-diff-sign { text-align: right; padding-right: .5ch; color: var(--diff-muted); user-select: none; }
+.cstudio-diff-eof { margin-left: .5ch; color: var(--diff-muted); user-select: none; }
+.cstudio-diff-part-tools { border-top: .5px solid var(--diff-line); font-size: .9em; }
+.cstudio-diff-replacement { padding: 4px 8px 0; }
+.cstudio-diff-replacement textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  padding: 6px;
+  border: .5px solid var(--diff-line);
+  border-radius: var(--dsw-radius-sm, 4px);
+  background: var(--diff-soft);
+  color: inherit;
+  font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code);
+}
+.cstudio-diff-replacement .cstudio-diff-part-tools { justify-content: end; padding-inline: 0; border: 0; }
+.cstudio-diff-feedback { margin: 0; padding: 6px 10px; color: var(--diff-muted); overflow-wrap: anywhere; }
+.cstudio-diff-feedback[role=alert] { color: var(--diff-remove); }

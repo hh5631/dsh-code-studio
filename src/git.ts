@@ -160,13 +160,15 @@ export async function gitStatus(cwd: string): Promise<{ ok: true; root: string; 
  * @param staged 是否读取暂存区（false = 工作区 vs 暂存区）
  * @returns 差异文本；失败返回 ok:false
  */
-export async function gitDiff(cwd: string, path: string, staged: boolean): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+export async function gitDiff(cwd: string, path: string, staged: boolean): Promise<{ ok: true; root: string; text: string } | { ok: false; error: string }> {
+  if (!path) return { ok: false, error: '缺少文件路径' }
   const root = await gitRootOf(cwd)
   if (!root) return { ok: false, error: '当前目录不是 Git 仓库' }
-  const args = ['diff', '--no-color', '--no-ext-diff', ...(staged ? ['--cached'] : []), '--', path]
+  const args = ['--literal-pathspecs', 'diff', '--no-color', '--no-ext-diff', '--no-textconv', '--no-relative', '--unified=3',
+    '--output-indicator-new=+', '--output-indicator-old=-', '--output-indicator-context= ', ...(staged ? ['--cached'] : []), '--', path]
   const res = await runGit(root, args)
   if (!res.ok) return { ok: false, error: res.error ?? '读取差异失败' }
-  return { ok: true, text: res.stdout }
+  return { ok: true, root, text: res.stdout }
 }
 
 /**

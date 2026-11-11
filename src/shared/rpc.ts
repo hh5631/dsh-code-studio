@@ -461,7 +461,8 @@ export interface RpcRequestMap {
   'skills.list': { cwd?: string }
   // ── Git 集成（替代已移除的 SVN）───────────────────────────────
   'git.status': { cwd: string }
-  'git.diff': { cwd: string; path: string; staged: boolean }
+  'git.diff': { cwd: string; path: string; staged: boolean; sessionId?: string }
+  'git.editPart': { cwd: string; path: string; sessionId: string; revision: string; hunk: number; part: number; replacement?: string }
   'git.stage': { cwd: string; paths: string[] }
   'git.unstage': { cwd: string; paths: string[] }
   'git.discard': { cwd: string; paths: string[] }
@@ -578,7 +579,8 @@ export interface RpcOkMap {
   'cstudio.perf.configUndo': { restored: boolean; error?: string; backup?: string }
   'skills.list': SkillCatalog
   'git.status': { root: string; changes: Array<{ path: string; status: string; staged: boolean; from?: string }> }
-  'git.diff': { text: string }
+  'git.diff': { text: string; revision?: string }
+  'git.editPart': object
   'git.stage': object
   'git.unstage': object
   'git.discard': object

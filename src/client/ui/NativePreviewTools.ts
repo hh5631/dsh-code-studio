@@ -4,6 +4,7 @@ import { DOCUMENT_EDITOR_ID } from '../documentRenderer.js'
 import { buildFileAddress, type SidebarRightServiceLike } from '../officialSidebar.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 import { minimalWorkspace } from '../state/minimalWorkspace.js'
+import { normalizedPath } from '../state/gitPaths.js'
 import { tabPathOf } from '../tabActions.js'
 import { GitDiffView } from './GitDiffView.js'
 import { WorkspacePanel, type EditorPanelActions, type WorkspacePanelActions } from './WorkspacePanel.js'
@@ -78,6 +79,7 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
       editorActions, actions, beforeNavigate,
     }) : null,
     body && (diff || message) ? createPortal(React.createElement('div', { className: 'cstudio-preview-overlay' },
-      diff ? React.createElement(GitDiffView, { ...diff, onClose: () => setDiff(null) }) : null,
+      diff ? React.createElement(GitDiffView, { ...diff, sessionId, workspaceRoot: cwd, onClose: () => setDiff(null),
+        onApplied: (path: string) => { if (path === normalizedPath(absolutePath)) editorActions.current?.refreshFile() } }) : null,
       message ? React.createElement('button', { type: 'button', className: 'cstudio-preview-message', onClick: () => setMessage('') }, message, ' ×') : null), body) : null)
 }

@@ -45,7 +45,7 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
   const cwd: string | null = React.useSyncExternalStore(
     React.useCallback(listener => list?.subscribe?.(listener) ?? (() => {}), [list]),
     () => list?.getSnapshot?.()?.byId?.[sessionId ?? '']?.cwd ?? null, () => null)
-  const [panelToolbar, setPanelToolbar] = React.useState<HTMLDivElement | null>(null)
+  const [panelToolbar, setPanelToolbar] = React.useState<HTMLElement | null>(null)
   const editorActions = React.useRef<EditorPanelActions | null>(null)
   const panelActions = React.useRef<WorkspacePanelActions | null>(null)
   const showWorkspacePanel = React.useCallback((view: WorkspaceView) => {

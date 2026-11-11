@@ -50,13 +50,6 @@
 .cstudio-minimal-error { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--dsw-alias-state-error-primary, #b23838); border-top: 1px solid var(--cstudio-border); }
 .cstudio-minimal-error > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .cstudio-minimal-git { width: 260px; max-width: 40%; flex: none; min-width: 150px; border-right: 1px solid var(--cstudio-border); overflow: hidden; }
-.cstudio-git-diff { display: flex; flex-direction: column; }
-.cstudio-git-diff > header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--cstudio-border); }
-.cstudio-git-diff > header > span { min-width: 0; overflow-wrap: anywhere; }
-.cstudio-git-diff > pre { margin: 0; padding: 16px; overflow: auto; flex: 1; font: var(--cstudio-code-size, 14px)/1.6 var(--cstudio-code-font, ui-monospace, SFMono-Regular, Menlo, monospace); tab-size: 4; }
-.cstudio-git-add { color: var(--dsw-alias-state-success-primary, #16733e); background: color-mix(in srgb, currentColor 5%, transparent); }
-.cstudio-git-delete { color: var(--dsw-alias-state-error-primary, #b23838); background: color-mix(in srgb, currentColor 5%, transparent); }
-.cstudio-git-hunk { color: var(--cstudio-accent); }
 
 /* 设置与 DSH 设置页面使用同一文案层级。 */
 .cstudio-settings { max-width: 640px; padding: 28px 32px; color: var(--dsw-alias-label-primary, #0f1115); }

@@ -368,7 +368,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
           sessionId: sessionId || '', path: active,
           loadPage: async args => { const result = await rpc('cstudio.textPage', args); return result.ok ? result : { ok: false, error: result.error, reason: result.reason ?? 'read-failed' } },
         })) : null,
-        gitDiff ? React.createElement(GitDiffView, { ...gitDiff, onClose: () => setGitDiff(null) }) : null,
+        gitDiff ? React.createElement(GitDiffView, { ...gitDiff, sessionId, workspaceRoot: cwd, onClose: () => setGitDiff(null) }) : null,
         preview && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-preview' }, React.createElement(MarkdownText as any, { text: previewText, streaming: false, labels: { code: { copyLabel: '复制', copiedLabel: '已复制' }, footnotes: '脚注' }, variant: 'body' })) : null,
         !active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-empty' },
           embedded ? React.createElement('p', null, '从右侧文件树选择文件') : React.createElement(React.Fragment, null, React.createElement(IconFolderOpenOutline16, { size: 28 }),

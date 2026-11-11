@@ -9,8 +9,10 @@ import type { RpcHandlerMap, RpcMethod, RpcRequestMap, RpcResult } from './share
 import { binaryMimeOf, SESSION_MISSING_ERROR, SESSION_NO_WORKSPACE_ERROR } from './shared/rpc.js'
 import type { Ctx, Session } from './store.js'
 import { BINARY_READ_CAP, READ_CAP, policyOf, resolveTarget, resolveTargetIn } from './store.js'
-import { cp, mkdir, readFile, rename, rm, stat, writeFile, readdir } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { cp, lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile, readdir } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { createHash } from 'node:crypto'
+import { editGitPatchPart, GIT_EDIT_LIMIT, parseGitPatch } from './shared/gitPatch.js'
 import type { Registry, SessionScope } from './registry.js'
 import { cwdOfSession, resolveScope, sessionOf } from './registry.js'
 import { newSearcher } from './search/orchestrator.js'
@@ -58,6 +60,35 @@ async function requireSession(ctx: Ctx, sessionId: string | undefined): Promise<
   const cwd = cwdOfSession(ctx, session)
   if (!cwd) return { err: SESSION_NO_WORKSPACE_ERROR }
   return { session, cwd }
+}
+
+function containsFile(directory: string, file: string): boolean {
+  const rel = relative(directory, file)
+  return rel !== '' && rel !== '..' && !rel.startsWith('..' + sep) && !isAbsolute(rel)
+}
+
+/** 仅授权会话工作区内、Git 仓库实际指向的普通文件，并复用 DSH 的版本化写入。 */
+async function gitEditTarget(ctx: Ctx, sessionId: string | undefined, root: string, path: string) {
+  if (typeof sessionId !== 'string' || !sessionId) return null
+  const sc = await requireSession(ctx, sessionId)
+  const fs = ctx.get('fs')
+  if ('err' in sc || !fs) return null
+  const abs = resolve(root, path)
+  if (!containsFile(root, abs)) return null
+  try {
+    const info = await lstat(abs)
+    if (!info.isFile() || info.size > GIT_EDIT_LIMIT) return null
+    const canonical = await realpath(abs)
+    if (canonical !== resolve(await realpath(root), relative(root, abs)) || !containsFile(await realpath(sc.cwd), canonical)) return null
+    const target = await resolveTarget(ctx, sc.session, abs)
+    const file = await fs.stat(target)
+    if (file?.type !== 'file' || typeof file.version !== 'string' || !file.version) return null
+    return { sc, fs, target, abs, version: file.version as string }
+  } catch { return null }
+}
+
+function gitDiffRevision(text: string, abs: string, version: string): string {
+  return createHash('sha256').update(JSON.stringify([abs, version, text])).digest('hex')
 }
 
 /**
@@ -1030,10 +1061,46 @@ export function buildHandlers(
     },
     'git.diff': async (args) => {
       try {
-        const result = await gitDiff(String(args?.cwd ?? ''), String(args?.path ?? ''), args?.staged === true)
-        return result.ok ? { ok: true, text: result.text } : result
+        const path = String(args?.path ?? '')
+        const result = await gitDiff(String(args?.cwd ?? ''), path, args?.staged === true)
+        if (!result.ok) return result
+        const writable = args?.staged !== true && parseGitPatch(result.text)?.editable
+        const target = writable ? await gitEditTarget(ctx, args.sessionId, result.root, path) : null
+        return { ok: true, text: result.text, revision: target ? gitDiffRevision(result.text, target.abs, target.version) : undefined }
       } catch (error) {
         return { ok: false, error: '读取差异失败：' + String(error) }
+      }
+    },
+    'git.editPart': async (args) => {
+      const stale = { ok: false as const, error: '文件或 Git 差异已变化，请刷新后再操作' }
+      try {
+        if (!args || !Number.isSafeInteger(args.hunk) || !Number.isSafeInteger(args.part) || args.hunk < 0 || args.part < 0
+          || typeof args.revision !== 'string' || !/^[\da-f]{64}$/.test(args.revision)) return { ok: false, error: '修改段参数无效' }
+        if (args.replacement !== undefined && (typeof args.replacement !== 'string'
+          || args.replacement.includes('\0') || Buffer.byteLength(args.replacement) > GIT_EDIT_LIMIT)) return { ok: false, error: '替换内容无效或过大' }
+        const path = String(args.path ?? '')
+        const result = await gitDiff(String(args.cwd ?? ''), path, false)
+        if (!result.ok) return result
+        const patch = parseGitPatch(result.text)
+        const hunk = patch?.hunks[args.hunk]
+        if (!patch?.editable || !hunk) return stale
+        const target = await gitEditTarget(ctx, args.sessionId, result.root, path)
+        if (!target) return { ok: false, error: '此文件不支持分段编辑' }
+        if (gitDiffRevision(result.text, target.abs, target.version) !== args.revision) return stale
+        const bytes = await target.fs.readBytes(target.target, undefined, GIT_EDIT_LIMIT)
+        if (bytes.byteLength > GIT_EDIT_LIMIT) return { ok: false, error: '文件过大，无法分段编辑' }
+        const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes)
+        if (content.includes('\0')) return { ok: false, error: '仅支持 UTF-8 文本文件' }
+        const next = editGitPatchPart(content, hunk, args.part, args.replacement)
+        if (next === null) return stale
+        if (Buffer.byteLength(next) > GIT_EDIT_LIMIT) return { ok: false, error: '替换后的文件过大' }
+        if (next !== content) {
+          await target.fs.writeText(target.target, next, { kind: 'replaceIfVersion', version: target.version }, void 0, policyOf(ctx, target.sc.session))
+          await afterManualSave(ctx, registry, target.sc, target.abs)
+        }
+        return { ok: true }
+      } catch (error) {
+        return isStaleVersion(error) ? stale : { ok: false, error: '修改段写入失败：' + String(error) }
       }
     },
     'git.stage': async (args) => {
