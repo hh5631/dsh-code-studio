@@ -81,7 +81,11 @@ describe('ensureActiveBridge（tmp 端到端）', () => {
     const plain = join(base, 'plain')
     await mkdir(plain, { recursive: true })
     await writeFile(join(plain, 'package.json'), JSON.stringify({ name: 'not-a-profile' }), 'utf8')
-    const ctx = { get: () => undefined } as unknown as Ctx
+    // dshHomePath 指向隔离根：否则 findProfileDir 会回退扫描**真实** DSH home，
+    // 命中开发机上已安装本插件的 profile，导致本用例前提失效。
+    const ctx = {
+      get: (key: string) => key === 'dshHomePath' ? () => base : undefined,
+    } as unknown as Ctx
     expect(await ensureActiveBridge(ctx, 'http://127.0.0.1:19387')).toBeNull()
   })
 

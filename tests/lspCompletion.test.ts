@@ -396,7 +396,7 @@ describe('edrv.lsp.completion handler', () => {
   beforeAll(() => {
     home = mkdtempSync(join(tmpdir(), 'dsh-lsp-completion-'))
     process.env.DSH_HOME = home
-    process.env.DSH_LSP_EXT_DIRS = join(home, 'dsh-vscode-mode', 'extensions')
+    process.env.DSH_LSP_EXT_DIRS = join(home, 'dsh-code-studio', 'extensions')
   })
   afterAll(() => {
     delete process.env.DSH_HOME
@@ -407,7 +407,7 @@ describe('edrv.lsp.completion handler', () => {
   it('未知语言 → ok:true + 空载荷（不报错，保持与 definition 同口径）', async () => {
     const server = fakeServer(ROOT, 'lua')
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: 'a.txt', position: { line: 0, character: 0 } })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: 'a.txt', position: { line: 0, character: 0 } })
     expect(res.ok).toBe(true)
     expect((res as { completions?: unknown }).completions).toBeUndefined()
   })
@@ -415,7 +415,7 @@ describe('edrv.lsp.completion handler', () => {
   it('该语言无运行实例 → ok:true + 空载荷（懒启动语义，不代起服务器）', async () => {
     const server = fakeServer(ROOT, 'csharp') // 与请求的 lua 不匹配
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 11, character: 6 } })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 11, character: 6 } })
     expect(res.ok).toBe(true)
     expect((res as { completions?: unknown }).completions).toBeUndefined()
   })
@@ -423,7 +423,7 @@ describe('edrv.lsp.completion handler', () => {
   it('命中实例 → 以工作区相对路径与 0-based 位置调用', async () => {
     const server = fakeServer(ROOT, 'lua', { items: [{ label: 'id' }, { label: 'name' }], incomplete: false })
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 11, character: 6 } })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 11, character: 6 } })
     expect(res.ok).toBe(true)
     const completions = (res as { completions: { items: Array<{ label: string }> } }).completions
     expect(completions.items.map((i) => i.label)).toEqual(['id', 'name'])
@@ -434,7 +434,7 @@ describe('edrv.lsp.completion handler', () => {
     const items = Array.from({ length: 620 }, (_, i) => ({ label: 'm' + i }))
     const server = fakeServer(ROOT, 'lua', { items, incomplete: false })
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 } })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 } })
     const completions = (res as { completions: { items: unknown[]; truncated?: boolean } }).completions
     expect(completions.items.length).toBe(500)
     expect(completions.truncated).toBe(true)
@@ -449,7 +449,7 @@ describe('edrv.lsp.completion handler', () => {
     ]
     const server = fakeServer(ROOT, 'lua', { items, incomplete: false })
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 }, prefix: 'ECommon' })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 }, prefix: 'ECommon' })
     const completions = (res as { completions: { items: Array<{ label: string }>; truncated?: boolean } }).completions
     expect(completions.items.length).toBe(500)
     expect(completions.truncated).toBe(true)
@@ -462,7 +462,7 @@ describe('edrv.lsp.completion handler', () => {
     const items = [{ label: 'ECommon' }, { label: 'CS_Foo' }]
     const server = fakeServer(ROOT, 'lua', { items, incomplete: false })
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 }, prefix: 'ECommon' })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 's1', path: LUA_DOC, position: { line: 0, character: 0 }, prefix: 'ECommon' })
     const completions = (res as { completions: { items: Array<{ label: string }>; truncated?: boolean } }).completions
     expect(completions.items.map((i) => i.label)).toEqual(['ECommon', 'CS_Foo'])
     expect(completions.truncated).toBeUndefined()
@@ -471,7 +471,7 @@ describe('edrv.lsp.completion handler', () => {
   it('会话不存在 → ok:false + 可见错误（不静默吞掉）', async () => {
     const server = fakeServer(ROOT, 'lua')
     const rpc = createLspRpc({ ctx: fakeCtx() as never, pluginConfig: {}, manager: fakeManager(server) as never })
-    const res = await rpc.handlers['edrv.lsp.completion']!({ sessionId: 'nope', path: LUA_DOC, position: { line: 0, character: 0 } })
+    const res = await rpc.handlers['cstudio.lsp.completion']!({ sessionId: 'nope', path: LUA_DOC, position: { line: 0, character: 0 } })
     expect(res.ok).toBe(false)
     expect(String((res as { error: string }).error)).toContain('会话')
   })

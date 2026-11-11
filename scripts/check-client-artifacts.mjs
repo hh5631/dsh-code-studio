@@ -5,9 +5,9 @@ import { pathToFileURL } from 'node:url'
 import { createContext, runInContext } from 'node:vm'
 import ts from 'typescript'
 
-const OWNER = 'dsh-vscode-mode'
-const CHUNKS = ['client.rules.js', 'client.debug.js']
-const SHARED = ['rpc', 'dbg', 'dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu']
+const OWNER = 'dsh-code-studio'
+const CHUNKS = []
+const SHARED = ['rpc', 'dbg', 'ContextMenu']
 
 /** @private @author ddj 2026年10月22号 @param source Bundle source. @param filename Diagnostic filename. @returns Registration without materializing its factory. */
 function registration(source, filename) {
@@ -108,7 +108,7 @@ export async function inspectArtifacts(libDir) {
   const chunks = CHUNKS.map((name) => {
     const row = registration(sources[name], name)
     assert.equal(row.chunk, name, `${name}: wrong chunk registration`)
-    assert.match(sources[name], /require\(["']dsh-vscode-mode["']\)/, `${name}: missing shared root dependency`)
+    assert.match(sources[name], /require\(["']dsh-code-studio["']\)/, `${name}: missing shared root dependency`)
     assert.match(sources[name], /__lazyShared/, `${name}: missing shared bridge`)
     assert.doesNotMatch(sources[name], /function\s+(rpc|createDapStore)\s*\(/, `${name}: duplicated singleton implementation`)
     verifySharedReads(row, name)
@@ -152,6 +152,7 @@ export async function verifyNativeLoader(artifacts, loaderPath) {
   const root = await system.import(OWNER)
   assert.equal(typeof root.__setPanelImport, 'function', 'missing panel import setter')
   for (const key of SHARED) assert.ok(root.__lazyShared?.[key] !== undefined, `missing shared export: ${key}`)
+  if (CHUNKS.length === 0) return { arrivals, sharedKeys: SHARED, loader: 'root-only' }
   const nativeRequire = system.makeRequire(OWNER, new Set())
   const [first, concurrent] = await Promise.all([nativeRequire.async('./client.rules.js'), nativeRequire.async('./client.rules.js')])
   assert.equal(first, concurrent, 'concurrent loads must reuse materialized exports')

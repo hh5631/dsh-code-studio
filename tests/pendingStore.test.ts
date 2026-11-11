@@ -315,12 +315,12 @@ describe('待审投影真实往返', () => {
     const sessions = new Map(['s1', 's2', 's3'].map((id) => [id, { id, header: { cwd: id === 's3' ? other : workspace } }]))
     const ctx = { get: (name: string) => name === 'sessions' ? sessions : undefined }
     const handlers = pendingHandlers(ctx, new Map([[workspace, new Map()], [other, new Map()]]))
-    const first = await handlers['edrv.pending.list']!({ sessionId: 's1' })
-    expect(await handlers['edrv.pending.list']!({ sessionId: 's2' })).toEqual(first)
-    expect(await handlers['edrv.pending.list']!({ sessionId: 's3' })).toMatchObject({ ok: true, page: { items: [] } })
+    const first = await handlers['cstudio.pending.list']!({ sessionId: 's1' })
+    expect(await handlers['cstudio.pending.list']!({ sessionId: 's2' })).toEqual(first)
+    expect(await handlers['cstudio.pending.list']!({ sessionId: 's3' })).toMatchObject({ ok: true, page: { items: [] } })
     sessions.delete('s1')
-    expect(await handlers['edrv.pending.detail']!({ sessionId: 's2', id: file })).toMatchObject({ ok: true })
-    expect(await handlers['edrv.pending.detail']!({ sessionId: 's3', id: file })).toMatchObject({ ok: false })
+    expect(await handlers['cstudio.pending.detail']!({ sessionId: 's2', id: file })).toMatchObject({ ok: true })
+    expect(await handlers['cstudio.pending.detail']!({ sessionId: 's3', id: file })).toMatchObject({ ok: false })
   })
 
   it('未参与修改的对话共享列表、决定与撤销，其他工作区隔离', async () => {

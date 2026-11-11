@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode host — 技能候选枚举（全局技能 + 当前工作区技能）。
+ * dsh-code-studio host — 技能候选枚举（全局技能 + 当前工作区技能）。
  *
  * 为什么要另起一条通道：本插件原有的 `skills.ts` 只管「随包分发的技能组」
  * （<包根>/skills，按 SKILL_PREFIXES 前缀白名单过滤）；而快捷菜单「绑定技能」需要的是

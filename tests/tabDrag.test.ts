@@ -90,11 +90,12 @@ describe('internal tab drop hit testing', () => {
     expect(hitTarget({ ...base, allowCreate: false, point: { x: 20, y: 300 } })?.target.kind).toBe('group')
     expect(hitTarget({ ...base, regions: [{ ...region, floating: true }], point: { x: 20, y: 300 } })?.target.kind).toBe('group')
   })
-  it('only creates floats in explicit blank areas inside the viewport', () => {
+  it('never creates floats in blank areas (floating groups removed 2026-11-10)', () => {
+    // 浮窗功能已按需求移除：拖到空白处一律返回 null（保持原状，不误拖成孤立窗口）。
     expect(hitTarget({ ...base, point: { x: 1000, y: 800 } })).toBeNull()
-    expect(hitTarget({ ...base, blank: true, point: { x: 1000, y: 800 } })?.target.kind).toBe('float')
+    expect(hitTarget({ ...base, blank: true, point: { x: 1000, y: 800 } })).toBeNull()
     expect(hitTarget({ ...base, blank: true, point: { x: -1, y: 800 } })).toBeNull()
-    expect(hitTarget({ ...base, blank: true, allowCreate: false, point: { x: 1000, y: 800 } })).toBeNull()
+    expect(hitTarget({ ...base, blank: true, allowCreate: true, point: { x: 1000, y: 800 } })).toBeNull()
   })
   it('does not split an undersized group', () => {
     expect(hitTarget({ ...base, regions: [{ group: 'main', rect: { left: 0, top: 0, width: 300, height: 200 } }], point: { x: 5, y: 100 } })?.target.kind).toBe('group')

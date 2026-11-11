@@ -45,7 +45,7 @@ export function officialMenus(ctx: { get(name: string): unknown }): OfficialMenu
   const disposers: Array<() => void> = []
   try {
     for (const kind of ['resource', 'tab']) {
-      disposers.push(service.register({ id: owner + '-' + kind, target: 'edrv.' + kind, order: 30,
+      disposers.push(service.register({ id: owner + '-' + kind, target: 'cstudio.' + kind, order: 30,
         resolve: (target, signal) => {
           const opening = current
           if (stopped || target.owner !== owner || !opening || !opening.valid() || signal.aborted) return []
@@ -62,13 +62,13 @@ export function officialMenus(ctx: { get(name: string): unknown }): OfficialMenu
   /** @private @author ddj 2026年11月04号 Close only this bridge's active shared popup. */
   function closeOwned(): void {
     const active = service.active?.getSnapshot()
-    if (active?.value?.owner === owner && (active.kind === 'edrv.resource' || active.kind === 'edrv.tab')) service.close()
+    if (active?.value?.owner === owner && (active.kind === 'cstudio.resource' || active.kind === 'cstudio.tab')) service.close()
   }
   return {
     open(kind, sessionId, path, point, items, valid) {
       if (stopped || !sessionId || !valid()) return false
       current = { items, valid, revision: ++revision }
-      try { service.open({ kind: 'edrv.' + kind, value: { owner, sessionId, path } }, point); return true }
+      try { service.open({ kind: 'cstudio.' + kind, value: { owner, sessionId, path } }, point); return true }
       catch { current = undefined; return false }
     },
     invalidate(valid) {

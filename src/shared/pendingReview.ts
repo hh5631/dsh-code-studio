@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode 待审投影（pending review）的共享契约：按文件累计的净差异视图。
+ * dsh-code-studio 待审投影（pending review）的共享契约：按文件累计的净差异视图。
  * 官方快照表是不可变事实来源，本类型只是可由事实重建的投影，任何决定都不等于磁盘版本。
  * @author ddj 2026年10月29号
  */

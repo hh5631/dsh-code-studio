@@ -85,14 +85,14 @@ describe('SQLite archive RPC', () => {
     const ctx = fakeCtx(fs)
     const bucket = new Map(records.map((rec) => [rec.callId, rec]))
     const handlers = buildHandlers(ctx, new Map([[CWD, bucket]]))
-    const wanted = await handlers['edrv.list']({ sessionId: 's1', callIds: [add.callId, remove.callId] })
+    const wanted = await handlers['cstudio.list']({ sessionId: 's1', callIds: [add.callId, remove.callId] })
     expect(wanted.ok && wanted.records).toHaveLength(2)
     expect(add.archived).toBe(false)
-    const skipped = await handlers['edrv.list']({ sessionId: 's1', skipStale: true })
+    const skipped = await handlers['cstudio.list']({ sessionId: 's1', skipStale: true })
     expect(skipped.ok && skipped.records).toHaveLength(3)
-    const listed = await handlers['edrv.list']({ sessionId: 's1' })
+    const listed = await handlers['cstudio.list']({ sessionId: 's1' })
     expect(listed.ok && listed.records.map((rec) => rec.callId)).toEqual([real.callId])
-    const original = await handlers['edrv.original']({ sessionId: 's1', path: FILE })
+    const original = await handlers['cstudio.original']({ sessionId: 's1', path: FILE })
     expect(original).toMatchObject({ ok: true, content: 'base\n', stale: [] })
     const archived = readArchives(CWD, FILE)
     expect(archived).toHaveLength(2)
@@ -101,7 +101,7 @@ describe('SQLite archive RPC', () => {
     const reloaded = await loadBucket(ctx, CWD)
     expect(reloaded.get(remove.callId)).toMatchObject({ archived: true, superseded: true })
     expect(reloaded.get(real.callId)).toMatchObject({ archived: false, superseded: false })
-    const badges = await handlers['edrv.list']({ sessionId: 's1', callIds: [add.callId, remove.callId] })
+    const badges = await handlers['cstudio.list']({ sessionId: 's1', callIds: [add.callId, remove.callId] })
     expect(badges.ok && badges.records.every((rec) => rec.superseded)).toBe(true)
     expect(fs.writeText).not.toHaveBeenCalled()
   })
@@ -111,16 +111,16 @@ describe('SQLite archive RPC', () => {
     const ctx = fakeCtx(fs)
     const rec = record()
     const handlers = buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))
-    const empty = await handlers['edrv.archiveList']({ sessionId: 's1' })
+    const empty = await handlers['cstudio.archiveList']({ sessionId: 's1' })
     expect(empty.ok && empty.entries).toEqual([])
-    const accepted = await handlers['edrv.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
+    const accepted = await handlers['cstudio.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
     expect(accepted.ok).toBe(true)
-    const list = await handlers['edrv.archiveList']({ sessionId: 's1' })
+    const list = await handlers['cstudio.archiveList']({ sessionId: 's1' })
     expect(list.ok && list.entries.map((item) => item.batch)).toEqual([1])
-    const read = await handlers['edrv.archiveRead']({ sessionId: 's1', path: FILE })
+    const read = await handlers['cstudio.archiveRead']({ sessionId: 's1', path: FILE })
     expect(read.ok && read.batches[0].records[0].callId).toBe(rec.callId)
     expect(files.get(LEGACY)).toContain('"batch":99')
-    const reverted = await handlers['edrv.rollback']({ sessionId: 's1', path: FILE, batch: 1 })
+    const reverted = await handlers['cstudio.rollback']({ sessionId: 's1', path: FILE, batch: 1 })
     expect(reverted.ok).toBe(true)
     expect(files.get(FILE)).toBe('old')
     expect(readArchives(CWD, FILE, 1)[0].records).toHaveLength(1)
@@ -138,7 +138,7 @@ describe('SQLite archive RPC', () => {
     second.path = CWD + '/b.ts'
     const bucket = new Map([[first.callId, first], [second.callId, second]])
     const handlers = buildHandlers(fakeCtx(fs), new Map([[CWD, bucket]]))
-    const outcome = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [first, second].map((rec) => ({
+    const outcome = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [first, second].map((rec) => ({
       callId: rec.callId, scope: 'call' as const, decision: 'accepted' as const,
     })) })
     expect(outcome.ok).toBe(true)
@@ -175,7 +175,7 @@ describe('SQLite archive RPC', () => {
     const ctx = fakeCtx(fs)
     const bucket = await loadBucket(ctx, CWD)
     files.set(SIDECAR, source + ' ')
-    const result = await buildHandlers(ctx, new Map([[CWD, bucket]]))['edrv.accept']({
+    const result = await buildHandlers(ctx, new Map([[CWD, bucket]]))['cstudio.accept']({
       sessionId: 's1', callId: rec.callId, scope: 'call',
     })
     expect(result.ok).toBe(false)
@@ -191,7 +191,7 @@ describe('SQLite archive RPC', () => {
     const lock = new DatabaseSync(archiveDbFile(CWD))
     lock.exec('BEGIN IMMEDIATE')
     try {
-      const outcome = await handlers['edrv.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
+      const outcome = await handlers['cstudio.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
       expect(outcome.ok).toBe(false)
       expect(rec.archived).toBe(false)
       expect(rec.decisions.call).toBe('accepted')
@@ -200,7 +200,7 @@ describe('SQLite archive RPC', () => {
       lock.exec('ROLLBACK')
       lock.close()
     }
-    const retry = await handlers['edrv.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
+    const retry = await handlers['cstudio.accept']({ sessionId: 's1', callId: rec.callId, scope: 'call' })
     expect(retry.ok).toBe(true)
     expect(rec.archived).toBe(true)
   })
@@ -218,7 +218,7 @@ describe('SQLite archive RPC', () => {
       if (path === FILE) db.exec('BEGIN IMMEDIATE')
     })
     try {
-      const failed = await buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))['edrv.reject']({
+      const failed = await buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))['cstudio.reject']({
         sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0,
       })
       expect(failed.ok).toBe(false)
@@ -231,7 +231,7 @@ describe('SQLite archive RPC', () => {
     }
     expect(revertState(CWD, rec.callId, 'hunk', 0)).toBe('started')
     const resumed = await loadBucket(ctx, CWD)
-    const again = await buildHandlers(ctx, new Map([[CWD, resumed]]))['edrv.reject']({
+    const again = await buildHandlers(ctx, new Map([[CWD, resumed]]))['cstudio.reject']({
       sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0,
     })
     expect(again.ok).toBe(false)
@@ -249,7 +249,7 @@ describe('SQLite archive RPC', () => {
     const db = new DatabaseSync(archiveDbFile(CWD))
     db.exec("CREATE TRIGGER deny_archive BEFORE INSERT ON records BEGIN SELECT RAISE(ABORT, 'archive denied'); END")
     try {
-      const failed = await buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))['edrv.reject']({
+      const failed = await buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))['cstudio.reject']({
         sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0,
       })
       expect(failed.ok).toBe(false)
@@ -261,7 +261,7 @@ describe('SQLite archive RPC', () => {
     }
     const resumed = await loadBucket(ctx, CWD)
     expect(resumed.get(rec.callId)?.decisions.perHunk).toEqual(['rejected'])
-    const again = await buildHandlers(ctx, new Map([[CWD, resumed]]))['edrv.reject']({
+    const again = await buildHandlers(ctx, new Map([[CWD, resumed]]))['cstudio.reject']({
       sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0,
     })
     expect(again.ok).toBe(true)
@@ -279,7 +279,7 @@ describe('SQLite archive RPC', () => {
     // 旧文件不存在的工作区已初始化；新记录只进 SQLite。
     commitActive(CWD, { upserts: [rec], removed: [] })
     const handlers = buildHandlers(ctx, new Map([[CWD, new Map([[rec.callId, rec]])]]))
-    const outcome = await handlers['edrv.reject']({ sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0 })
+    const outcome = await handlers['cstudio.reject']({ sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0 })
     expect(outcome.ok).toBe(true)
     expect(files.get(FILE)).toBe('old')
     expect(rec.archived).toBe(true)
@@ -288,7 +288,7 @@ describe('SQLite archive RPC', () => {
     expect(resumed.get(rec.callId)).toMatchObject({ archived: true, decisions: { perHunk: ['rejected'] } })
     expect(files.has(SIDECAR)).toBe(false) // 不生成新 sidecar
     const resumedHandlers = buildHandlers(ctx, new Map([[CWD, resumed]]))
-    const again = await resumedHandlers['edrv.reject']({ sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0 })
+    const again = await resumedHandlers['cstudio.reject']({ sessionId: 's1', callId: rec.callId, scope: 'hunk', hunkIndex: 0 })
     expect(again.ok).toBe(false)
     expect(files.get(FILE)).toBe('old')
   })

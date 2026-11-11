@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — 侧边栏「搜索」面板（VSCode 搜索视图形态）。
+ * dsh-code-studio client — 侧边栏「搜索」面板（VSCode 搜索视图形态）。
  * 内容搜索：edrv.searchContent RPC；结果按文件分组展示命中行（行号 + 高亮 + 文件计数），
  * 点击经 ctx.openFileAt 打开文件并跳转行列。
  * 选项：大小写/全词/正则；折叠区（⚙ 齿轮展开）：包含的文件（📖 toggle = 仅当前打开文件）
@@ -8,6 +8,7 @@
  * 作者 ddj 2026-08-26
  */
 import React from 'react'
+import { StudioIcon } from '../../ui/StudioIcon.js'
 import { rpc } from '../../rpc.js'
 import type { SidebarCtx } from '../types.js'
 import { CACHE_KEY } from '../../paths.js'
@@ -72,7 +73,7 @@ export function noticeInScope(detail: any, scope: string): boolean {
 
 /**
  * 判断文件变化通知是否可能改变内容搜索命中。
- * 文件增删改名（structure）会增删命中，一并重搜；SVN 状态刷新（svn）不代表内容变化，跳过以免无谓全库扫描。
+ * 文件增删改名（structure）会增删命中，一并重搜；非内容变化的状态刷新不代表内容变化，跳过以免无谓全库扫描。
  * @author ddj 2026年10月14号
  * @param detail 事件 detail（kind 可缺省）
  * @returns 是否触发重搜
@@ -125,6 +126,7 @@ export function SearchPanel(props) {
   const timerRef = React.useRef(null)
   const inputRef = React.useRef(null)
   const [focusTick, setFocusTick] = React.useState(0)
+  const restoredQueryRef = React.useRef('')
   const queryRef = React.useRef('')
   queryRef.current = query
   const activePathRef = React.useRef(activePath)
@@ -143,6 +145,7 @@ export function SearchPanel(props) {
   React.useEffect(() => {
     if (!scope) return
     const saved = savedSearchOf(CACHE_KEY.search + String(scope))
+    restoredQueryRef.current = typeof saved?.query === 'string' ? saved.query : ''
     if (saved) {
       if (typeof saved.query === 'string') setQuery(saved.query)
       if (typeof saved.matchCase === 'boolean') setMatchCase(saved.matchCase)
@@ -200,7 +203,7 @@ export function SearchPanel(props) {
     setStatus('searching')
     setError('')
     setWarning('')
-    rpc('edrv.searchContent', {
+    rpc('cstudio.searchContent', {
       sessionId, query: clean,
       matchCase: req.matchCase, wholeWord: req.wholeWord, regex: req.regex,
       include: req.include, exclude: req.exclude,
@@ -325,7 +328,14 @@ export function SearchPanel(props) {
   // 事件无人接收，故必须由挂载路径兜底。
   // ⚠️ 声明在「按作用域恢复」effect 之后：React 按声明序执行 effect，恢复值先落地，
   // 种子再覆盖，避免被记忆的旧查询词盖掉用户刚选中的内容。
-  React.useEffect(() => { applyScopeSeed(); applySeed(); setFocusTick((tick) => tick + 1) }, [])
+  React.useEffect(() => {
+    applyScopeSeed()
+    if (!applySeed()) {
+      if (restoredQueryRef.current.trim().length >= 2) runSearch(restoredQueryRef.current)
+    }
+    setFocusTick((tick) => tick + 1)
+    return () => { seqRef.current++; if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [])
 
   // Ctrl+Shift+F / 「在文件夹中查找…」：先提交恢复值/种子，再全选新内容。
   React.useEffect(() => {
@@ -384,11 +394,11 @@ export function SearchPanel(props) {
   const toggleGroup = (path) => setCollapsed((prev) => Object.assign({}, prev, { [path]: prev[path] === true ? false : true }))
 
   const optsBar = React.createElement('div', { className: 'edrv-search-opts' },
-    React.createElement('button', { className: 'edrv-search-opt' + (matchCase ? ' on' : ''), title: '区分大小写', 'aria-pressed': matchCase, onClick: () => toggleOpt('matchCase', !matchCase) }, 'Aa'),
-    React.createElement('button', { className: 'edrv-search-opt' + (wholeWord ? ' on' : ''), title: '全字匹配', 'aria-pressed': wholeWord, onClick: () => toggleOpt('wholeWord', !wholeWord) }, 'Ab'),
-    React.createElement('button', { className: 'edrv-search-opt' + (regex ? ' on' : ''), title: '使用正则表达式', 'aria-pressed': regex, onClick: () => toggleOpt('regex', !regex) }, '.*'),
+    React.createElement('button', { className: 'edrv-search-opt' + (matchCase ? ' on' : ''), title: '区分大小写', 'aria-label': '区分大小写', 'aria-pressed': matchCase, onClick: () => toggleOpt('matchCase', !matchCase) }, 'Aa'),
+    React.createElement('button', { className: 'edrv-search-opt' + (wholeWord ? ' on' : ''), title: '全字匹配', 'aria-label': '全字匹配', 'aria-pressed': wholeWord, onClick: () => toggleOpt('wholeWord', !wholeWord) }, 'Ab'),
+    React.createElement('button', { className: 'edrv-search-opt' + (regex ? ' on' : ''), title: '使用正则表达式', 'aria-label': '使用正则表达式', 'aria-pressed': regex, onClick: () => toggleOpt('regex', !regex) }, '.*'),
     React.createElement('span', { className: 'edrv-search-spacer' }),
-    React.createElement('button', { className: 'edrv-search-opt' + (sectionOpen ? ' on' : ''), title: sectionOpen ? '收起文件过滤' : '文件过滤（包含/排除）', 'aria-pressed': sectionOpen, onClick: () => setSectionOpen((v) => !v) }, '⚙'))
+    React.createElement('button', { className: 'edrv-search-opt' + (sectionOpen ? ' on' : ''), title: sectionOpen ? '收起文件过滤' : '文件过滤（包含/排除）', 'aria-pressed': sectionOpen, onClick: () => setSectionOpen((v) => !v) }, React.createElement(StudioIcon, { name: 'filter' })))
 
   const filterRows = sectionOpen
     ? React.createElement('div', { className: 'edrv-search-rows' },
@@ -403,7 +413,7 @@ export function SearchPanel(props) {
             className: 'edrv-search-toggle' + (onlyActive ? ' on' : ''), title: activePath ? '仅在当前打开的文件中搜索' : onlyActive ? '无打开的文件（点击退出仅当前文件）' : '无打开的文件（需先打开文件）',
             'aria-pressed': onlyActive, disabled: !activePath && !onlyActive,
             onClick: () => toggleOpt('onlyActive', !onlyActive),
-          }, '📖')),
+          }, React.createElement(StudioIcon, { name: 'file' }))),
         React.createElement('div', { className: 'edrv-search-row' },
           React.createElement('input', {
             className: 'edrv-search-field' + (excludeOn ? '' : ' dim'), placeholder: INCLUDE_PLACEHOLDER,
@@ -415,7 +425,7 @@ export function SearchPanel(props) {
             className: 'edrv-search-toggle' + (excludeOn ? ' on' : ''), title: '启用排除文件（忽略下方模式的命中）',
             'aria-pressed': excludeOn,
             onClick: () => toggleOpt('excludeOn', !excludeOn),
-          }, '⚙')))
+          }, React.createElement(StudioIcon, { name: 'filter' }))))
     : null
 
   const summary = status === 'done'
@@ -438,14 +448,14 @@ export function SearchPanel(props) {
       groups.map((group) => {
         const open = collapsed[group.path] !== true
         return React.createElement('div', { key: group.path, className: 'edrv-search-group' },
-          React.createElement('div', { className: 'edrv-search-file', title: group.path, onClick: () => toggleGroup(group.path) },
-            React.createElement('span', { className: 'edrv-search-chev' }, open ? '▾' : '▸'),
+          React.createElement('div', { className: 'edrv-search-file', title: group.path, role: 'button', tabIndex: 0, 'aria-expanded': open, onClick: () => toggleGroup(group.path), onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleGroup(group.path) } } },
+            React.createElement('span', { className: 'edrv-search-chev' }, React.createElement(StudioIcon, { name: open ? 'down' : 'right', size: 13 })),
             React.createElement('span', { className: 'edrv-search-fname' }, String(group.path).split(/[\\/]/).pop() || group.path),
             React.createElement('span', { className: 'edrv-search-fdir' }, String(group.path).split(/[\\/]/).slice(0, -1).join('/')),
             React.createElement('span', { className: 'edrv-search-fcount' }, group.count)),
           open ? group.matches.map((m, i) => {
             const parts = splitHit(m.text, m.startColumn, m.endColumn)
-            return React.createElement('div', { key: m.path + ':' + m.line + ':' + i, className: 'edrv-search-line' + (i % 2 ? ' alt' : ''), title: group.path + ':' + m.line, onClick: () => openFileAt(m.path, m.line, m.startColumn) },
+            return React.createElement('div', { key: m.path + ':' + m.line + ':' + i, className: 'edrv-search-line' + (i % 2 ? ' alt' : ''), title: group.path + ':' + m.line, role: 'button', tabIndex: 0, 'aria-label': `${String(m.path).split(/[\\/]/).pop()}:${m.line} ${m.text}`, onClick: () => openFileAt(m.path, m.line, m.startColumn), onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openFileAt(m.path, m.line, m.startColumn) } } },
               React.createElement('span', { className: 'edrv-search-ln' }, m.line),
               React.createElement('span', { className: 'edrv-search-text' },
                 React.createElement('span', null, parts.before),
@@ -459,7 +469,7 @@ export function SearchPanel(props) {
     React.createElement('div', { className: 'edrv-search-qrow' },
       React.createElement('input', {
         ref: inputRef, className: 'edrv-search-input', autoFocus: true, autoComplete: 'off', spellCheck: false,
-        placeholder: '搜索',
+        placeholder: '搜索工作区内容', 'aria-label': '搜索工作区内容',
         value: query,
         onChange: (e) => onChange(e.target.value),
         onKeyDown: (e) => {

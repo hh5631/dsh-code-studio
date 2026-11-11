@@ -316,7 +316,7 @@ describe('edrv.searchContent RPC handler', () => {
   it('maps request args and returns matches', async () => {
     const search = vi.fn(async () => ({ matches: [{ path: 'a.lua', line: 2, startColumn: 4, endColumn: 7, text: 'x' }], truncated: false }))
     const handlers = buildHandlers(rpcCtx(), new Map(), undefined, { search })
-    const out = await handlers['edrv.searchContent']({ sessionId: 's1', query: 'foo', matchCase: true, maxResults: 50, include: ['*.ts'], exclude: ['*.lua'] })
+    const out = await handlers['cstudio.searchContent']({ sessionId: 's1', query: 'foo', matchCase: true, maxResults: 50, include: ['*.ts'], exclude: ['*.lua'] })
     expect(out).toEqual({ ok: true, matches: [{ path: 'a.lua', line: 2, startColumn: 4, endColumn: 7, text: 'x' }], truncated: false })
     expect(search).toHaveBeenCalledWith(expect.objectContaining({ query: 'foo', cwd: 'ws1', matchCase: true, maxResults: 50, include: ['*.ts'], exclude: ['*.lua'] }))
   })
@@ -324,18 +324,18 @@ describe('edrv.searchContent RPC handler', () => {
   it('passes the force flag through to the searcher', async () => {
     const search = vi.fn(async () => ({ matches: [], truncated: false }))
     const handlers = buildHandlers(rpcCtx(), new Map(), undefined, { search })
-    const forced = await handlers['edrv.searchContent']({ sessionId: 's1', query: 'foo', force: true })
+    const forced = await handlers['cstudio.searchContent']({ sessionId: 's1', query: 'foo', force: true })
     expect(forced).toEqual({ ok: true, matches: [], truncated: false })
     expect(search).toHaveBeenLastCalledWith(expect.objectContaining({ query: 'foo', force: true }))
     // 不带 force 的普通搜索保持旧行为（缓存路径），且不因缺省字段报错。
-    const plain = await handlers['edrv.searchContent']({ sessionId: 's1', query: 'foo' })
+    const plain = await handlers['cstudio.searchContent']({ sessionId: 's1', query: 'foo' })
     expect(plain).toEqual({ ok: true, matches: [], truncated: false })
     expect(search).toHaveBeenCalledTimes(2)
   })
 
   it('returns error response when the searcher fails', async () => {    const search = vi.fn(async () => { throw new Error('ripgrep 不可用') })
     const handlers = buildHandlers(rpcCtx(), new Map(), undefined, { search })
-    const out = await handlers['edrv.searchContent']({ sessionId: 's1', query: 'foo' })
+    const out = await handlers['cstudio.searchContent']({ sessionId: 's1', query: 'foo' })
     expect(out.ok).toBe(false)
     expect((out as { error: string }).error).toContain('ripgrep 不可用')
   })
@@ -343,7 +343,7 @@ describe('edrv.searchContent RPC handler', () => {
   it('passes the partial-result warning through the ok payload', async () => {
     const search = vi.fn(async () => ({ matches: [{ path: 'a.lua', line: 1, startColumn: 1, endColumn: 4, text: 'x' }], truncated: false, warning: '部分路径无法访问，结果可能不完整：rg: broken (os error 2)' }))
     const handlers = buildHandlers(rpcCtx(), new Map(), undefined, { search })
-    const out = await handlers['edrv.searchContent']({ sessionId: 's1', query: 'foo' })
+    const out = await handlers['cstudio.searchContent']({ sessionId: 's1', query: 'foo' })
     expect(out).toEqual({ ok: true, matches: [{ path: 'a.lua', line: 1, startColumn: 1, endColumn: 4, text: 'x' }], truncated: false, warning: expect.stringContaining('部分路径无法访问') })
   })
 })

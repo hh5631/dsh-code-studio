@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — AI 内联补全（ghost text）provider。
+ * dsh-code-studio client — AI 内联补全（ghost text）provider。
  * 速度设计：内部 150ms 去抖（Monaco 逐键调用 provider，不逐键打 LLM）、
  * 在飞取消（新请求 abort 旧的）+ 序号守卫（过期响应丢弃）、
  * 位置+前缀缓存（dismiss 后同位置重查不重复计费）、前后缀窗口裁剪。
@@ -69,7 +69,7 @@ export function aiInlineEnabled() {
 /** 初始化开关（启动时从 configGet 拉一次）。 */
 export async function initAiInlineState() {
   try {
-    const res = await rpc('edrv.ai.configGet', {})
+    const res = await rpc('cstudio.ai.configGet', {})
     setAiInlineEnabled(res?.ok && res.enabled === true)
   } catch {
     setAiInlineEnabled(false)
@@ -144,7 +144,7 @@ export function registerAiInline(monaco) {
           inFlight = controller
           emitAiStatus('busy')
           try {
-            const data = await rpc('edrv.ai.inline', { path, prefix: trimmed.prefix, suffix: trimmed.suffix }, controller.signal)
+            const data = await rpc('cstudio.ai.inline', { path, prefix: trimmed.prefix, suffix: trimmed.suffix }, controller.signal)
             if (mySeq !== seq || !data?.ok || typeof data.text !== 'string' || !data.text) {
               cache.set(key, { items: [], at: Date.now() })
               if (data?.note) emitAiStatus('error', { note: String(data.note) })

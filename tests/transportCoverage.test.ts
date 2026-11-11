@@ -1,5 +1,5 @@
 /**
- * 入口覆盖回归：插件内部 /edrv 地址必须经 transportUrl 解析（不得裸用 appUrl）。
+ * 入口覆盖回归：插件内部 /cstudio 地址必须经 transportUrl 解析（不得裸用 appUrl）。
  * 防止新增入口回退到「本地可达、远程 403」的写法。
  * @author ddj 2026年11月02号
  */
@@ -24,21 +24,22 @@ function sourceFiles(dir: string): string[] {
 describe('transport coverage', () => {
   const files = ['client', 'shared'].flatMap((dir) => sourceFiles(join(SRC, dir)))
 
-  it('never resolves an /edrv path through plain appUrl', () => {
+  it('never resolves an /cstudio path through plain appUrl', () => {
     const offenders = files
-      .filter((file) => /appUrl\(\s*'\/edrv/.test(readFileSync(file, 'utf8')))
+      .filter((file) => /appUrl\(\s*'\/cstudio/.test(readFileSync(file, 'utf8')))
       .map((file) => relative(SRC, file))
     expect(offenders).toEqual([])
   })
 
-  it('routes every /edrv entry through the channel-aware resolver', () => {
+  it('routes every /cstudio entry through the channel-aware resolver', () => {
     const entries = [
       'client/monaco/loader.ts',
       'client/pdf/pdfLoader.ts',
-      'client/ui/DiffBadge.ts',
+      // client/ui/DiffBadge.ts 已改用内联 SVG 图标，不再加载 /cstudio 网络资源，
+      // 故不在「必须经 transportUrl 解析」的清单内（2026-11-10）。
     ]
     for (const entry of entries) {
-      expect(readFileSync(join(SRC, entry), 'utf8')).toContain("transportUrl('/edrv")
+      expect(readFileSync(join(SRC, entry), 'utf8')).toContain("transportUrl('/cstudio")
     }
     expect(readFileSync(join(SRC, 'shared/rpc.ts'), 'utf8')).toContain('transportUrl(RPC_PATH)')
   })

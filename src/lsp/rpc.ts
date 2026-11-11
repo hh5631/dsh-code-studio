@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode host — edrv.lsp.* RPC handlers。
+ * dsh-code-studio host — edrv.lsp.* RPC handlers。
  * 文档跟踪（openDocs 集合 + root|lang 引用计数）→ 懒启动服务器、用完释放。
  * LSP 配置降级为配置值：插件组合配置 + 会话内运行时覆盖层（原 settings section
  * 命名空间不合法，永久不可注册，见 lsp/config.ts 头注释）。
@@ -291,25 +291,25 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
   }
 
   const handlers: Partial<RpcHandlerMap> = {
-    'edrv.lsp.status': async (args) => {
+    'cstudio.lsp.status': async (args) => {
       if (!args.sessionId) return { ok: true, servers: manager.statusAll() }
       const sc = await rootOf(args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
       return { ok: true, servers: manager.statusAll().filter((status) => status.root === sc.root) }
     },
 
-    'edrv.lsp.detect': async () => {
+    'cstudio.lsp.detect': async () => {
       // 全支持语言的检测结果（不启动服务器）：设置页动态渲染卡片 + 候选展示
       return { ok: true, servers: LSP_LANGUAGES.map((lang) => detectedStatus(lang)) }
     },
 
-    'edrv.lsp.configGet': async () => {
+    'cstudio.lsp.configGet': async () => {
       // 配置值降级：插件组合配置 + 运行时覆盖层（原 settings section 已废弃）
       const merged = mergeConfig(configFromPlugin(pluginConfig), runtimeConfig)
       return { ok: true, config: merged as unknown as Record<string, unknown> }
     },
 
-    'edrv.lsp.configUpdate': async (args) => {
+    'cstudio.lsp.configUpdate': async (args) => {
       const lang = args.languageId
       if (!lang || !(LSP_LANGUAGES as readonly string[]).includes(lang)) {
         return { ok: false, error: '不支持的语言：' + lang }
@@ -330,7 +330,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.sync': async (args) => {
+    'cstudio.lsp.sync': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true }
       const sc = await rootOf(args.sessionId)
@@ -344,7 +344,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       return { ok: true }
     },
 
-    'edrv.lsp.close': async (args) => {
+    'cstudio.lsp.close': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true }
       const sc = await rootOf(args.sessionId)
@@ -356,7 +356,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       return { ok: true }
     },
 
-    'edrv.lsp.definition': async (args) => {
+    'cstudio.lsp.definition': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, locations: [] }
       const sc = await rootOf(args.sessionId)
@@ -373,7 +373,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.references': async (args) => {
+    'cstudio.lsp.references': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, locations: [] }
       const sc = await rootOf(args.sessionId)
@@ -390,7 +390,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.documentSymbol': async (args) => {
+    'cstudio.lsp.documentSymbol': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, symbols: [] }
       const sc = await rootOf(args.sessionId)
@@ -405,7 +405,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.workspaceSymbol': async (args) => {
+    'cstudio.lsp.workspaceSymbol': async (args) => {
       const sc = await rootOf(args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
       const out: { symbols: never[]; truncated?: boolean } = { symbols: [] }
@@ -423,7 +423,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       return { ok: true, symbols: out.symbols.slice(0, 500), truncated: truncated || undefined }
     },
 
-    'edrv.lsp.hover': async (args) => {
+    'cstudio.lsp.hover': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, hover: undefined }
       const sc = await rootOf(args.sessionId)
@@ -438,7 +438,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.completion': async (args) => {
+    'cstudio.lsp.completion': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, completions: undefined }
       const sc = await rootOf(args.sessionId)
@@ -465,7 +465,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.resolveCompletion': async (args) => {
+    'cstudio.lsp.resolveCompletion': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, item: undefined }
       const sc = await rootOf(args.sessionId)
@@ -480,7 +480,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.signatureHelp': async (args) => {
+    'cstudio.lsp.signatureHelp': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, signatureHelp: undefined }
       const sc = await rootOf(args.sessionId)
@@ -497,7 +497,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.semanticTokens': async (args) => {
+    'cstudio.lsp.semanticTokens': async (args) => {
       const lang = langOfPath(args.path)
       if (!lang) return { ok: true, tokens: undefined }
       const sc = await rootOf(args.sessionId)
@@ -511,7 +511,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.redetect': async (args) => {
+    'cstudio.lsp.redetect': async (args) => {
       if (!(LSP_LANGUAGES as readonly string[]).includes(args.languageId)) {
         return { ok: false, error: '不支持的语言：' + args.languageId }
       }
@@ -523,21 +523,21 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
     },
 
     // 环境需求：一键安装（内置安装器）与安装进度查询
-    'edrv.lsp.envInstall': async (args) => {
+    'cstudio.lsp.envInstall': async (args) => {
       if (!installRequirement(args.id)) {
         return { ok: false, started: false, error: '该需求不支持一键安装：' + args.id }
       }
       return { ok: true, started: true }
     },
 
-    'edrv.lsp.envState': async () => {
+    'cstudio.lsp.envState': async () => {
       return { ok: true, states: envInstallStates() }
     },
 
     // --region 扩展管理（edrv.lsp.ext.*：已装/市场/安装/卸载/更新）
-    'edrv.lsp.ext.list': async () => ({ ok: true, extensions: listInstalled() }),
+    'cstudio.lsp.ext.list': async () => ({ ok: true, extensions: listInstalled() }),
 
-    'edrv.lsp.ext.market': async (args) => {
+    'cstudio.lsp.ext.market': async (args) => {
       try {
         const items = await marketSearch(args.query, args.size ?? 12)
         return { ok: true, extensions: items }
@@ -546,7 +546,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.ext.install': async (args) => {
+    'cstudio.lsp.ext.install': async (args) => {
       try {
         let info: ExtInfo
         if (args.vsixPath) info = await installVsixFile(args.vsixPath)
@@ -559,13 +559,13 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.ext.uninstall': async (args) => {
+    'cstudio.lsp.ext.uninstall': async (args) => {
       const ok = uninstall(args.id)
       if (ok) clearProviderCache()
       return ok ? { ok: true } : { ok: false, error: '扩展未安装：' + args.id }
     },
 
-    'edrv.lsp.ext.update': async (args) => {
+    'cstudio.lsp.ext.update': async (args) => {
       try {
         const updated = await updateExtension(args.id)
         if (!updated) {
@@ -579,7 +579,7 @@ export function createLspRpc(deps: LspRpcDeps): { handlers: Partial<RpcHandlerMa
       }
     },
 
-    'edrv.lsp.ext.updates': async () => {
+    'cstudio.lsp.ext.updates': async () => {
       try {
         const updates = []
         for (const ext of listInstalled()) {

@@ -28,7 +28,7 @@ describe('isSelfSubject', () => {
   it('畸形 subject 不抛错且不命中', () => {
     expect(isSelfSubject(null)).toBe(false)
     expect(isSelfSubject(undefined)).toBe(false)
-    expect(isSelfSubject('dsh-vscode-mode')).toBe(false)
+    expect(isSelfSubject('dsh-code-studio')).toBe(false)
     expect(isSelfSubject({ kind: 'bundle' })).toBe(false)
     expect(isSelfSubject({ kind: 'item' })).toBe(false)
     expect(isSelfSubject({ kind: 'item', id: 42 })).toBe(false)

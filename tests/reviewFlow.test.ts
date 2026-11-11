@@ -45,7 +45,7 @@ describe('isolated official review operation flow', () => {
         coarse: false, hunks: [{ oldStart: 1, oldLines: 1, newStart: 1, newLines: 1, lines: ['-A', '+B'] }] } }] }
     saveSnapshot(cwd, snapshot)
     const review = reviewHandlers(ctx, registry)
-    const before = await review['edrv.review.list']!({ sessionId: 'fixture' })
+    const before = await review['cstudio.review.list']!({ sessionId: 'fixture' })
     expect(before.ok).toBe(true)
     if (!before.ok) throw new Error('fixture list failed')
     expect(diffSummary([], before.page).totalFiles).toBe(1)
@@ -54,20 +54,20 @@ describe('isolated official review operation flow', () => {
     const saved = await buildHandlers(ctx, registry)['edrv.save']({ sessionId: 'fixture', path, content: 'manual edit' })
     expect(saved.ok).toBe(true)
     expect(diskText).toBe('manual edit')
-    const afterSave = await review['edrv.review.detail']!({ sessionId: 'fixture', id: item.id })
+    const afterSave = await review['cstudio.review.detail']!({ sessionId: 'fixture', id: item.id })
     expect(afterSave.ok && afterSave.detail.item.decision).toBe('pending')
     expect(afterSave.ok && afterSave.detail.diff).toEqual(snapshot.files[0].diff)
 
-    const kept = await review['edrv.review.decide']!({ sessionId: 'fixture', id: item.id, seq: 10,
+    const kept = await review['cstudio.review.decide']!({ sessionId: 'fixture', id: item.id, seq: 10,
       revision: 0, operationId: 'fixture-keep', decision: 'accepted' })
     expect(kept).toEqual({ ok: true, revision: 1 })
     closeArchiveDbs()
     const reopened = reviewHandlers(ctx, new Map([[cwd, new Map()]]))
-    const pending = await reopened['edrv.review.list']!({ sessionId: 'fixture' })
+    const pending = await reopened['cstudio.review.list']!({ sessionId: 'fixture' })
     expect(pending.ok && pending.page.pending).toBe(0)
     expect(pending.ok && pending.page.items).toEqual([])
     expect(pending.ok && diffSummary([], pending.page).totalFiles).toBe(0)
-    const history = await reopened['edrv.review.detail']!({ sessionId: 'fixture', id: item.id })
+    const history = await reopened['cstudio.review.detail']!({ sessionId: 'fixture', id: item.id })
     expect(history.ok && history.detail.item).toMatchObject({ decision: 'accepted', revision: 1, id: item.id })
     expect(fs.writeText).toHaveBeenCalledTimes(1) // Keep never writes a file.
     expect(diskText).toBe('manual edit')

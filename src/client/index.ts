@@ -1,8 +1,8 @@
 /**
- * dsh-vscode-mode client — 浏览器半入口：slot 注册 + 装配。
+ * dsh-code-studio client — 浏览器半入口：slot 注册 + 装配。
  * 挂点：官方右侧 Sidebar「文件编辑」Tab（DSH 0.1.5+，对话+编辑同屏）> betterSidebar Tab
  * （归档，仅旧版 DSH 回退）> conversation.view 中央页签 + conversation.input.dock 差异条 + header 差异角标。
- * 与 Host 通信：同源 fetch('/edrv/rpc')（shared/rpc 契约）。
+ * 与 Host 通信：同源 fetch('/cstudio/rpc')（shared/rpc 契约）。
  *
  * ⚠️ 跨版本 slot 装配（2026-08-21）：新版 DSH 的 slots 系统要求 slot 必须由父 entry
  * 的 children table 先声明，直接 `ctx.slots.register({name:'conversation.view'})` 在
@@ -14,21 +14,17 @@
  * 作者 ddj 2026-08-20
  */
 import React from 'react'
+import './styles/git.css'
 import './styles/editor.css'
-import './styles/quickmenu.css'
 import { EditorView } from './ui/EditorView.js'
-import { DiffBadge } from './ui/DiffBadge.js'
-import { PerfSizeBadge } from './ui/PerfSizeBadge.js'
-import { ConversationDiffDock } from './ui/ConversationDiffDock.js'
-import { McpSettings } from './ui/McpSettings.js'
-import { mcpSessionState } from './mcpSessionState.js'
+import { installWorkspaceGuards } from './state/minimalWorkspace.js'
 import { forgeBridge } from './forgeBridge.js'
 import { lazyMenus } from './contextMenusOfficial.js'
-import { IconCodeOutline16 } from './ui/icons.js'
-import { McpSessionIcon, McpSessionDetail, type McpRowProps } from './ui/McpSessionStatus.js'
+import { IconCodeOutline16, IconFolderOpenOutline16 } from './ui/icons.js'
 import { PluginDetailSection } from './ui/PluginDetailSection.js'
-import { rpc } from './rpc.js'
-import { loadMonaco } from './monaco/loader.js'
+import { rpc, dbg } from './rpc.js'
+import { ContextMenu } from './ui/ContextMenu.js'
+
 import { observeScheme, schemeOfSnapshot } from './monaco/theme.js'
 import { createFileOpenerRegistry, scanSidebar, officialSidebarOpener, shouldClaimFiles, type FileOpenContext } from './fileOpeners.js'
 import type { FileOpenerRegistry } from './fileOpeners.js'
@@ -37,62 +33,49 @@ import { openOriginal, patchRemoteOpen, probeRemoteOpen } from './remoteOpenRout
 import { patchSettingsDoc, probeSettingsDoc } from './settingsDocRouter.js'
 import { openEditorView } from './events.js'
 import { setupExtOpen } from './externalOpen.js'
-import { SettingsContext } from './settingsContext.js'
+
 import { SIDEBAR_PLUGIN, registerSlotSafely, settingsBridge } from './compat.js'
 import { clientSummary } from './compatSummary.js'
 import { detectSidebarService, hasSideRoute, installSideEditor, routeSideEditor, setEnsureSideEditor, SIDEBAR_INSTALL_CMD } from './sidebarBridge.js'
-import { detectOfficial, installOfficial, registerOfficialFileClaim, OFFICIAL_TAB_KIND, OFFICIAL_TAB_TITLE, isEditorTabActive, markEditorActive, restoreEditorTab, buildFileAddress, readSavedTab, setEditorTabScope } from './officialSidebar.js'
+import { detectOfficial, installOfficial, registerOfficialFileClaim, registerWorkspaceFilesClaim, buildFileAddress, setEditorTabScope } from './officialSidebar.js'
 import { setNativeCsv, setNativeOpenHandler, resetNativeOpen } from './nativeOpenStore.js'
 import { SideEditorTab } from './ui/SideEditorTab.js'
-import { OfficialSideTab } from './ui/OfficialSideTab.js'
-import { createClaimRouter } from './ui/ClaimRouter.js'
+import { NativeFileTab, LegacyEditorRedirect } from './ui/NativeFileTab.js'
 import { createAddToConversation } from './addToConversation.js'
-import { createMenuStore } from './quickMenuStore.js'
-import { QuickMenuLauncher } from './ui/QuickMenuLauncher.js'
-import type { QuickMenuHost, QuickSendResult } from './quickMenuHost.js'
-import type { RuleListSnapshot } from '../shared/quickMenu.js'
 import type { SkillCatalog } from '../shared/skillCatalog.js'
-import { toastDom } from './externalOpen.js'
+
 import { createSidebarPanelRegistry } from './sidebar/registry.js'
-import { createFilePanel } from './sidebar/panels/index.js'
-import { createSearchPanel } from './sidebar/panels/index.js'
-import { createRulesPanel } from './sidebar/panels/index.js'
-import { createSvnPanel } from './sidebar/panels/index.js'
-import { createDebugPanel } from './sidebar/panels/index.js'
+import { createGitPanel } from './sidebar/panels/GitPanel.js'
+import { EditorSettings } from './ui/EditorSettings.js'
+import { applyTypography } from './typography.js'
 import { createTreeMenuRegistry } from './sidebar/contextMenu.js'
 import { createDefaultFileMenuItems } from './sidebar/menuItems.js'
-import { createOutlinePanel } from './outline/index.js'
-import { createOutlineSourceRegistry, registerBuiltinOutlineSources } from './outline/sources.js'
-import { createLspOutlineSource } from './outline/lspSource.js'
 import { applyOfficialChords } from './keybindings.js'
 import { createCommandBridge } from './commandBridge.js'
 import type { CommandBridge } from './commandBridge.js'
 import { REGISTRY_GLOBAL } from './commandGlobals.js'
-import { awaitShortcutsService, bindCatalogChords, detectShortcuts, installLegacyKeys, migrateLegacyKeybindings, registerOfficialShortcuts } from './shortcutsOfficial.js'
+import { awaitShortcutsService, bindCatalogChords, installLegacyKeys, migrateLegacyKeybindings, registerOfficialShortcuts } from './shortcutsOfficial.js'
 import { SHORTCUT_PROFILES, defaultKeybindings, normalizeKeybindings } from '../shared/keybindings.js'
 import { sidebarMinApply } from './sidebarMin.js'
 import { editorLimitApply } from './editorLimit.js'
+import { appearanceApply, initAppearance } from './appearance.js'
 import { log } from './log.js'
 import { installLocale } from './localeClient.js'
-import { setupLsp, setSession, disposeLsp } from './monaco/lsp/index.js'
+import { disposeLsp } from './monaco/lsp/index.js'
 import { disposeSnippets } from './snippets/provider.js'
-import { disposeLaunchJson } from './dap/launchSnippetProvider.js'
 import { disposeAiInline } from './ai/inlineProvider.js'
 import { readSessionScope, subscribeScope } from './sessionScope.js'
 import { installPlanBridge } from './planBridge.js'
 import { installPageReload } from './pageReload.js'
-import { installUpdateNotice } from './updateNotice.js'
-import { flushPageState, flushUiState, hydrateUiState, installUiStatePersist, onUiStateReady, reportUiStateEvent, uiStateSettled } from './state/uiStatePersist.js'
+import { flushPageState, flushUiState, hydrateUiState, installUiStatePersist, reportUiStateEvent, uiStateSettled } from './state/uiStatePersist.js'
 import { workspaceScopeOf } from './state/scopeStore.js'
-import { dapStore } from './dap/store.js'
 import type { CompatAdapter } from '../shared/compat.js'
 import { setPanelImport } from './lazyPanel.js'
-import { dbg } from './rpc.js'
-import { BP_MODE, MODES, fieldOfMode } from './dap/BpWidget.js'
-import { ContextMenu } from './ui/ContextMenu.js'
+
+
 
 /** Root-owned live objects shared with independent panel chunks; no copied stores or transport state. */
-export const __lazyShared = { rpc, dbg, dapStore, BP_MODE, MODES, fieldOfMode, ContextMenu }
+export const __lazyShared = { rpc, dbg, ContextMenu }
 export { setPanelImport as __setPanelImport }
 
 // ⚠️ inject 只列必需服务：webUiSettings 是 @linxin666/dsh-client-ui-web-ui-settings 提供的
@@ -131,7 +114,7 @@ function setupCommands(ctx: any): CommandBridge {
     bridge.dispose()
     commandsBridge = null
     if (host[REGISTRY_GLOBAL] === bridge.registry) delete host[REGISTRY_GLOBAL]
-  }, 'vscode-mode: command registry')
+  }, 'code-studio: command registry')
   log.info('指令系统已装配：' + bridge.registry.list().length + ' 条指令，Ctrl+Shift+P 打开命令栏')
   return bridge
 }
@@ -144,6 +127,9 @@ function setupCommands(ctx: any): CommandBridge {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function apply(ctx: any): Promise<void> {
   const schedule = (fn: () => void, ms: number) => ctx.timeout(fn, ms)
+
+  // 外观皮肤：先落默认（精致玻璃），待设置桥就绪后再按设置覆盖，避免首帧闪烁。
+  initAppearance()
 
   // UI 壳层文案：注册本插件词典到官方 locale 服务（旧版无该服务时直读中文词典）。
   // slot label / 编辑 Tab 标题一律写成 thunk，让语言切换后无需重注册即可刷新。
@@ -160,7 +146,7 @@ export async function apply(ctx: any): Promise<void> {
     // 只认 host 侧已知级别，其余落 'debug'（镜像内部只发 'debug'/'warn'）
     const lv = level === 'info' || level === 'warn' || level === 'error' ? level : 'debug'
     try {
-      void rpc('edrv.debug', { sessionId: readSessionScope(ctx).sessionId, text: 'ui-state: ' + text, level: lv })
+      void rpc('cstudio.debug', { sessionId: readSessionScope(ctx).sessionId, text: 'ui-state: ' + text, level: lv })
         .catch(() => { /* 诊断上报失败忽略 */ })
     } catch (error) { /* 会话未就绪等异常忽略 */ }
   }
@@ -187,7 +173,7 @@ export async function apply(ctx: any): Promise<void> {
       ])
     } catch (error) { /* 水合失败已在镜像内降级 */ }
   }
-  ctx.effect(() => () => { void flushUiState() }, 'vscode-mode: ui state flush')
+  ctx.effect(() => () => { void flushUiState() }, 'code-studio: ui state flush')
   ctx.effect(() => {
     let disposed = false
     let attempts = 0
@@ -210,7 +196,7 @@ export async function apply(ctx: any): Promise<void> {
       disposed = true
       restore?.()
     }
-  }, 'vscode-mode: settings document editor route')
+  }, 'code-studio: settings document editor route')
 
   // 指令系统（命令栏 + 指令注册表）先装配：命令栏在被任何 React slot 渲染前即可唤起
   const commands = setupCommands(ctx)
@@ -220,61 +206,18 @@ export async function apply(ctx: any): Promise<void> {
     window.dispatchEvent(new CustomEvent('edrv:reload-status', { detail: message }))
     window.alert(message)
   }
-  ctx.effect(() => installPageReload(flushPageState, notifyReload), 'vscode-mode: guarded page reload')
-
-  // 可用更新主动提醒：启动延迟 + 抖动后检查 registry，有新版本且未提醒过时 toast（失败静默）
-  installUpdateNotice(ctx, schedule)
+  ctx.effect(() => installWorkspaceGuards(), 'code-studio: workspace save protection')
+  ctx.effect(() => installPageReload(flushPageState, notifyReload), 'code-studio: guarded page reload')
 
   const registry: FileOpenerRegistry = createFileOpenerRegistry()
   const workspaces = ctx.get('workspaces')
   const sessions = ctx.get('sessions')
-  ctx.effect(() => installPlanBridge(ctx, schedule), 'vscode-mode: plan integration')
+  ctx.effect(() => installPlanBridge(ctx, schedule), 'code-studio: plan integration')
 
   // 外部深链落地：Windows 右键菜单 / Unity 外部编辑器 → 浏览器 URL 参数 → 打开规则路由
-  ctx.effect(() => setupExtOpen(ctx), 'vscode-mode: external open')
+  ctx.effect(() => setupExtOpen(ctx), 'code-studio: external open')
 
-  // Monaco 加载时机：不再 DSH 启动即预热，改为进入会话界面（当前会话出现）后再后台加载，
-  // 用户点开「文件编辑」页签即用；空闲时仍由 EditorView 挂载兜底加载。
-  // 模块级 promise 去重，重复触发只首次真正加载；requestIdleCallback 让出会话首屏带宽，缺省回退延时调度；
-  // 预热失败静默吞掉（loader 失败会重置 promise，页签打开时仍走原有加载/重试路径）。
-  //
-  // 会话取值经 readSessionScope 收敛（跨版本三级链，见 sessionScope.ts）：
-  // DSH 0.1.6-alpha.2 随多实例共存移除了 sessions.list.current，旧版则没有 uiSession；
-  // 原先直读 list.getSnapshot().current 在新版恒为 undefined，会让预热/LSP 同步/编辑 Tab 恢复静默失效。
-  // 会话切换 → LSP 文档归属更新 + 状态刷新（原先为两条订阅，取值源一致，此处合流为一条）。
-  if (typeof window !== 'undefined') {
-    const schedulePreload = () => {
-      const preload = () => loadMonaco(() => {}).then((m: unknown) => setupLsp(m)).catch(() => {})
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(preload, { timeout: 2000 })
-      else schedule(preload, 300)
-    }
-    let preloadedFor: string | undefined
-    const onScopeChange = () => {
-      const scope = readSessionScope(ctx)
-      // 传 undefined = 清除绑定（保留原 LSP 同步语义：无当前会话时不残留旧归属）
-      setSession(scope.sessionId)
-      if (!scope.sessionId || scope.sessionId === preloadedFor) return
-      preloadedFor = scope.sessionId
-      schedulePreload()
-    }
-    ctx.effect(() => subscribeScope(ctx, onScopeChange), 'vscode-mode: monaco session trigger')
-    onScopeChange()
-  }
-  // 会话切换 → 编辑 Tab 跨会话自动恢复：上一会话编辑区激活时，新会话自动展开并激活
-  //（官方停靠面按会话隔离，新会话默认收起；先试 openTabIn 直写新会话面，未 adopt 走有界重试）。
-  // 注意：首次打开某会话时通知早于会话字段落定，故通知只调度延迟任务，执行时再读最新作用域
-  ctx.effect(() => {
-    let lastCurrent = readSessionScope(ctx).sessionId
-    const check = () => {
-      const current = readSessionScope(ctx).sessionId
-      if (!current || current === lastCurrent) return
-      lastCurrent = current
-      if (!isEditorTabActive() || officialService === undefined) return
-      try { officialService.service.openTabIn?.(current, OFFICIAL_TAB_KIND, {}) } catch { /* 未 adopt 等 seat 就绪走重试 */ }
-      restoreEditorTab(officialService.service, schedule)
-    }
-    return subscribeScope(ctx, () => schedule(check, 0))
-  }, 'vscode-mode: editor tab restore')
+  // 侧栏是否展开由 DSH 按会话维护；切换会话只同步数据，不主动打开编辑器。
   const originalOpenPath = workspaces?.openPath
   // 设置桥：服务不进 inject（0.1.6 settingsScope / 0.1.7 configForms 桥名互斥，写死任一
   // 都会在另一版本停等）→ compat.settingsBridge 探测 + 晚到 15×2s 有界重试，命中后重挂同步
@@ -294,39 +237,6 @@ export async function apply(ctx: any): Promise<void> {
   let claimDisposer: (() => void) | null = null
   /** 「添加到对话」动作集：编辑区/Tab 右键菜单注入文件引用与代码块（conversation 服务缺失时各动作安全降级）。 */
   const addToConversation = createAddToConversation(ctx)
-
-  /**
-   * 读取规则列表（rules.list；失败抛错，由快捷菜单按「未校验」降级）。
-   * @author ddj 2026年10月30号
-   * @returns 用户规则 + 项目规则
-   */
-  const loadRules = async (): Promise<RuleListSnapshot> => {
-    const result = await rpc('rules.list', {})
-    if (!result.ok) throw new Error(result.error)
-    return { user: result.user, projects: result.projects }
-  }
-
-  /**
-   * 会话技能枚举服务（remote.skills 动态注入；旧版 DSH 无该服务时保持 null = 「未校验」）。
-   * @author ddj 2026年10月30号
-   */
-  let skillEnumerator: { list?: (req: { sessionId: string }) => Promise<{ skills?: Array<{ name?: string }> }> } | null = null
-
-  /**
-   * 读取会话可见技能名（服务不可用时返回 null，界面按「未校验」处理）。
-   * @author ddj 2026年10月30号
-   * @param sessionId 会话 id
-   * @returns 技能名清单或 null
-   */
-  const loadSkillNames = async (sessionId: string): Promise<string[] | null> => {
-    const list = skillEnumerator?.list
-    if (typeof list !== 'function') return null
-    const result = await list.call(skillEnumerator, { sessionId })
-    // remote 命名空间返回 Typert 信封 { ok, value }，旧版也可能直接给裸值，两种都吃。
-    const payload = (result as { value?: { skills?: Array<{ name?: string }> } }).value ?? (result as { skills?: Array<{ name?: string }> })
-    const names = (payload?.skills ?? []).map((entry) => entry.name).filter((name): name is string => typeof name === 'string')
-    return names
-  }
 
   /**
    * 读取技能候选（全局技能 + 当前工作区技能；只读枚举，失败返回 null）。
@@ -362,76 +272,7 @@ export async function apply(ctx: any): Promise<void> {
     return { id: draft.id }
   }
 
-  /**
-   * 发送快捷菜单文本（优先发到当前会话，会话忙碌时如实回报）。
-   * @author ddj 2026年10月30号
-   * @param text 合成后的消息文本
-   * @returns 是否发送成功
-   */
-  const sendQuickText = async (text: string): Promise<QuickSendResult> => {
-    const session = await ensureSession()
-    if ('error' in session) return { ok: false, message: session.error }
-    const sent = await addToConversation.sendTask(session.id, text)
-    return sent ? { ok: true } : { ok: false, message: '发送被拒绝（会话可能正忙，稍后再点）' }
-  }
 
-  /**
-   * 只把快捷菜单文本填入输入框。
-   * @author ddj 2026年10月30号
-   * @param text 合成后的消息文本
-   * @returns 是否填入成功
-   */
-  const fillQuickText = async (text: string): Promise<QuickSendResult> => {
-    const session = await ensureSession()
-    if ('error' in session) return { ok: false, message: session.error }
-    const outcome = await addToConversation.appendText(session.id, text)
-    if (outcome === 'ok' || outcome === 'busy') return { ok: true }
-    return { ok: false, message: '写入输入框失败（' + outcome + '），请重试' }
-  }
-
-  /** 快捷菜单宿主桥接：菜单组件不直接摸 ctx，规则/技能/发送/工作区都从这里注入。 */
-  const quickMenuHost: QuickMenuHost = {
-    store: createMenuStore({
-      rules: loadRules,
-      skills: loadSkillNames,
-      scope: () => {
-        const scope = readSessionScope(ctx)
-        return { sessionId: scope.sessionId, cwd: scope.cwd }
-      },
-    }),
-    scope: () => {
-      const scope = readSessionScope(ctx)
-      return { sessionId: scope.sessionId, cwd: scope.cwd }
-    },
-    send: sendQuickText,
-    fill: fillQuickText,
-    rules: loadRules,
-    skills: async () => {
-      const scope = readSessionScope(ctx)
-      return scope.sessionId ? loadSkillNames(scope.sessionId) : null
-    },
-    skillCatalog: loadSkillCatalog,
-    readRule: async (binding) => {
-      const result = await rpc('rules.read', {
-        scope: binding.scope,
-        file: binding.file,
-        ...(binding.workspacePath ? { workspacePath: binding.workspacePath } : {}),
-        ...(binding.origin ? { origin: binding.origin } : {}),
-      })
-      if (!result.ok) throw new Error(result.error)
-      return result.content
-    },
-    workspaces: () => (workspaces?.list.getSnapshot().items ?? []).map((item: { path: string; title: string }) => ({ path: item.path, title: item.title })),
-    notify: (message: string) => { toastDom(message) },
-  }
-
-  // 技能枚举是可选服务：按需动态注入，缺失时不影响悬浮按钮与其余功能（旧版 DSH 自然降级）。
-  if (typeof ctx.inject === 'function') {
-    ctx.inject(['remote.skills'], (scope: { remote?: { skills?: typeof skillEnumerator } }) => {
-      skillEnumerator = scope.remote?.skills ?? null
-      void quickMenuHost.store.refreshBindings(true)
-    })
-  }
 
   /**
    * Build applicable client diagnostics from live installation state.
@@ -449,58 +290,55 @@ export async function apply(ctx: any): Promise<void> {
   }, version)
 
   ctx.provide('fileOpeners', registry)
-  ctx.effect(() => registry.register(vscodeOpener()), 'vscode-mode: file opener')
+  ctx.effect(() => registry.register(vscodeOpener()), 'code-studio: file opener')
 
   // 侧边栏面板注册表（对外 provide，供本插件/第三方注册面板；文件管理为面板 #1）
   const sidebarPanels = createSidebarPanelRegistry()
   ctx.provide('edrvSidebarPanels', sidebarPanels)
-  ctx.effect(() => sidebarPanels.register(createFilePanel()), 'vscode-mode: sidebar panel')
-  // 搜索面板：活动栏「搜索」页签（Ctrl+Shift+F 唤起，VSCode 搜索视图形态）
-  ctx.effect(() => sidebarPanels.register(createSearchPanel()), 'vscode-mode: sidebar panel search')
-  // 规则面板：活动栏「规则」页签（Codebuddy 规则管理形态：用户/项目规则 + 启用开关，host 注入生效）
-  ctx.effect(() => sidebarPanels.register(createRulesPanel()), 'vscode-mode: sidebar panel rules')
-  // SVN 变更面板：活动栏「SVN 变更」页签（工作副本状态列表；visible 守卫使非 SVN 工作区不出现）
-  ctx.effect(() => sidebarPanels.register(createSvnPanel()), 'vscode-mode: sidebar panel svn')
-  // 调试面板：活动栏「调试」页签（VS Code 调试视图四段布局 + REPL；DAP 桥接）
-  ctx.effect(() => sidebarPanels.register(createDebugPanel()), 'vscode-mode: sidebar panel debug')
-  // 客户端（重）装配对账：host 的 DapSession 常驻，而本模块状态随刷新/HMR 归零，
-  // 不对账则调试面板与暂停态 hover 静默失效（见 dapStore.resync）。
-  void dapStore.resync()
+  // 文件浏览与搜索由 DSH 原生工作区承担；插件仅保留按需 Git 修改视图。
+  ctx.effect(() => sidebarPanels.register(createGitPanel()), 'code-studio: sidebar panel git')
   // 文件右键菜单项注册表（对外 provide，供本插件/第三方注册；内置「在文件浏览器中打开」）
   const fileMenuItems = createTreeMenuRegistry()
   ctx.provide('edrvFileContextMenuItems', fileMenuItems)
   for (const item of createDefaultFileMenuItems()) {
-    ctx.effect(() => fileMenuItems.register(item), 'vscode-mode: file context menu item ' + item.id)
+    ctx.effect(() => fileMenuItems.register(item), 'code-studio: file context menu item ' + item.id)
   }
   // 大纲源注册表（公开预留口）：第三方语言插件（LSP/VSIX 等）注册更高优先级源即可覆盖兜底
-  const outlineSources = createOutlineSourceRegistry()
-  ctx.provide('edrvOutlineSources', outlineSources)
-  ctx.effect(() => registerBuiltinOutlineSources(outlineSources), 'vscode-mode: outline sources')
-  // LSP 大纲源（priority 60）：lua/csharp 有 host 服务器时优先生效，否则自动落入 fallback
-  ctx.effect(() => outlineSources.register(createLspOutlineSource()), 'vscode-mode: outline lsp source')
-  ctx.effect(() => sidebarPanels.register(createOutlinePanel()), 'vscode-mode: sidebar panel outline')
+
   ctx.effect(() => registry.register({
     id: 'system', label: '系统默认应用', priority: 0,
     open: async (path: string) => { await openOriginal({ path }) },
-  }), 'vscode-mode: system file opener')
+  }), 'code-studio: system file opener')
   ctx.effect(() => {
     const sidebar = scanSidebar(ctx)
     return sidebar ? registry.register(sidebar) : undefined
-  }, 'vscode-mode: sidebar file opener')
+  }, 'code-studio: sidebar file opener')
   // 官方侧边栏正文组件装配（页类型正文；兼作 file 认领转发失败时的兜底正文）
   const forge = forgeBridge(ctx, () => readSessionScope(ctx).sessionId ?? undefined)
   const menuBridge = lazyMenus(ctx)
-  if (menuBridge) ctx.effect(() => () => menuBridge.dispose(), 'vscode-mode: official menus')
-  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(OfficialSideTab, Object.assign({}, props, { schedule, addToConversation, sidebarPanels, outlineSources, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions, readSessionScope: () => readSessionScope(ctx) }))
-  /** 官方 file 地址认领同步：自动/VSCodeMode 档认领（转发进单一编辑器页签），其余交官方查看器。 */
+  if (menuBridge) ctx.effect(() => () => menuBridge.dispose(), 'code-studio: official menus')
+  const openWorkspaceFiles = (): boolean => {
+    try {
+      const official = detectOfficial(ctx)
+      if (!official) return false
+      official.service.openTab('files')
+      return true
+    } catch { return false }
+  }
+  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(NativeFileTab, Object.assign({}, props, { schedule, openWorkspaceFiles, addToConversation, sidebarPanels, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions, readSessionScope: () => readSessionScope(ctx) }))
+  /** 官方 file 地址认领同步：自动/代码工作台 档认领（原生文件资源中编辑），其余交官方查看器。 */
   const syncFileClaim = (): void => {
     const official = officialService
     const want = official !== undefined && shouldClaimFiles(selected)
     if (want && claimDisposer === null && official) {
-      // 认领正文只做转发：文件分页收归编辑器自带页签栏，官方侧栏不再按文件分裂编辑器实例
-      const renderTab = createClaimRouter({ service: official.service, schedule, fallback: officialRenderTab })
+      // 文本资源在原生文件页签内直接编辑，原生文件树与编辑区同屏。
+      const renderTab = officialRenderTab
       const disposer = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab })
-      if (disposer !== null) claimDisposer = ctx.effect(() => disposer, 'vscode-mode: official file claim')
+      const workspaceDisposer = registerWorkspaceFilesClaim({ tabs: official.tabs, slots: ctx.slots,
+        renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true }), icon: IconFolderOpenOutline16 })
+      if (disposer !== null || workspaceDisposer !== null) claimDisposer = ctx.effect(() => () => {
+        disposer?.(); workspaceDisposer?.()
+      }, 'code-studio: official file claim')
       return
     }
     if (!want && claimDisposer !== null) {
@@ -538,10 +376,10 @@ export async function apply(ctx: any): Promise<void> {
       }
       sync()
       return scope.subscribe(sync)
-    }, 'vscode-mode: file opener setting sync')
+    }, 'code-studio: file opener setting sync')
     // 界面偏好同步：侧边栏最小宽度（sidebarMinWidth）→ 派发 edrv:sidebar-min-width 通知编辑器重夹
     // 页签上限（maxOpenEditors）→ 派发 edrv:max-open-editors 通知编辑器复算淘汰
-    // （快捷键配置已归官方 shortcuts 机制，目录弦表同步见 'vscode-mode: official shortcuts' effect）
+    // （快捷键配置已归官方 shortcuts 机制，目录弦表同步见 'code-studio: official shortcuts' effect）
     ctx.effect(() => {
       const sync = (): void => {
         const snapshot = scope.getSnapshot()
@@ -553,13 +391,16 @@ export async function apply(ctx: any): Promise<void> {
         window.dispatchEvent(new CustomEvent('edrv:max-open-editors', { detail: { value: limit } }))
         // 原生打开范围同拍推送（nativeOpenStore 解析缓存；旧版无该字段 → 保持默认集）
         setNativeCsv(snapshot.value?.nativeOpenExts)
+        // 外观皮肤与密度同拍推送（写根节点 data-cs-skin / data-cs-density，CSS 皮肤层据此切换）
+        appearanceApply(snapshot.value?.appearanceSkin, snapshot.value?.appearanceDensity)
+        applyTypography(snapshot.value)
       }
       sync()
       return scope.subscribe(sync)
-    }, 'vscode-mode: keybindings setting sync')
+    }, 'code-studio: keybindings setting sync')
   }
   mountSettingsSyncs()
-  if (!settingsSyncMounted) ctx.effect(() => bridge.whenReady(mountSettingsSyncs), 'vscode-mode: settings bridge wait')
+  if (!settingsSyncMounted) ctx.effect(() => bridge.whenReady(mountSettingsSyncs), 'code-studio: settings bridge wait')
 
   // 官方 shortcuts 机制装配（可选服务，有界重试；服务缺失仅降级告警，不阻断装配）：
   // ① 全部指令注册进官方目录（含无默认键位命令，官方 UI 可自定义绑定；冲突默认自动降级未绑定）；
@@ -611,7 +452,7 @@ export async function apply(ctx: any): Promise<void> {
       disposeRegistration?.()
       disposeCatalog?.()
     }
-  }, 'vscode-mode: official shortcuts')
+  }, 'code-studio: official shortcuts')
   if (workspaces?.openPath) {
     ctx.effect(() => installOpenPathRouter({
       workspaces,
@@ -619,7 +460,7 @@ export async function apply(ctx: any): Promise<void> {
       selected: () => selected,
       context: openContext,
       logger: routeLogger,
-    }), 'vscode-mode: file link routing')
+    }), 'code-studio: file link routing')
   }
   // 0.1.3+ 会话文件链接主路径：dsh-client-ui-chat 的 openFile 直接调
   // remote.session.openWorkspacePath（session/openWorkspacePath RPC），绕开
@@ -646,7 +487,7 @@ export async function apply(ctx: any): Promise<void> {
         return
       }
       remoteOpenInstalled = true
-      ctx.effect(() => disposer, 'vscode-mode: remote file link routing')
+      ctx.effect(() => disposer, 'code-studio: remote file link routing')
       log.info('已安装 0.1.3+ 会话文件链接路由（remote.session.openWorkspacePath）')
     }, 2000)
   }
@@ -663,8 +504,8 @@ export async function apply(ctx: any): Promise<void> {
     if (!themeService || typeof ctx.on !== 'function') return undefined
     const disposer = ctx.on('theme/change', emitTheme)
     return typeof disposer === 'function' ? disposer : undefined
-  }, 'vscode-mode: official theme event')
-  ctx.effect(() => observeScheme(emitTheme), 'vscode-mode: theme attribute watch')
+  }, 'code-studio: official theme event')
+  ctx.effect(() => observeScheme(emitTheme), 'code-studio: theme attribute watch')
   emitTheme()
 
   // 中央「文件编辑」页签（旧形态回退）：类 VSCode 编辑器；侧边栏形态（官方/better-sidebar）可用时
@@ -676,7 +517,7 @@ export async function apply(ctx: any): Promise<void> {
       order: 5,
       label: () => t('slot.fileEditor'),
       inject: (sessionId: string) => ({ sessionId }),
-    }, (props: unknown) => React.createElement(EditorView, Object.assign({}, props, { layout: 'tab', sideHint: SIDEBAR_INSTALL_CMD, schedule, addToConversation, sidebarPanels, outlineSources, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions })))
+    }, (props: unknown) => React.createElement(EditorView, Object.assign({}, props, { layout: 'tab', sideHint: SIDEBAR_INSTALL_CMD, schedule, addToConversation, sidebarPanels, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions })))
   }
 
   // 侧边栏三形态互斥切换：官方（DSH 0.1.5+）> better-sidebar（归档，仅旧版回退）> 中央页签。
@@ -697,7 +538,8 @@ export async function apply(ctx: any): Promise<void> {
       tabs: official.tabs,
       service: official.service,
       slots: ctx.slots,
-      renderTab: officialRenderTab,
+      renderTab: (props: Record<string, unknown>) => React.createElement(LegacyEditorRedirect, { ...props, sessions, service: official.service }),
+      sessionId: () => readSessionScope(ctx).sessionId ?? undefined,
       title: () => t('slot.fileEditor'),
       guide: {
         title: () => t('guide.title'),
@@ -710,26 +552,15 @@ export async function apply(ctx: any): Promise<void> {
       applySideForm()
       return
     }
-    officialDisposer = ctx.effect(() => outcome, 'vscode-mode: official sidebar editor tab')
-    // 编辑 Tab 展开/激活态按工作区落 localStorage（镜像层写穿 host，重启/换端口后仍在）：
-    // 冷启动据此自动回到上次的编辑 Tab；官方 openTab 幂等，已激活时不重复调用。
+    officialDisposer = ctx.effect(() => outcome, 'code-studio: official sidebar editor tab')
+    // 仅保留编辑状态的存储作用域；展开与当前页签由 DSH 自行恢复。
     setEditorTabScope(() => {
       const scope = readSessionScope(ctx)
       return workspaceScopeOf(scope.cwd, scope.sessionId)
     })
-    const restoreActiveTab = (): void => {
-      const saved = readSavedTab()
-      const active = isEditorTabActive()
-      reportUiStateEvent('编辑 Tab 恢复：本地存档=' + String(saved) + '、当前激活=' + String(active))
-      if (!active && saved) markEditorActive(true)
-      restoreEditorTab(official.service, schedule)
-    }
-    restoreActiveTab()
-    // 换 origin 时本地 localStorage 为空：镜像回填完成后重判一次，迟到的回填同样能恢复编辑 Tab
-    ctx.effect(() => onUiStateReady(restoreActiveTab), 'vscode-mode: editor tab state hydration')
     // 官方打开器（下拉「官方侧边栏」选项，动态出现；openResource 能力缺失时跳过）+ 按当前设置同步 file 地址认领
     if (typeof official.service.openResource === 'function') {
-      ctx.effect(() => registry.register(officialSidebarOpener(official.service)), 'vscode-mode: official sidebar opener')
+      ctx.effect(() => registry.register(officialSidebarOpener(official.service)), 'code-studio: official sidebar opener')
       // 原生打开 handler：文件树 openFile 命中 nativeOpenExts 时经 openResource 落官方渲染器
       //（claim 的 canOpen 同步让位该范围，否则地址又被认领转发回本插件）；形态撤下时解绑
       ctx.effect(() => {
@@ -740,7 +571,7 @@ export async function apply(ctx: any): Promise<void> {
           return typeof official.service.openResource === 'function'
         })
         return () => setNativeOpenHandler(null)
-      }, 'vscode-mode: native open handler')
+      }, 'code-studio: native open handler')
     }
     syncFileClaim()
   }
@@ -755,14 +586,14 @@ export async function apply(ctx: any): Promise<void> {
       if (legacyDisposer !== null) { legacyDisposer(); legacyDisposer = null }
       sideDisposer = ctx.effect(() => installSideEditor({
         service: sideService as NonNullable<typeof sideService>,
-        renderTab: (props: Record<string, unknown>) => React.createElement(SideEditorTab, Object.assign({}, props, { schedule, addToConversation, sidebarPanels, outlineSources, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions })),
+        renderTab: (props: Record<string, unknown>) => React.createElement(SideEditorTab, Object.assign({}, props, { schedule, addToConversation, sidebarPanels, fileMenuItems, officialMenus: menuBridge, forge, fileOpeners: registry, sessions })),
         activeSession: () => {
           const scope = readSessionScope(ctx)
           if (!scope.sessionId) return undefined
           return { sessionId: scope.sessionId, cwd: scope.cwd }
         },
         registerLegacyFallback: registerLegacyTab,
-      }), 'vscode-mode: sidebar editor tab')
+      }), 'code-studio: sidebar editor tab')
       return
     }
     if (legacyDisposer !== null) return
@@ -796,51 +627,10 @@ export async function apply(ctx: any): Promise<void> {
   }
   retrySideService()
 
-  // Root row slots receive only sessionId: no sessions.scope()/activation for historical rows.
-  ctx.effect(() => {
-    const store = mcpSessionState()
-    /** @author ddj 2026年10月20号 @param props Official root row identity. @returns Leading marker with shared polling. */
-    const renderIcon = (props: unknown) => React.createElement(McpSessionIcon, { ...(props as McpRowProps), store })
-    /** @author ddj 2026年10月20号 @param props Official hover identity. @returns Project-only initialization details. */
-    const renderDetail = (props: unknown) => React.createElement(McpSessionDetail, { ...(props as McpRowProps), store })
-    const leading = registerSlotSafely(ctx, { name: 'sidebar.session.row.leading', id: 'edrv-mcp-status', order: 20 }, renderIcon)
-    const hover = registerSlotSafely(ctx, { name: 'sidebar.session.row.hover', id: 'edrv-mcp-detail', order: 20 }, renderDetail)
-    return () => { leading?.(); hover?.(); store.dispose() }
-  }, 'vscode-mode: session MCP status')
+  registerSlotSafely(ctx, { name: 'settings.section', id: 'dsh-code-studio', order: 30, label: () => t('slot.settings') },
+    () => React.createElement(EditorSettings, { bridge }))
 
-  // 对话输入框上方差异 dock：普通对话显示单文案按钮，文件编辑页由 EditorView 隐藏
-  registerSlotSafely(ctx, {
-    name: 'conversation.input.dock',
-    id: 'edrv-diff-dock',
-    order: 30,
-    label: () => t('slot.diff'),
-    inject: (sessionId: string) => ({ sessionId }),
-  }, (props: unknown) => React.createElement(ConversationDiffDock, Object.assign({}, props)))
-
-  // header 差异角标：仅当前工作区存在差异时渲染
-  registerSlotSafely(ctx, { name: 'conversation.session.header.utilities', id: 'edrv-diff-badge', order: 90, label: () => t('slot.diff') },
-    (props: unknown) => React.createElement(DiffBadge, Object.assign({}, props)))
-
-  // header 会话体积指示器：当前会话持久化体积，超阈值提示新开会话（性能优化）
-  registerSlotSafely(ctx, { name: 'conversation.session.header.utilities', id: 'edrv-perf-size', order: 89, label: () => t('slot.sessionSize') },
-    (props: unknown) => React.createElement(PerfSizeBadge, Object.assign({}, props, { sessions })))
-
-  // 设置页中的 VSCodeMode 专属页签，MCP 管理作为该页签的内部子 Tab。
-  registerSlotSafely(ctx, {
-    name: 'settings.section',
-    id: 'vscode-mode',
-    order: 30,
-    label: () => t('slot.settings'),
-  }, () => React.createElement(SettingsContext.Provider, { value: bridge.scope() }, React.createElement(McpSettings, {
-    openerRegistry: registry,
-    getMcpSession: () => readSessionScope(ctx).sessionId,
-    compatSummary,
-    // 快捷键统一走 DSH 官方配置：通用页只提供「打开官方快捷键配置」入口。
-    // 服务运行时探测（自愈）：旧版 DSH 无该服务时按钮给出手动打开方式。
-    getShortcuts: () => detectShortcuts(ctx),
-  })))
-
-  registerSlotSafely(ctx, { name: 'settings.section.icon', id: 'vscode-mode', order: 30 },
+  registerSlotSafely(ctx, { name: 'settings.section.icon', id: 'dsh-code-studio', order: 30 },
     (input: unknown) => {
       const props = input as { size?: number; active?: boolean }
       return React.createElement(IconCodeOutline16 as React.ComponentType<{ size?: number; className?: string }>, {
@@ -856,45 +646,24 @@ export async function apply(ctx: any): Promise<void> {
     order: 40,
   }, (props: unknown) => React.createElement(PluginDetailSection, Object.assign({}, props)))
 
-  // 快捷菜单悬浮按钮：挂在 shell.overlay（全框浮层，层本身 click-through，条目自己接管指针）。
-  // 旧版 DSH 没有该槽时 slots.inject 会一直等待而不报错——按钮自然不出现即为「不支持」，
-  // 因此这里不做版本号判断，只按能力探测。
-  ctx.effect(() => {
-    const dispose = registerSlotSafely(ctx, {
-      name: 'shell.overlay',
-      id: 'edrv-quick-menu',
-      order: 120,
-      label: '快捷菜单',
-    }, () => React.createElement(QuickMenuLauncher, { host: quickMenuHost }))
-    return () => {
-      dispose?.()
-      void quickMenuHost.store.flushLauncher()
-    }
-  }, 'vscode-mode: quick menu launcher')
-
-  // 切换会话/工作区后重算绑定状态（规则与技能都跟会话可见性有关）
-  ctx.effect(() => subscribeScope(ctx, () => {
-    void quickMenuHost.store.refreshBindings(true)
-  }), 'vscode-mode: quick menu scope refresh')
-
   // 卸载收尾（G4，DSH 0.1.6-alpha.2 起支持运行时卸载/重载）：
   // 注销挂在存活的 window.monaco 上的全部 Monaco provider 并复位模块状态。
   // 不做会导致重载后重复注册（补全/跳转/hover 各翻倍）与陈旧开关残留。
   ctx.effect(() => () => {
     setPanelImport()
+    applyTypography()
     try { disposeSnippets() } catch { /* 卸载异常不得阻断其余清理 */ }
-    try { disposeLaunchJson() } catch { /* 同上 */ }
     try { disposeAiInline() } catch { /* 同上 */ }
     try { disposeLsp() } catch { /* 同上 */ }
     // 原生打开范围复位回默认集（handler 解绑已由其自身 ctx.effect disposer 承担）
     try { resetNativeOpen() } catch { /* 同上 */ }
-  }, 'vscode-mode: monaco providers teardown')
+  }, 'code-studio: monaco providers teardown')
 
   // 会话晚到补试：冷启动早期 `sessions` 未就绪时 host 答「会话不存在」，首次水合会失败重试；
   // 作用域变化（sid→ws）后同样补一次，保证界面状态尽早回填。
   ctx.effect(() => subscribeScope(ctx, () => {
     if (!uiStateSettled()) void hydrateUiState()
-  }), 'vscode-mode: ui state rehydrate')
+  }), 'code-studio: ui state rehydrate')
 
   // 争取「回填先于界面首次读 localStorage」：宿主若 await 本 apply，此处等到水合结束（或 1.2s 超时兜底）。
   // 失败/超时不抛：镜像内部自带重试与结束事件，界面侧还有迟到回填重跑。

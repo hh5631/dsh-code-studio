@@ -1,11 +1,10 @@
 /**
- * dsh-vscode-mode client — 侧边栏面板契约（类型 + 上下文）。
+ * dsh-code-studio client — 侧边栏面板契约（类型 + 上下文）。
  * 面板 = 活动栏一项 + 面板区一处渲染；新增面板只需注册一条 SidebarPanelDef。
  * 作者 ddj 2026-08-26
  */
 import type { OutlineSourceRegistry } from '../outline/types.js'
 import type { AddToConversation } from '../addToConversation.js'
-import type { SvnChangeEntry, SvnStatusPayload } from '../../shared/svn.js'
 import type { TreeMenuRegistry } from './contextMenu.js'
 
 /** 面板可用的共享上下文（由 SidebarView 从 EditorView 注入，面板不直碰其内部）。 */
@@ -20,12 +19,10 @@ export interface SidebarCtx {
   /** 打开文件并跳转到指定行/列（搜索面板命中跳转；缺省仅打开）。 */
   openFileAt?: (path: string, line?: number, column?: number) => void
   activePath: string | null
-  /** 文件路径 → 待处理差异数（>0 才收录）。 */
-  pendingByPath: Record<string, number>
-  /** 按文件分组的差异摘要（records 状态派生）。 */
-  sum: { totalFiles: number; files: Array<{ path: string; pending: number }> }
-  /** 触发差异记录刷新（保存/决策后由 EditorView 统一 emitRefresh）。 */
-  refreshRecords: () => void
+  /** 查看 Git 仓库文件的修改差异。 */
+  openGitDiff?: (path: string, staged: boolean, repositoryRoot?: string) => void
+  /** 移动/删除前先保存打开的相关文件，失败则取消文件操作。 */
+  prepareFileOperation?: (path: string) => Promise<boolean>
   /** 取当前 Monaco 编辑器实例（可能为 null；大纲面板读 model/跳转用）。 */
   editor?: () => unknown | null
   /** 大纲源注册表（公开 provide 为 edrvOutlineSources；大纲面板解析符号用）。 */
@@ -36,22 +33,6 @@ export interface SidebarCtx {
   forge?: import('../forgeBridge.js').ForgeBridge
   /** 「添加到对话」动作集（文件/文件夹引用注入对话输入框；缺省时菜单项降级提示）。 */
   addToConversation?: AddToConversation
-  /** SVN 能力状态（未加载/未检出为 null；SVN 菜单项显隐判定）。 */
-  svn?: SvnStatusPayload | null
-  /** SVN 变更清单（未加载为 null；文件树徽标与变更类菜单项判定）。 */
-  svnChanges?: SvnChangeEntry[] | null
-  /** 路径 → 变更条目（文件树徽标查表；由 svnStatus.svnChangeMapOf 产出）。 */
-  svnChangeMap?: Record<string, SvnChangeEntry>
-  /** 打开 SVN 基线差异视图（变更面板行内「与基线比较」；缺省时面板降级提示）。 */
-  openSvnDiff?: (path: string) => void
-  /** 打开双侧本地文件差异（W2-4 冲突副本 `.rN` ↔ `.mine`；缺省时面板降级提示）。 */
-  openSvnLocalPair?: (left: string, right: string, leftLabel: string, rightLabel: string, title: string) => void
-  /** 重查 SVN 变更清单（CLI 更新/还原/加入版本控制后由菜单动作调用）。 */
-  refreshSvnChanges?: () => void
-  /** 打开 SVN 更新窗口（树菜单与其它入口共用）。 */
-  openSvnUpdate?: (path: string) => void
-  /** 打开 SVN 日志弹窗（P3；菜单/命令栏「查看日志」）。 */
-  openSvnLog?: (path?: string) => void
   /** 确认对话框（破坏性动作守卫；缺省走 window.confirm，测试可注入）。 */
   confirm?: (message: string) => boolean
   /** 面板动作反馈（如右键菜单操作结果 → 编辑区路径栏状态）。 */

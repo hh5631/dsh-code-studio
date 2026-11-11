@@ -18,13 +18,13 @@ import {
 
 afterEach(() => vi.unstubAllGlobals())
 describe('editor host font', () => {
-  it.each([['14px', 14, 18], ['16px', 16, 21], ['18px', 18, 24], [' 14.5px ', 14.5, 19], ['', 16, 21], ['0px', 16, 21], ['-2px', 16, 21], ['Infinitypx', 16, 21], ['14rem', 16, 21], ['14pxjunk', 16, 21]])('parses %s safely', (raw, fontSize, lineHeight) => {
+  it.each([['14px', 14, 21], ['16px', 16, 24], ['18px', 18, 27], [' 14.5px ', 14.5, 22], ['', 16, 24], ['0px', 16, 24], ['-2px', 16, 24], ['Infinitypx', 16, 24], ['14rem', 16, 24], ['14pxjunk', 16, 24]])('parses %s safely', (raw, fontSize, lineHeight) => {
     vi.stubGlobal('document', { body: {}, documentElement: {} })
-    vi.stubGlobal('window', { getComputedStyle: () => ({ getPropertyValue: () => raw }) })
-    expect(editorFont()).toEqual({ fontSize, lineHeight })
+    vi.stubGlobal('window', { getComputedStyle: () => ({ getPropertyValue: (name: string) => name === '--dsh-content-font-size' ? raw : '' }) })
+    expect(editorFont()).toMatchObject({ fontSize, lineHeight })
   })
-  it('preserves old defaults without DOM', () => {
-    expect(editorFont()).toEqual({ fontSize: 16, lineHeight: 21 })
+  it('uses readable defaults without DOM', () => {
+    expect(editorFont()).toMatchObject({ fontSize: 16, lineHeight: 24 })
   })
 })
 

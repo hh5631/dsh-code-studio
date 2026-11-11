@@ -1,0 +1,85 @@
+/* DSH 原生文件编辑：颜色跟随宿主，排版偏好只作用于插件。 */
+.cstudio-minimal[data-edrv-view] {
+  --cstudio-surface: var(--dsw-alias-bg-base, #fff);
+  --cstudio-raised: var(--dsw-alias-bg-layer-1, #f7f8fa);
+  --cstudio-border: var(--dsw-alias-border-l3, #e8eaed);
+  --cstudio-muted: var(--dsw-alias-label-secondary, #61666b);
+  --cstudio-accent: var(--dsw-alias-brand-primary, #4d6bfe);
+  height: 100%; min-height: 0; min-width: 0; display: flex; flex-direction: column;
+  background: var(--cstudio-surface); color: var(--dsw-alias-label-primary, #0f1115);
+  font-family: var(--cstudio-ui-font, inherit); font-size: var(--cstudio-ui-size, inherit);
+  line-height: 1.5; box-shadow: none;
+}
+.cstudio-minimal:not(.cstudio-native-file) button, .cstudio-native-actions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: inherit; line-height: 1.3; color: inherit; cursor: pointer;
+  background: transparent; border: 0; border-radius: 6px; padding: 5px 8px;
+}
+.cstudio-minimal:not(.cstudio-native-file) button:hover, .cstudio-native-actions button:hover { background: var(--dsw-alias-interactive-bg-hover, #f2f3f5); }
+.cstudio-minimal :is(button,[role=tab]):focus-visible,
+.cstudio-settings input:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset: -2px; box-shadow: none; }
+.cstudio-minimal-bar { min-height: 42px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: 1px solid var(--cstudio-border); background: var(--cstudio-raised); }
+.cstudio-minimal .edrv-tabs { display: flex; align-items: center; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; gap: 3px; padding: 0; background: transparent; }
+.cstudio-minimal .edrv-tab { display: flex; align-items: center; gap: 8px; flex: none; max-width: 240px; min-height: 30px; padding: 3px 8px 3px 10px; cursor: pointer; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--cstudio-muted); font-size: 1em; }
+.cstudio-minimal .edrv-tab > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cstudio-minimal .edrv-tab.edrv-tab-active { border-color: var(--cstudio-border); background: var(--cstudio-surface); color: var(--dsw-alias-label-primary, #0f1115); box-shadow: 0 1px 2px #00000004; }
+.cstudio-minimal .edrv-tab-close { flex: none; width: 20px; height: 20px; padding: 0; opacity: 0; color: var(--cstudio-muted); }
+.cstudio-minimal .edrv-tab:hover .edrv-tab-close,
+.cstudio-minimal .edrv-tab:focus-within .edrv-tab-close,
+.cstudio-minimal .edrv-tab-active .edrv-tab-close { opacity: 1; }
+.cstudio-minimal-tools { display: flex; flex: none; align-items: center; gap: 2px; }
+.cstudio-minimal-tools button { width: 30px; height: 30px; padding: 0; color: var(--cstudio-muted); }
+.cstudio-minimal-tools button[aria-pressed=true] { color: var(--cstudio-accent); background: var(--dsw-alias-interactive-bg-hover, #f2f3f5); }
+.cstudio-minimal-body { flex: 1; display: flex; min-height: 0; min-width: 0; overflow: hidden; }
+.cstudio-minimal-document { flex: 1; min-height: 0; min-width: 0; position: relative; overflow: hidden; }
+.cstudio-minimal-editor { position: absolute; inset: 0; }
+.cstudio-minimal-preview,.cstudio-git-diff,.cstudio-minimal-empty { position: absolute; inset: 0; background: var(--cstudio-surface); }
+.cstudio-minimal-preview { overflow: auto; padding: 24px clamp(16px,4vw,48px); overflow-wrap: anywhere; }
+.cstudio-minimal-preview :is(pre,code),.cstudio-minimal-preview .edrv-large-text-content { font-family: var(--cstudio-code-font, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: var(--cstudio-code-size, 1em); }
+.cstudio-minimal-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--cstudio-muted); }
+.cstudio-minimal-empty p { margin: 0 0 4px; }
+.cstudio-minimal-empty button { border: 1px solid var(--cstudio-border); padding: 6px 14px; }
+.cstudio-minimal-loading { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; background: var(--cstudio-surface); color: var(--cstudio-muted); }
+.cstudio-minimal-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex: none; font-size: .85em; line-height: 1.6; min-height: 26px; min-width: 0; padding: 2px 12px; border-top: 1px solid var(--cstudio-border); color: var(--cstudio-muted); }
+.cstudio-minimal-status > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cstudio-minimal-status > span:last-child { white-space: nowrap; flex: none; }
+.cstudio-minimal-quick { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--cstudio-border); position: relative; z-index: 5; }
+.cstudio-minimal-quick .edrv-search-wrap { flex: 1; min-width: 0; }
+.cstudio-minimal-quick .edrv-search { width: 100%; height: 32px; min-width: 0; box-sizing: border-box; font: inherit; }
+.cstudio-minimal-quick .edrv-search-pop { left: 0; right: auto; width: min(460px,100%); box-sizing: border-box; box-shadow: 0 8px 24px #00000014; }
+.cstudio-minimal-error { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--dsw-alias-state-error-primary, #b23838); border-top: 1px solid var(--cstudio-border); }
+.cstudio-minimal-error > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cstudio-minimal-git { width: 260px; max-width: 40%; flex: none; min-width: 150px; border-right: 1px solid var(--cstudio-border); overflow: hidden; }
+.cstudio-git-diff { display: flex; flex-direction: column; }
+.cstudio-git-diff > header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--cstudio-border); }
+.cstudio-git-diff > header > span { min-width: 0; overflow-wrap: anywhere; }
+.cstudio-git-diff > pre { margin: 0; padding: 16px; overflow: auto; flex: 1; font: var(--cstudio-code-size, 14px)/1.6 var(--cstudio-code-font, ui-monospace, SFMono-Regular, Menlo, monospace); tab-size: 4; }
+.cstudio-git-add { color: var(--dsw-alias-state-success-primary, #16733e); background: color-mix(in srgb, currentColor 5%, transparent); }
+.cstudio-git-delete { color: var(--dsw-alias-state-error-primary, #b23838); background: color-mix(in srgb, currentColor 5%, transparent); }
+.cstudio-git-hunk { color: var(--cstudio-accent); }
+
+/* 设置与 DSH 设置页面使用同一文案层级。 */
+.cstudio-settings { max-width: 640px; padding: 28px 32px; color: var(--dsw-alias-label-primary, #0f1115); }
+.cstudio-settings h2 { margin: 0 0 8px; font-size: 1.4em; font-weight: 600; }
+.cstudio-settings-intro,.cstudio-settings-hint { color: var(--dsw-alias-label-secondary, #61666b); line-height: 1.7; }
+.cstudio-settings fieldset { margin: 28px 0 0; padding: 0; border: 0; }
+.cstudio-settings legend { width: 100%; box-sizing: border-box; padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--dsw-alias-border-l3, #e8eaed); font-weight: 600; }
+.cstudio-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 0; }
+.cstudio-setting-row label { flex: 1; }
+.cstudio-setting-input { display: flex; align-items: center; gap: 8px; width: min(280px,60%); }
+.cstudio-setting-input input { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; border: 1px solid var(--dsw-alias-border-l2, #dce0e5); border-radius: 7px; background: var(--dsw-alias-bg-base, #fff); color: inherit; padding: 6px 10px; font: inherit; }
+.cstudio-setting-input input:disabled { opacity: .5; }
+.cstudio-setting-input > span { font-size: .85em; color: var(--dsw-alias-label-secondary, #61666b); }
+.cstudio-settings-hint { margin: 24px 0 0; font-size: .9em; }
+.cstudio-settings-result { min-height: 1.5em; font-size: .9em; color: var(--dsw-alias-label-secondary, #61666b); }
+@media(max-width:600px) { .cstudio-settings { padding: 20px 16px; } .cstudio-setting-row { gap: 12px; } }
+@media(prefers-reduced-motion:reduce) { .cstudio-minimal * { scroll-behavior: auto !important; } }
+
+/* 原生文件资源布局：上方统一文件路径，编辑内容旁复用原生文件树。 */
+.cstudio-native-file { isolation: isolate; }
+.cstudio-native-header { display: flex; flex: none; align-items: center; gap: 8px; min-height: 40px; padding: 4px 10px 4px 16px; border-bottom: 1px solid var(--cstudio-border); }
+.cstudio-native-path { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--cstudio-muted); }
+.cstudio-native-actions { display: flex; flex: none; }
+.cstudio-native-actions .cstudio-minimal-tools button { min-width: 30px; width: auto; padding: 5px 8px; }
+.cstudio-native-content { isolation: isolate; position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; }
+.cstudio-native-content > .cstudio-minimal { isolation: isolate; flex: 1; min-width: 0; height: auto; }

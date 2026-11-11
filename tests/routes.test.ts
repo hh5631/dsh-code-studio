@@ -12,7 +12,7 @@ import { BINARY_READ_CAP, READ_CAP } from '../src/store.js'
 function request(body: string, method = 'POST'): IncomingMessage {
   const req = Readable.from([Buffer.from(body)]) as unknown as IncomingMessage
   req.method = method
-  req.url = '/edrv/rpc'
+  req.url = '/cstudio/rpc'
   req.headers = { 'content-type': 'application/json; charset=utf-8' }
   return req
 }
@@ -44,7 +44,7 @@ describe('plugin HTTP admission', () => {
     const { routes, dispatch, trust } = setup(status)
     const req = request('{"method":"mcp.save","args":{"config":{"command":"never-run"}}}')
     const { res, output } = response()
-    await routes.get('/edrv/rpc')!.handler(req, res)
+    await routes.get('/cstudio/rpc')!.handler(req, res)
     expect(trust).toHaveBeenCalledWith(req)
     expect(dispatch).not.toHaveBeenCalled()
     expect(output.statusCode).toBe(status)
@@ -72,7 +72,7 @@ describe('plugin HTTP admission', () => {
     const { routes, dispatch } = setup()
     const { res, output, headers } = response()
     const req = request('{}', 'GET')
-    await routes.get('/edrv/rpc')!.handler(req, res)
+    await routes.get('/cstudio/rpc')!.handler(req, res)
     expect(output.statusCode).toBe(405)
     expect(headers.get('allow')).toBe('POST')
     expect(dispatch).not.toHaveBeenCalled()
@@ -82,7 +82,7 @@ describe('plugin HTTP admission', () => {
   it.each(['[]', 'null', '{', '{"method":"mcp.list","args":[]}', '{"method":1}', '{"method":"mcp.list","args":null}'])('rejects invalid envelopes: %s', async (body) => {
     const { routes, dispatch } = setup()
     const { res, output } = response()
-    await routes.get('/edrv/rpc')!.handler(request(body), res)
+    await routes.get('/cstudio/rpc')!.handler(request(body), res)
     expect(output.statusCode).toBe(400)
     expect(dispatch).not.toHaveBeenCalled()
   })
@@ -90,7 +90,7 @@ describe('plugin HTTP admission', () => {
   it('dispatches the existing single-segment compat method', async () => {
     const { routes, dispatch } = setup()
     const { res, output } = response()
-    await routes.get('/edrv/rpc')!.handler(request('{"method":"compat","args":{}}'), res)
+    await routes.get('/cstudio/rpc')!.handler(request('{"method":"compat","args":{}}'), res)
     expect(dispatch).toHaveBeenCalledWith('compat', {})
     expect(output.statusCode).toBe(200)
   })
@@ -98,7 +98,7 @@ describe('plugin HTTP admission', () => {
   it('retains object arguments and omitted-args compatibility', async () => {
     const { routes, dispatch } = setup()
     const { res, headers, output } = response()
-    await routes.get('/edrv/rpc')!.handler(request('{"method":"mcp.list"}'), res)
+    await routes.get('/cstudio/rpc')!.handler(request('{"method":"mcp.list"}'), res)
     expect(dispatch).toHaveBeenCalledWith('mcp.list', {})
     expect(output.statusCode).toBe(200)
     expect(headers.get('cache-control')).toBe('no-store')

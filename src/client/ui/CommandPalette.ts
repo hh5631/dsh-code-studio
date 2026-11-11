@@ -1,15 +1,18 @@
 /**
- * dsh-vscode-mode client — 命令栏浮层（Ctrl+Shift+P / F1）。
+ * dsh-code-studio client — 命令栏浮层（Ctrl+Shift+P / F1）。
  * 订阅 commandPaletteStore 的开关状态；候选来自注入的指令注册表（window.dsh.edrvCommands），
  * 过滤/排序复用 commandSearch 纯函数；↑↓ 选择、Enter 执行、Esc 或点击遮罩关闭。
+ * 候选按 category 分组展示（组标题类名 edrv-palette-group，组内行仍是 edrv-palette-row）；
+ * 最近使用（commandRecents）仅在有查询词时把用过的命令置顶（VSCode 行为）。
  * 浮层经 createPortal 渲染到 body，故不受编辑区三种形态（官方侧栏/better-sidebar/中央页签）影响；
  * 宿主单实例由 store 的 claimPaletteHost 保证（另一个宿主自动返回 null）。
- * 作者 ddj 2026年09月10号
+ * 作者 ddj 2026年09月10号 / 2026年11月
  */
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { REGISTRY_GLOBAL } from '../commandGlobals.js'
-import { filterCommands } from '../commandSearch.js'
+import { groupCommands } from '../commandSearch.js'
+import { recentCommandIds, recordCommandUse } from '../commandRecents.js'
 import { createCommandRegistry } from '../commandRegistry.js'
 import type { CommandRegistry } from '../commandRegistry.js'
 import { chordOf } from '../keybindings.js'
@@ -45,16 +48,36 @@ interface PaletteRow {
   chord: string | null
 }
 
+/** 命令栏分组（组名 + 组内行；组内行携带全局扁平下标供 ↑↓ 选择）。 */
+interface PaletteGroup {
+  category: string
+  rows: { row: PaletteRow; index: number }[]
+}
+
 /**
- * 组装候选行（先按可用性过滤，再按查询排序）。
- * @author ddj 2026年09月10号
+ * 组装候选行（先按可用性过滤，再按查询排序 + 最近使用加权，最后按分类分组）。
+ *
+ * 注意：分组只改「展示形态」，命中集合与 commandSearch.rankCommands 完全一致；
+ * 扁平下标在所有分组间连续，↑↓ 选择与 Enter 执行都基于该下标。
+ * @author ddj 2026年09月10号 / 2026年11月
  * @param registry 指令注册表
  * @param query 用户输入
- * @returns 候选行
+ * @returns 分组候选（组内行带全局下标）
  */
-function rowsOf(registry: CommandRegistry, query: string): PaletteRow[] {
-  return filterCommands(registry.available(), query)
-    .map((command) => ({ command, chord: chordOf(command.id) }))
+function groupsOf(registry: CommandRegistry, query: string): PaletteGroup[] {
+  const recent = query.trim() ? recentCommandIds() : []
+  const groups = groupCommands(registry.available(), query, recent)
+  const out: PaletteGroup[] = []
+  let cursor = 0
+  for (const group of groups) {
+    const rows: { row: PaletteRow; index: number }[] = []
+    for (const command of group.commands) {
+      rows.push({ row: { command, chord: chordOf(command.id) }, index: cursor })
+      cursor += 1
+    }
+    out.push({ category: group.category, rows })
+  }
+  return out
 }
 
 /**
@@ -118,9 +141,14 @@ export function CommandPalette(): React.ReactElement | null {
     return () => clearTimeout(timer)
   }, [open, openSeq])
 
-  const rows = React.useMemo(
-    () => (open && host ? rowsOf(registry, query) : []),
+  const groups = React.useMemo(
+    () => (open && host ? groupsOf(registry, query) : []),
     [open, host, registry, query],
+  )
+  // 扁平化后的候选行（分组只是展示形态；↑↓ 选择基于全局扁平下标）
+  const rows = React.useMemo(
+    () => groups.flatMap((group) => group.rows.map((entry) => entry.row)),
+    [groups],
   )
   const active = rows.length ? Math.min(selected, rows.length - 1) : 0
 
@@ -131,10 +159,12 @@ export function CommandPalette(): React.ReactElement | null {
     if (typeof scroll === 'function') scroll.call(node, { block: 'nearest' })
   }, [open, active, rows.length])
 
-  /** 执行候选行（执行器内部会做可用性校验与异常上报）。 */
+  /** 执行候选行（执行器内部会做可用性校验与异常上报；同时登记最近使用）。 */
   const execute = (row: PaletteRow | undefined): void => {
     if (!row) return
     closeCommandPalette()
+    // 登记最近使用：下次带查询词打开时该命令会被提到前面（VSCode 行为）
+    recordCommandUse(row.command.id)
     if (!runPaletteCommand(row.command.id)) setNotice('命令未执行：' + row.command.label)
   }
 
@@ -159,16 +189,22 @@ export function CommandPalette(): React.ReactElement | null {
   }
 
   if (!open || !host || typeof document === 'undefined') return null
-  const list = rows.length
-    ? rows.map((row, index) => React.createElement('div', {
-        key: row.command.id,
-        className: 'edrv-palette-row' + (index === active ? ' edrv-palette-sel' : ''),
-        onMouseEnter: () => setSelected(index),
-        onClick: () => execute(row),
+  // 分组渲染：组标题（edrv-palette-group）→ 组内行（edrv-palette-row / edrv-palette-sel）
+  const list = groups.length
+    ? groups.map((group) => React.createElement('div', {
+        key: 'group:' + group.category,
+        className: 'edrv-palette-group',
       },
-        React.createElement('span', { className: 'edrv-palette-label' }, row.command.label),
-        React.createElement('span', { className: 'edrv-palette-cat' }, row.command.category),
-        row.chord ? React.createElement('kbd', { className: 'edrv-palette-key' }, row.chord) : null))
+        React.createElement('div', { className: 'edrv-palette-group-title' }, group.category),
+        group.rows.map((entry) => React.createElement('div', {
+          key: entry.row.command.id,
+          className: 'edrv-palette-row' + (entry.index === active ? ' edrv-palette-sel' : ''),
+          onMouseEnter: () => setSelected(entry.index),
+          onClick: () => execute(entry.row),
+        },
+          React.createElement('span', { className: 'edrv-palette-label' }, entry.row.command.label),
+          React.createElement('span', { className: 'edrv-palette-cat' }, entry.row.command.category),
+          entry.row.chord ? React.createElement('kbd', { className: 'edrv-palette-key' }, entry.row.chord) : null))))
     : React.createElement('div', { className: 'edrv-palette-empty' }, '无匹配命令')
 
   const panel = React.createElement('div', { className: 'edrv-palette', 'data-edrv-palette': '1', onKeyDown },

@@ -56,12 +56,12 @@ describe('locale 词典结构', () => {
 describe('locale 子路径可被导出解析', () => {
   for (const lang of ['en', 'zh']) {
     it('解析 <pkg>/locale/' + lang + '.json 不抛 ERR_PACKAGE_PATH_NOT_EXPORTED', () => {
-      expect(() => requireFromRoot.resolve('dsh-vscode-mode/locale/' + lang + '.json')).not.toThrow()
+      expect(() => requireFromRoot.resolve('dsh-code-studio/locale/' + lang + '.json')).not.toThrow()
     })
   }
 
   it('解析结果落在本包 locale 目录内', () => {
-    const resolved = requireFromRoot.resolve('dsh-vscode-mode/locale/en.json')
+    const resolved = requireFromRoot.resolve('dsh-code-studio/locale/en.json')
     expect(resolved.startsWith(join(root, 'locale'))).toBe(true)
   })
 })

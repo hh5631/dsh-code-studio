@@ -1,7 +1,7 @@
 /**
- * dsh-vscode-mode 快捷菜单共享契约 — 技能候选（全局技能 + 当前工作区技能）。
+ * dsh-code-studio 快捷菜单共享契约 — 技能候选（全局技能 + 当前工作区技能）。
  *
- * 纯类型模块：禁 node/react 导入（与 shared/rules.ts、shared/quickMenu.ts 同约束）。
+ * 纯类型模块：禁 node/react 导入（与 shared/mcp.ts 同约束）。
  * 为什么需要它：快捷菜单的「绑定技能」下拉要按来源分组展示候选，而会话可见技能名
  * （remote.skills）只给名字、不给来源，且无活跃会话时不可用；这里定义 host 扫描
  * 磁盘技能目录后的只读快照，供 UI 分组与摘要使用。

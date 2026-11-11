@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 下载落盘位置（目录选择器）。
+ * dsh-code-studio client — 下载落盘位置（目录选择器）。
  *
  * 浏览器原生 `<a download>` 由浏览器决定保存位置，页面拿不到路径；本模块用
  * File System Access API 的 `showDirectoryPicker` 让用户在点「下载」时选一次目标文件夹，

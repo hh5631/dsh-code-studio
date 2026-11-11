@@ -93,14 +93,14 @@ describe('missing file review', () => {
     const fs = fakeFs({})
     const records = bucketOf([rec({ callId: 'older', after: 'older full text' }), rec({ callId: 'latest', at: '2026-10-28', after: 'complete\r\nnewest\r\n' })])
     const handlers = buildHandlers(fakeCtx(fs), new Map([[CWD, records]]))
-    const preview = await handlers['edrv.missingReview']({ sessionId: 's1', path: CWD + '/a.ts' })
+    const preview = await handlers['cstudio.missingReview']({ sessionId: 's1', path: CWD + '/a.ts' })
     expect(preview.ok).toBe(true)
     if (!preview.ok || !preview.review) throw new Error('Missing preview')
     expect(preview.review.content).toBe('complete\r\nnewest\r\n')
     expect(fs.writeText).not.toHaveBeenCalled()
     const args = { sessionId: 's1', token: preview.review.token, operationId: 'retry-id', undo }
-    expect(await handlers['edrv.missingDecide'](args)).toEqual({ ok: true, callIds: ['older', 'latest'] })
-    expect(await handlers['edrv.missingDecide'](args)).toMatchObject({ ok: true })
+    expect(await handlers['cstudio.missingDecide'](args)).toEqual({ ok: true, callIds: ['older', 'latest'] })
+    expect(await handlers['cstudio.missingDecide'](args)).toMatchObject({ ok: true })
     expect(fs.writeText).toHaveBeenCalledTimes(undo ? 1 : 0)
     if (undo) expect(fs.writeText.mock.calls[0].slice(0, 3)).toEqual([CWD + '/a.ts', preview.review.content, { kind: 'createIfAbsent' }])
     expect([...records.values()].every((record) => record.archived)).toBe(true)
@@ -110,11 +110,11 @@ describe('missing file review', () => {
     const fs = fakeFs({})
     const record = rec({ after: 'full snapshot' })
     const handlers = buildHandlers(fakeCtx(fs), new Map([[CWD, bucketOf([record])]]))
-    const result = await handlers['edrv.missingReview']({ sessionId: 's1', path: record.path })
+    const result = await handlers['cstudio.missingReview']({ sessionId: 's1', path: record.path })
     if (!result.ok || !result.review) throw new Error('Missing preview')
     await fs.writeText(record.path, 'external text')
     fs.writeText.mockClear()
-    expect(await handlers['edrv.missingDecide']({ sessionId: 's1', token: result.review.token, operationId: 'op', undo })).toMatchObject({ ok: false, error: expect.stringContaining('重新出现') })
+    expect(await handlers['cstudio.missingDecide']({ sessionId: 's1', token: result.review.token, operationId: 'op', undo })).toMatchObject({ ok: false, error: expect.stringContaining('重新出现') })
     expect(await fs.readText(record.path)).toBe('external text')
     expect(fs.writeText).not.toHaveBeenCalled()
     expect(record.decisions.call).toBe('pending')
@@ -124,17 +124,17 @@ describe('missing file review', () => {
     const fs = fakeFs({})
     const record = rec({})
     const handlers = buildHandlers(fakeCtx(fs), new Map([[CWD, bucketOf([record])]]))
-    expect(await handlers['edrv.missingReview']({ sessionId: 's1', path: record.path })).toMatchObject({ ok: false, error: expect.stringContaining('完整历史快照') })
+    expect(await handlers['cstudio.missingReview']({ sessionId: 's1', path: record.path })).toMatchObject({ ok: false, error: expect.stringContaining('完整历史快照') })
     record.after = ''
-    const preview = await handlers['edrv.missingReview']({ sessionId: 's1', path: record.path })
+    const preview = await handlers['cstudio.missingReview']({ sessionId: 's1', path: record.path })
     if (!preview.ok || !preview.review) throw new Error('Missing preview')
     record.after = 'changed'
-    expect(await handlers['edrv.missingDecide']({ sessionId: 's1', token: preview.review.token, operationId: 'op', undo: true })).toMatchObject({ ok: false, error: expect.stringContaining('历史记录已变化') })
+    expect(await handlers['cstudio.missingDecide']({ sessionId: 's1', token: preview.review.token, operationId: 'op', undo: true })).toMatchObject({ ok: false, error: expect.stringContaining('历史记录已变化') })
     expect(fs.writeText).not.toHaveBeenCalled()
-    const next = await handlers['edrv.missingReview']({ sessionId: 's1', path: record.path })
+    const next = await handlers['cstudio.missingReview']({ sessionId: 's1', path: record.path })
     if (!next.ok || !next.review) throw new Error('Missing preview')
     fs.writeText.mockRejectedValueOnce(new Error('FS_STALE_VERSION'))
-    expect(await handlers['edrv.missingDecide']({ sessionId: 's1', token: next.review.token, operationId: 'op', undo: true })).toMatchObject({ ok: false, error: expect.stringContaining('FS_STALE_VERSION') })
+    expect(await handlers['cstudio.missingDecide']({ sessionId: 's1', token: next.review.token, operationId: 'op', undo: true })).toMatchObject({ ok: false, error: expect.stringContaining('FS_STALE_VERSION') })
     expect(record.archived).toBe(false)
     expect(record.decisions.call).toBe('pending')
   })
@@ -143,13 +143,13 @@ describe('missing file review', () => {
     const fs = fakeFs({})
     const record = rec({ after: 'snapshot' })
     const handlers = buildHandlers(fakeCtx(fs), new Map([[CWD, bucketOf([record])]]))
-    expect(await handlers['edrv.accept']({ sessionId: 's1', callId: record.callId })).toMatchObject({ ok: false, error: expect.stringContaining('整文件删除预览') })
+    expect(await handlers['cstudio.accept']({ sessionId: 's1', callId: record.callId })).toMatchObject({ ok: false, error: expect.stringContaining('整文件删除预览') })
     await fs.writeText(record.path, 'present')
-    expect(await handlers['edrv.missingReview']({ sessionId: 's1', path: record.path })).toEqual({ ok: true, review: null })
+    expect(await handlers['cstudio.missingReview']({ sessionId: 's1', path: record.path })).toEqual({ ok: true, review: null })
   })
 })
 
-describe('edrv.decideBatch', () => {
+describe('cstudio.decideBatch', () => {
   it('official identity blocks old accept, reject, batch and rollback without file IO', async () => {
     const path = CWD + '/a.ts'
     saveSnapshot(CWD, { sourceKind: 'official', sessionId: 'source', turn: 1, seq: 10, capturedAt: '',
@@ -158,11 +158,11 @@ describe('edrv.decideBatch', () => {
     const fs = fakeFs({ [path]: 'b' })
     const registry = new Map([[CWD, bucketOf([rec({})])]])
     const handlers = buildHandlers(fakeCtx(fs), registry)
-    expect(await handlers['edrv.accept']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false, error: expect.stringContaining('官方审查') })
-    expect(await handlers['edrv.reject']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false })
-    const batch = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'rejected' }] })
+    expect(await handlers['cstudio.accept']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false, error: expect.stringContaining('官方审查') })
+    expect(await handlers['cstudio.reject']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false })
+    const batch = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'rejected' }] })
     expect(batch).toMatchObject({ ok: true, results: [{ ok: false }] })
-    expect(await handlers['edrv.rollback']({ sessionId: 's1', path })).toMatchObject({ ok: false, error: expect.stringContaining('官方审查') })
+    expect(await handlers['cstudio.rollback']({ sessionId: 's1', path })).toMatchObject({ ok: false, error: expect.stringContaining('官方审查') })
     expect(fs.writeText).not.toHaveBeenCalled()
     expect(registry.get(CWD)!.get('c1')!.decisions.call).toBe('pending')
   })
@@ -173,7 +173,7 @@ describe('edrv.decideBatch', () => {
       [CWD, bucketOf([rec({ callId: 'a' }), rec({ callId: 'b' })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [
       { callId: 'a', scope: 'hunk', hunkIndex: 0, decision: 'accepted' },
       { callId: 'b', scope: 'hunk', hunkIndex: 0, decision: 'accepted' },
     ] })
@@ -197,7 +197,7 @@ describe('edrv.decideBatch', () => {
       [CWD, bucketOf([rec({ callId: 'a' })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [
       { callId: 'ghost', scope: 'hunk', hunkIndex: 0, decision: 'accepted' },
       { callId: 'a', scope: 'hunk', hunkIndex: 0, decision: 'accepted' },
     ] })
@@ -215,7 +215,7 @@ describe('edrv.decideBatch', () => {
       [CWD, bucketOf([rec({ callId: 'a', hunks: [{ oldText: 'a', newText: 'b' }] })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [
       { callId: 'a', scope: 'hunk', hunkIndex: 0, decision: 'rejected' },
     ] })
     expect(res.ok).toBe(true)
@@ -241,7 +241,7 @@ describe('edrv.decideBatch', () => {
       ], decisions: { call: 'pending', perHunk: ['pending', 'pending', 'pending'] } }),
     ])]])
     const handlers = buildHandlers(ctx, registry)
-    const result = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [0, 1, 2].map((hunkIndex) => ({
+    const result = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [0, 1, 2].map((hunkIndex) => ({
       callId: 'multi', scope: 'hunk' as const, hunkIndex, decision: 'rejected' as const,
     })) })
     expect(result.ok).toBe(true)
@@ -259,7 +259,7 @@ describe('edrv.decideBatch', () => {
       { oldText: 'old-tail', newText: 'tail', afterStart: 4, afterEnd: 8 },
     ], decisions: { call: 'pending', perHunk: ['pending', 'pending'] } })
     const registry = new Map<string, Map<string, DiffRecord>>([[CWD, bucketOf([record])]])
-    const result = await buildHandlers(fakeCtx(fs), registry)['edrv.decideBatch']({
+    const result = await buildHandlers(fakeCtx(fs), registry)['cstudio.decideBatch']({
       sessionId: 's1', items: [0, 1].map((hunkIndex) => ({
         callId: 'shift', scope: 'hunk' as const, hunkIndex, decision: 'rejected' as const,
       })),
@@ -280,7 +280,7 @@ describe('edrv.decideBatch', () => {
         { oldText: 'old3', newText: 'last' },
       ], decisions: { call: 'pending', perHunk: ['pending', 'pending', 'pending'] },
     })])]])
-    const result = await buildHandlers(fakeCtx(fs), registry)['edrv.decideBatch']({
+    const result = await buildHandlers(fakeCtx(fs), registry)['cstudio.decideBatch']({
       sessionId: 's1', items: [0, 1, 2].map((hunkIndex) => ({
         callId: 'multi', scope: 'hunk' as const, hunkIndex, decision: 'rejected' as const,
       })),
@@ -305,7 +305,7 @@ describe('edrv.decideBatch', () => {
       { oldText: 'old-stale', newText: 'missing' },
     ], decisions: { call: 'pending', perHunk: ['pending', 'pending'] } })
     const registry = new Map<string, Map<string, DiffRecord>>([[CWD, bucketOf([record])]])
-    const result = await buildHandlers(fakeCtx(fs), registry)['edrv.decideBatch']({
+    const result = await buildHandlers(fakeCtx(fs), registry)['cstudio.decideBatch']({
       sessionId: 's1', items: [0, 1].map((hunkIndex) => ({
         callId: 'multi', scope: 'hunk' as const, hunkIndex, decision: 'rejected' as const,
       })),
@@ -324,7 +324,7 @@ describe('edrv.decideBatch', () => {
       [CWD, bucketOf([rec({ callId: 'a', hunks: [{ oldText: 'a', newText: 'b' }] })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [
       { callId: 'a', scope: 'hunk', hunkIndex: 0, decision: 'rejected' },
     ] })
     expect(res.ok).toBe(true)
@@ -344,7 +344,7 @@ describe('edrv.decideBatch', () => {
       [CWD, bucketOf([rec({ callId: 'a', hunks: [{ oldText: 'a', newText: 'b' }] })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [
       { callId: 'a', scope: 'hunk', hunkIndex: 0, decision: 'rejected' },
     ] })
     expect(res.ok).toBe(true)
@@ -365,7 +365,7 @@ describe('edrv.accept / edrv.reject 单条委托', () => {
       [CWD, bucketOf([rec({ callId: 'a' })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.accept']({ sessionId: 's1', callId: 'a', scope: 'hunk', hunkIndex: 0 })
+    const res = await handlers['cstudio.accept']({ sessionId: 's1', callId: 'a', scope: 'hunk', hunkIndex: 0 })
     expect(res.ok).toBe(true)
     if (!res.ok) return
     expect(res.record?.decisions.perHunk).toEqual(['accepted'])
@@ -380,7 +380,7 @@ describe('edrv.accept / edrv.reject 单条委托', () => {
       [CWD, bucketOf([rec({ callId: 'a' })])],
     ])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.reject']({ sessionId: 's1', callId: 'a', scope: 'call' })
+    const res = await handlers['cstudio.reject']({ sessionId: 's1', callId: 'a', scope: 'call' })
     expect(res.ok).toBe(true)
     if (!res.ok) return
     expect(res.record?.decisions.call).toBe('rejected')
@@ -392,7 +392,7 @@ describe('edrv.accept / edrv.reject 单条委托', () => {
     const ctx = fakeCtx(fs)
     const registry = new Map<string, Map<string, DiffRecord>>([[CWD, bucketOf([])]])
     const handlers = buildHandlers(ctx, registry)
-    const res = await handlers['edrv.accept']({ sessionId: 's1', callId: 'nope', scope: 'call' })
+    const res = await handlers['cstudio.accept']({ sessionId: 's1', callId: 'nope', scope: 'call' })
     expect(res.ok).toBe(false)
     if (res.ok) return
     expect(res.error).toBe('记录不存在')
@@ -408,13 +408,13 @@ describe('edrv.list skipStale', () => {
     const registry = new Map<string, Map<string, DiffRecord>>([[CWD, bucketOf([stale])]])
     const handlers = buildHandlers(ctx, registry)
 
-    const skipped = await handlers['edrv.list']({ sessionId: 's1', skipStale: true })
+    const skipped = await handlers['cstudio.list']({ sessionId: 's1', skipStale: true })
     expect(skipped.ok).toBe(true)
     if (!skipped.ok) return
     // 未清理 → ghost 仍在返回列表（未归档）
     expect(skipped.records.map((r) => r.callId)).toContain('ghost')
 
-    const full = await handlers['edrv.list']({ sessionId: 's1' })
+    const full = await handlers['cstudio.list']({ sessionId: 's1' })
     expect(full.ok).toBe(true)
     if (!full.ok) return
     expect(full.records.map((r) => r.callId)).toContain('ghost')

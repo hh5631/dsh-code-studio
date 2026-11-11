@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — Monaco model 预热调度层。
+ * dsh-code-studio client — Monaco model 预热调度层。
  *
  * 背景：Monaco 的 GotoDefinitionAtPositionEditorContribution 在 Ctrl+hover 渲染定义链接
  * 预览时，对目标的 edrv:// uri 调 textModelResolverService.createModelReference 后

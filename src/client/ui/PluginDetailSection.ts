@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — 官方插件管理器详情页的只读状态段。
+ * dsh-code-studio client — 官方插件管理器详情页的只读状态段。
  * 挂在 DSH 0.2.1 新增的 `plugins.detail.section`（list / root）扩展位上，
  * 只在「本插件自己」的详情页渲染，其余插件页返回 null。
  * 作者 ddj 2026年10月19号
@@ -9,7 +9,7 @@ import React from 'react'
 import { rpc } from '../rpc.js'
 
 /** 本插件标识（与 package.json name / bundle 行 id 一致）。 */
-export const SELF_ID = 'dsh-vscode-mode'
+export const SELF_ID = 'dsh-code-studio'
 
 /**
  * 判断详情页 subject 是否指向本插件。
@@ -70,7 +70,7 @@ export function PluginDetailSection(props) {
   const warnCount = Array.isArray(report?.warnings) ? report.warnings.length : 0
 
   return React.createElement('section', { className: 'vsm-panel', 'data-edrv-plugin-status': '1' },
-    React.createElement('h3', { className: 'vsm-panel-title' }, 'VSCodeMode 运行状态'),
+    React.createElement('h3', { className: 'vsm-panel-title' }, '代码工作台运行状态'),
     React.createElement('div', { className: 'vsm-panel-body' },
       row('版本', versionText + ' · ' + pluginText),
       row('版本适配', countText(report?.adapters)),

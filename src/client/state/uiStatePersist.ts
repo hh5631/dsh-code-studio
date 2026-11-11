@@ -1,11 +1,11 @@
 /**
- * dsh-vscode-mode client — 界面状态镜像（把 `edrv.*` 的 localStorage 状态写穿到 host）。
+ * dsh-code-studio client — 界面状态镜像（把 `edrv.*` 的 localStorage 状态写穿到 host）。
  *
  * 背景：Web GUI 的 origin（含端口）每次启动可能变化，而 localStorage 按 origin 分区，
  * 于是页签/侧栏/预览态等状态「重启就忘」。本模块包装 localStorage 写口：
  * 只拦 `edrv.` 前缀键（跳过镜像自身标记键与派生条目缓存，见 `SKIP_PREFIX`），400ms 去抖后
- * 增量上送 `edrv.uiState.set`：按体积分批，整批被拒则逐键回退，避免个别超大键拖垮同批。
- * 启动（含换 origin）后 `edrv.uiState.get` 水合，仅填本地缺失的键（本地优先，绝不覆盖）；
+ * 增量上送 `cstudio.uiState.set`：按体积分批，整批被拒则逐键回退，避免个别超大键拖垮同批。
+ * 启动（含换 origin）后 `cstudio.uiState.get` 水合，仅填本地缺失的键（本地优先，绝不覆盖）；
  * 首次搬运标记只在整批落盘成功后写入（失败则下次加载重试）。
  * 全局键（不随工作区变化）走 globals 分区，其余按键原值搬进工作区分区。
  *
@@ -27,7 +27,7 @@ export const SEEDED_KEY = 'edrv.uistate.v1.seeded'
 /** 水合完成事件名（换 origin 回填后广播，供界面重跑恢复逻辑）。 */
 export const READY_EVENT = 'edrv:ui-state-ready'
 /** 全局键（不随工作区变化，落用户级镜像文件）。 */
-const GLOBAL_EXACT = ['edrv.debug', CACHE_KEY.sideHint]
+const GLOBAL_EXACT = ['edrv.debug', CACHE_KEY.sideHint, CACHE_KEY.commandRecents]
 /** 全局键前缀（不随工作区变化）。 */
 const GLOBAL_PREFIX = [CACHE_KEY.workspaceFold]
 /** 单次上送的字节上限（host 单文件上限 512KB；分批避免个别超大键拖垮整批）。 */
@@ -114,7 +114,7 @@ export interface UiStateMirror {
 
 // --region 纯逻辑
 /**
- * 是否参与镜像（`edrv.` 前缀且非标记键）。
+ * 是否参与镜像（`cstudio.` 前缀且非标记键）。
  * @author ddj 2026年09月28号
  * @param key localStorage 键
  * @returns 是否镜像
@@ -343,7 +343,7 @@ export function createUiStateMirror(deps: UiStateMirrorDeps): UiStateMirror {
 
   /**
    * 结束水合阶段（成功或重试耗尽）：解禁界面落盘，并广播就绪事件让恢复逻辑补跑一次。
-   * 冷启动早期会话未就绪时 `edrv.uiState.get` 会返回「会话不存在」，故本阶段必须可重试；
+   * 冷启动早期会话未就绪时 `cstudio.uiState.get` 会返回「会话不存在」，故本阶段必须可重试；
    * 未结束前界面不得写存档，否则空初值会覆盖 host 上的真实状态。
    */
   function settle(): void {
@@ -528,13 +528,13 @@ function readLocalStorage(): UiStorage | null {
 
 /** 上送镜像（host 返回 ok:false 视为失败，触发内部重试）。 */
 async function pushViaRpc(payload: UiStatePush, sessionId?: string): Promise<void> {
-  const res = await rpc('edrv.uiState.set', { sessionId, keys: payload.keys, globals: payload.globals })
+  const res = await rpc('cstudio.uiState.set', { sessionId, keys: payload.keys, globals: payload.globals })
   if (!res.ok) throw new Error(res.error)
 }
 
 /** 取回镜像。 */
 async function fetchViaRpc(sessionId?: string): Promise<UiStateSnapshot> {
-  const res = await rpc('edrv.uiState.get', { sessionId })
+  const res = await rpc('cstudio.uiState.get', { sessionId })
   if (!res.ok) throw new Error(res.error)
   return { keys: res.keys, globals: res.globals }
 }
@@ -593,7 +593,7 @@ export function installUiStatePersist(
       uiReady = false
       reporter = null
     }
-  }, 'vscode-mode: ui state lifecycle')
+  }, 'code-studio: ui state lifecycle')
   hydrating = mirror.hydrate().then((filled) => {
     if (singleton === mirror && (filled > 0 || mirror.settled())) uiReady = true
     return filled

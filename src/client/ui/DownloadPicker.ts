@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 「下载到本机」确认框（仅远程访问时由右键菜单打开）。
+ * dsh-code-studio client — 「下载到本机」确认框（仅远程访问时由右键菜单打开）。
  *
  * 形态：ModalShell 居中卡片 + 懒加载目录树 + 文件勾选。产品决策是「不打包」：
  * 这里只收集勾选，由调用方（downloadFile.ts）逐个下载原文件。
@@ -55,7 +55,7 @@ export function DownloadPicker(props: DownloadPickerProps): React.ReactElement {
     setState((prev) => markLoading(prev, dirPath))
     try {
       const args = sessionId ? { sessionId, path: dirPath } : { path: dirPath }
-      const out = await rpc('edrv.listDir', args)
+      const out = await rpc('cstudio.listDir', args)
       if (!aliveRef.current) return
       if (!out.ok) {
         setState((prev) => markError(prev, dirPath, out.error))

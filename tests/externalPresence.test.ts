@@ -12,7 +12,7 @@ describe('presence on insecure HTTP origins', () => {
     vi.stubGlobal('crypto', { getRandomValues: (bytes: Uint8Array) => bytes.fill(1) })
     const dispose = setupExtOpen({}, { search: '' })
     await Promise.resolve()
-    expect(rpc).toHaveBeenCalledWith('edrv.external.pending', expect.objectContaining({ clientId: '01010101-0101-4101-8101-010101010101' }))
+    expect(rpc).toHaveBeenCalledWith('cstudio.external.pending', expect.objectContaining({ clientId: '01010101-0101-4101-8101-010101010101' }))
     expect(vi.getTimerCount()).toBe(1)
     dispose()
     expect(vi.getTimerCount()).toBe(0)

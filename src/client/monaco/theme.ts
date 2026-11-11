@@ -1,11 +1,13 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — Monaco 主题：官方令牌跟随 + 现役双套回落。
+ * dsh-code-studio client — Monaco 主题：官方令牌跟随 + 现役双套回落。
  * 优先级：官方代码/UI 令牌（--shiki-* / --dsw-alias-*，DSH 0.1.5+ 主题体系，
  * 含第三方皮肤）→ edrv-dark / edrv-light 两套内置配色（旧版 DSH 或令牌缺失）。
  * 明暗判定：body[data-ds-dark-theme]（官方）→ 根 data-theme（旧皮肤）→ prefers-color-scheme。
  * 作者 ddj 2026-08-28 / 2026-09-10
  */
+
+import { getTypography } from '../typography.js'
 
 export const EDRV_DARK = 'edrv-dark'
 export const EDRV_LIGHT = 'edrv-light'
@@ -295,11 +297,13 @@ let officialSeq = 0
  * Read the host content font on editor creation, preserving the original line density.
  * @returns Monaco font options; invalid or unavailable CSS falls back to 16px.
  */
-export function editorFont(): { fontSize: number; lineHeight: number } {
+export function editorFont(): { fontSize: number; lineHeight: number; fontFamily: string } {
+  const preference = getTypography()
   const raw = readCssVar('--dsh-content-font-size') ?? ''
   const parsed = /^\d+(?:\.\d+)?px$/i.test(raw) ? Number(raw.slice(0, -2)) : NaN
-  const fontSize = Number.isFinite(parsed) && parsed > 0 ? parsed : 16
-  return { fontSize, lineHeight: Math.round(fontSize * 21 / 16) }
+  const fontSize = preference.editorFontSize || (Number.isFinite(parsed) && parsed > 0 ? parsed : 16)
+  const fontFamily = preference.editorFontFamily || readCssVar('--dsh-font-family-code') || readCssVar('--dsw-font-family-code') || 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+  return { fontSize, lineHeight: preference.editorLineHeight || Math.round(fontSize * 1.5), fontFamily }
 }
 
 /**

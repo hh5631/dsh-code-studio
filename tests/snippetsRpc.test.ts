@@ -73,7 +73,7 @@ describe('edrv.read 全局片段分支', () => {
   it('无会话也不会报「会话不存在」：片段目录在工作区之外，不走 cwd 解析', async () => {
     const file = join(userSnippetsDir(home), 'missing.code-snippets')
     const handlers = buildHandlers(fakeCtx(fakeFs()))
-    const res = await handlers['edrv.read']({ path: file })
+    const res = await handlers['cstudio.read']({ path: file })
     expect(res.ok).toBe(false)
     if (!res.ok) {
       // 命中片段分支（而非被会话前置拦下），并带出解析后的真实路径便于诊断
@@ -86,7 +86,7 @@ describe('edrv.read 全局片段分支', () => {
     const file = join(userSnippetsDir(home), 'read.code-snippets')
     const handlers = buildHandlers(fakeCtx(fakeFs()))
     await handlers['edrv.save']({ path: file, content: '{"a":{"body":"A"}}' } as never)
-    const res = await handlers['edrv.read']({ path: file })
+    const res = await handlers['cstudio.read']({ path: file })
     expect(res.ok).toBe(true)
     if (res.ok) {
       expect(res.content).toBe('{"a":{"body":"A"}}')
@@ -96,7 +96,7 @@ describe('edrv.read 全局片段分支', () => {
 
   it('非片段路径仍走会话前置（分支不过宽）', async () => {
     const handlers = buildHandlers(fakeCtx(fakeFs()))
-    const res = await handlers['edrv.read']({ path: CWD + '/a.ts' })
+    const res = await handlers['cstudio.read']({ path: CWD + '/a.ts' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(String(res.error)).toBe('会话不存在')
   })

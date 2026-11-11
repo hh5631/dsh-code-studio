@@ -2,7 +2,7 @@
  * 远程访问通道适配：插件内部路径 → 远程传输可达路径。
  *
  * 背景：宿主 connection 插件对 Host 不是 loopback / bind 地址 / trustedHosts 的请求一律回 403
- * （Host 围栏先于任何 cookie 校验），因此 /edrv/rpc 与 /edrv/vendor/** 在局域网 IP 或隧道域名
+ * （Host 围栏先于任何 cookie 校验），因此 /cstudio/rpc 与 /cstudio/vendor/** 在局域网 IP 或隧道域名
  * 页面上必然被拒。第三方远程访问插件（@linxin666/dsh-remote-web-ui）提供 /remote/<内部路径>
  * 的 catch-all 代理：校验配对设备后回环重发到本进程，本插件自身的准入照旧执行。
  *

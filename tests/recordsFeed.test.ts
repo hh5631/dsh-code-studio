@@ -70,7 +70,7 @@ describe('recordsFeed 共享订阅', () => {
     await flush()
 
     expect(rpcMock).toHaveBeenCalledTimes(1)
-    expect(rpcMock).toHaveBeenCalledWith('edrv.list', { sessionId: 's1' }, expect.any(AbortSignal))
+    expect(rpcMock).toHaveBeenCalledWith('cstudio.list', { sessionId: 's1' }, expect.any(AbortSignal))
     expect(seen).toHaveLength(1)
     expect(seen[0][0].callId).toBe('c1')
     off()

@@ -35,39 +35,39 @@ describe('identity constants', () => {
   })
 
   it('包名与路由前缀不漂移', () => {
-    expect(PLUGIN_NAME).toBe('dsh-vscode-mode')
+    expect(PLUGIN_NAME).toBe('dsh-code-studio')
     expect(MCP_PACKAGE).toBe('@deepseek-ai/dsh-mcp-client')
-    expect(ROUTE_PREFIX).toBe('/edrv')
+    expect(ROUTE_PREFIX).toBe('/cstudio')
   })
 })
 
 describe('routeConflict', () => {
-  it('精确路由占用 /edrv 前缀时告警', () => {
-    const web = { exact: new Map([['/edrv/rpc', {}]]), prefixes: new Map() }
-    expect(routeConflict(web, '/edrv')).toContain('/edrv/rpc')
+  it('精确路由占用 /cstudio 前缀时告警', () => {
+    const web = { exact: new Map([['/cstudio/rpc', {}]]), prefixes: new Map() }
+    expect(routeConflict(web, '/cstudio')).toContain('/cstudio/rpc')
   })
 
   it('其他前缀路由与本前缀重叠时告警', () => {
-    const web = { exact: new Map(), prefixes: new Map([['/edrv/vendor', {}]]) }
-    expect(routeConflict(web, '/edrv')).toContain('/edrv/vendor')
+    const web = { exact: new Map(), prefixes: new Map([['/cstudio/vendor', {}]]) }
+    expect(routeConflict(web, '/cstudio')).toContain('/cstudio/vendor')
     const sibling = { exact: new Map(), prefixes: new Map([['/edrv2', {}]]) }
-    expect(routeConflict(sibling, '/edrv')).toBeNull()
+    expect(routeConflict(sibling, '/cstudio')).toBeNull()
   })
 
   it('无冲突或内部表不可读时返回 null', () => {
-    expect(routeConflict({ exact: new Map(), prefixes: new Map() }, '/edrv')).toBeNull()
-    expect(routeConflict({}, '/edrv')).toBeNull()
-    expect(routeConflict(undefined, '/edrv')).toBeNull()
+    expect(routeConflict({ exact: new Map(), prefixes: new Map() }, '/cstudio')).toBeNull()
+    expect(routeConflict({}, '/cstudio')).toBeNull()
+    expect(routeConflict(undefined, '/cstudio')).toBeNull()
   })
 
   it('本插件自有路由不计入冲突（自误报排除）', () => {
-    const web = { exact: new Map([['/edrv/rpc', {}]]), prefixes: new Map([['/edrv/vendor', {}]]) }
-    expect(routeConflict(web, '/edrv')).toContain('/edrv/rpc')
-    noteOwnRoute('exact', '/edrv/rpc')
-    noteOwnRoute('prefix', '/edrv/vendor')
-    expect(routeConflict(web, '/edrv')).toBeNull()
+    const web = { exact: new Map([['/cstudio/rpc', {}]]), prefixes: new Map([['/cstudio/vendor', {}]]) }
+    expect(routeConflict(web, '/cstudio')).toContain('/cstudio/rpc')
+    noteOwnRoute('exact', '/cstudio/rpc')
+    noteOwnRoute('prefix', '/cstudio/vendor')
+    expect(routeConflict(web, '/cstudio')).toBeNull()
     resetOwnRoutes()
-    expect(routeConflict(web, '/edrv')).toContain('/edrv/rpc')
+    expect(routeConflict(web, '/cstudio')).toContain('/cstudio/rpc')
   })
 })
 
@@ -147,14 +147,14 @@ describe('detectGuards / buildReport', () => {
   it('依赖缺失与路由冲突进入警告', async () => {
     const broken = {
       get: (name) => {
-        if (name === 'webServer') return { exact: new Map([['/edrv/rpc', {}]]), prefixes: new Map() }
+        if (name === 'webServer') return { exact: new Map([['/cstudio/rpc', {}]]), prefixes: new Map() }
         if (name === 'loader') return { entries: () => [{ options: { name: PLUGIN_NAME } }, { options: { name: PLUGIN_NAME } }] }
         return undefined
       },
     }
     const report = await buildReport(broken, { depsAvailable: false, version: '9.9.9' })
     expect(report.warnings.some((w) => w.includes('dsh-settings'))).toBe(true)
-    expect(report.warnings.some((w) => w.includes('/edrv'))).toBe(true)
+    expect(report.warnings.some((w) => w.includes('/cstudio'))).toBe(true)
     expect(report.warnings.some((w) => w.includes('cordis.patch.yml'))).toBe(true)
   })
 })

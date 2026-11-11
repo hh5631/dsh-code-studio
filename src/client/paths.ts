@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 浏览器端缓存键/路径统一出口（PathConst）。
+ * dsh-code-studio client — 浏览器端缓存键/路径统一出口（PathConst）。
  * 统一 localStorage 键前缀（各缓存模块/编辑区/搜索面板共用），避免内联散落；
  * 键带 schema 版本号，未来版本递增时经 sweepLegacyKeys 自动清旧。
  * 浏览器不涉 ~/.dsh 文件系统，这里只管键名 + shared 路由常量。
@@ -38,6 +38,8 @@ export const CACHE_KEY = {
   editorTab: 'edrv.editor-tab.v1.',
   /** 编辑器导航历史双栈（navStateCache v1：重启后前进/后退与当前位置仍在，按作用域隔离）。 */
   navHistory: 'edrv.nav-history.v1.',
+  /** 命令栏最近使用记录（commandRecents v1：命令 id + 时间戳，全局不按会话）。 */
+  commandRecents: 'edrv.command-recents.v1',
 } as const
 
 /** 按前缀拼作用域键（scopeStore 产出作用域；侧边栏/编辑器等需要布局段时自行拼接后传入）。 */

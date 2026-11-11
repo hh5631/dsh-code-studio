@@ -1,7 +1,7 @@
 /**
- * dsh-vscode-mode host — 工作区目录树索引（.sln 式结构缓存，层 2）。
+ * dsh-code-studio host — 工作区目录树索引（.sln 式结构缓存，层 2）。
  * 内存 Map<cwd, 索引> + 落盘缓存文件（工作区级：
- * ~/.dsh/dsh-vscode-mode/cache/workspace/<cwdHash>/tree.v<schema>.json，路径统一走
+ * ~/.dsh/dsh-code-studio/cache/workspace/<cwdHash>/tree.v<schema>.json，路径统一走
  * paths.ts PathConst）：命中（ts 新鲜且未失效）内存直出 0 IO；列取结果 putIndex 更新
  * 并防抖落盘；agent 写入/手动保存 invalidateIndex 父目录+祖先 → 3s 防抖后台 re-heal
  * （并行、单轮有界、合并并发轮）；TTL 兜底外部改动。缓存写读走原生 node:fs（与引擎

@@ -42,7 +42,7 @@ beforeEach(async () => {
   fetchMock.mockImplementation(async (_url: unknown, init: unknown) => {
     const body = JSON.parse(String((init as RequestInit).body))
     calls.push({ method: body.method, args: body.args })
-    if (body.method === 'edrv.readBinary') return unwiredEnvelope()
+    if (body.method === 'cstudio.readBinary') return unwiredEnvelope()
     const path = String(body.args?.path ?? '')
     if (path.endsWith('big.bin')) return jsonResponse({ ok: false, error: '文件过大（>32MB），不支持整文件预览' })
     return base64Ok()
@@ -67,7 +67,7 @@ describe('fetchDownload', () => {
     const file = await mod.fetchDownload('src/a.txt', 's1')
     expect(Array.from(file.bytes)).toEqual([104, 101, 108, 108, 111])
     expect(file.mime).toBe('text/plain')
-    expect(calls.map((call) => call.method)).toEqual(['edrv.readBinary', 'edrv.read'])
+    expect(calls.map((call) => call.method)).toEqual(['cstudio.readBinary', 'cstudio.read'])
     expect(calls[1].args).toMatchObject({ sessionId: 's1', path: 'src/a.txt', encoding: 'base64' })
   })
 
@@ -107,7 +107,7 @@ describe('downloadOne / downloadMany', () => {
     expect(out.failed[0]).toMatchObject({ path: 'big.bin', message: '文件过大（>32MB），不支持整文件预览' })
     expect(anchor.click).toHaveBeenCalledTimes(2)
     // 串行：3 个文件各一次 edrv.read（首次 readBinary 探测后本页不再尝试）
-    expect(calls.filter((call) => call.method === 'edrv.read').map((call) => call.args.path))
+    expect(calls.filter((call) => call.method === 'cstudio.read').map((call) => call.args.path))
       .toEqual(['big.bin', 'a.txt', 'b.md'])
   })
 

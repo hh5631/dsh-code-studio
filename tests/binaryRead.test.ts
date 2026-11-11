@@ -73,7 +73,7 @@ describe('readBinaryPreview 成功通道', () => {
     }
     expect(rpc.calls).toHaveLength(0)
     const body = String((fetchMock.mock.calls[0] as unknown[])[1] && (fetchMock.mock.calls[0][1] as { body?: string }).body)
-    expect(body).toContain('edrv.readBinary')
+    expect(body).toContain('cstudio.readBinary')
   })
 })
 
@@ -84,7 +84,7 @@ describe('readBinaryPreview 降级链', () => {
     const out = await mod.readBinaryPreview(rpc.fn, ARGS)
     expect(out.ok).toBe(true)
     if (out.ok) expect(out.via).toBe('base64')
-    expect(rpc.calls[0]).toEqual({ method: 'edrv.read', args: { sessionId: 's1', path: 'img/logo.png', encoding: 'base64' } })
+    expect(rpc.calls[0]).toEqual({ method: 'cstudio.read', args: { sessionId: 's1', path: 'img/logo.png', encoding: 'base64' } })
     // 下一次仍尝试新通道（该类失败不标记 unwired）
     fetchMock.mockClear()
     fetchMock.mockResolvedValue(binRes(new Uint8Array([7])))
@@ -138,7 +138,7 @@ describe('readBinaryPreview 未接线探测（host 有 handler 但 routes 强制
     if (second.ok) expect(second.via).toBe('base64')
     expect((second as { probed?: boolean }).probed).toBeUndefined()
     expect(rpc.calls).toHaveLength(2)
-    expect(rpc.calls.every((c) => c.method === 'edrv.read')).toBe(true)
+    expect(rpc.calls.every((c) => c.method === 'cstudio.read')).toBe(true)
   })
 
   it('JSON 错误响应（未知方法/真实错误）只回退不关停通道', async () => {

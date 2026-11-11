@@ -111,12 +111,12 @@ function makeHandlers(fs: any, records: DiffRecord[] = []) {
   return { handlers: buildHandlers(fakeCtx(fs), registry), registry }
 }
 
-describe('edrv.saveBinary', () => {
+describe('cstudio.saveBinary', () => {
   it('成功路径：解码后经 node:fs writeFile 落盘并返回 ok', async () => {
     writeFileMock.mockClear()
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
     expect(res.ok).toBe(true)
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     const call = writeFileMock.mock.calls[0]
@@ -128,7 +128,7 @@ describe('edrv.saveBinary', () => {
     writeFileMock.mockClear()
     const fs = fakeFs({ contains: false })
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('不在会话工作区内')
     expect(writeFileMock).not.toHaveBeenCalled()
@@ -139,7 +139,7 @@ describe('edrv.saveBinary', () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
     const big = Buffer.alloc(BINARY_READ_CAP + 1).toString('base64')
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: big, encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: big, encoding: 'base64' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('过大')
     expect(writeFileMock).not.toHaveBeenCalled()
@@ -149,7 +149,7 @@ describe('edrv.saveBinary', () => {
     writeFileMock.mockClear()
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: '', encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: '', encoding: 'base64' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('为空')
     expect(writeFileMock).not.toHaveBeenCalled()
@@ -159,7 +159,7 @@ describe('edrv.saveBinary', () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
     // @ts-expect-error 故意传非法 encoding 验证运行时校验
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'utf8' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'utf8' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('base64')
   })
@@ -167,7 +167,7 @@ describe('edrv.saveBinary', () => {
   it('目标不存在拒绝', async () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'missing.pdf', content: 'JVBERi0=', encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'missing.pdf', content: 'JVBERi0=', encoding: 'base64' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('文件不存在')
   })
@@ -178,7 +178,7 @@ describe('edrv.saveBinary', () => {
     const pending = rec({ callId: 'c1', path: 'doc.pdf', superseded: false })
     const other = rec({ callId: 'c2', path: 'other.ts', superseded: false })
     const { handlers, registry } = makeHandlers(fs, [pending, other])
-    const res = await handlers['edrv.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
+    const res = await handlers['cstudio.saveBinary']({ sessionId: 's1', path: 'doc.pdf', content: 'JVBERi0=', encoding: 'base64' })
     expect(res.ok).toBe(true)
     const bucket = registry.get(CWD)!
     expect(bucket.get('c1')!.superseded).toBe(false)
@@ -193,7 +193,7 @@ describe('edrv.read base64 mime', () => {
   it('pdf 返回 application/pdf', async () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.read']({ sessionId: 's1', path: 'doc.pdf', encoding: 'base64' })
+    const res = await handlers['cstudio.read']({ sessionId: 's1', path: 'doc.pdf', encoding: 'base64' })
     expect(res.ok).toBe(true)
     if (res.ok) expect(res.mime).toBe('application/pdf')
   })
@@ -202,7 +202,7 @@ describe('edrv.read base64 mime', () => {
     const fs = fakeFs()
     fs.stat = vi.fn(async (target: string) => (target === CWD + '/logo.png' ? { type: 'file', size: 4 } : undefined))
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.read']({ sessionId: 's1', path: 'logo.png', encoding: 'base64' })
+    const res = await handlers['cstudio.read']({ sessionId: 's1', path: 'logo.png', encoding: 'base64' })
     expect(res.ok).toBe(true)
     if (res.ok) expect(res.mime).toBe('image/png')
   })
@@ -212,7 +212,7 @@ describe('edrv.readBinary（二进制直读信封）', () => {
   it('pdf 返回 bytes/mime/size/version 信封', async () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.readBinary']({ sessionId: 's1', path: 'doc.pdf' })
+    const res = await handlers['cstudio.readBinary']({ sessionId: 's1', path: 'doc.pdf' })
     expect(res.ok).toBe(true)
     if (!res.ok || !('binary' in res)) throw new Error('期望成功信封')
     expect(res.binary.mime).toBe('application/pdf')
@@ -225,7 +225,7 @@ describe('edrv.readBinary（二进制直读信封）', () => {
     const fs = fakeFs()
     fs.stat = vi.fn(async (target: string) => (target === CWD + '/logo.png' ? { type: 'file', size: 4 } : undefined))
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.readBinary']({ sessionId: 's1', path: 'logo.png' })
+    const res = await handlers['cstudio.readBinary']({ sessionId: 's1', path: 'logo.png' })
     expect(res.ok).toBe(true)
     if (!res.ok || !('binary' in res)) throw new Error('期望成功信封')
     expect(res.binary.mime).toBe('image/png')
@@ -235,7 +235,7 @@ describe('edrv.readBinary（二进制直读信封）', () => {
   it('目标不存在：错误带 resolvedPath（诊断路径解析 vs 目标缺失）', async () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.readBinary']({ sessionId: 's1', path: 'missing.png' })
+    const res = await handlers['cstudio.readBinary']({ sessionId: 's1', path: 'missing.png' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('文件不存在')
     expect((res as { resolvedPath?: string }).resolvedPath).toBe(CWD + '/missing.png')
@@ -245,7 +245,7 @@ describe('edrv.readBinary（二进制直读信封）', () => {
     const fs = fakeFs()
     fs.stat = vi.fn(async (target: string) => (target === CWD + '/big.pdf' ? { type: 'file', size: BINARY_READ_CAP + 1 } : undefined))
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.readBinary']({ sessionId: 's1', path: 'big.pdf' })
+    const res = await handlers['cstudio.readBinary']({ sessionId: 's1', path: 'big.pdf' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('过大')
   })
@@ -253,7 +253,7 @@ describe('edrv.readBinary（二进制直读信封）', () => {
   it('会话不存在拒绝', async () => {
     const fs = fakeFs()
     const { handlers } = makeHandlers(fs)
-    const res = await handlers['edrv.readBinary']({ sessionId: 'missing', path: 'doc.pdf' })
+    const res = await handlers['cstudio.readBinary']({ sessionId: 'missing', path: 'doc.pdf' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('会话不存在')
   })

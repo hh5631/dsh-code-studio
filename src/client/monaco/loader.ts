@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — Monaco 加载与语言映射（AMD 构建，离线随包分发）。
+ * dsh-code-studio client — Monaco 加载与语言映射（AMD 构建，离线随包分发）。
  * 迁移自原 src/client/index.ts 的 MONACO_BASE/LANG_BY_EXT/langOf/loadMonaco，语义不改。
  * 作者 ddj 2026-08-20
  */
@@ -9,7 +9,7 @@ import { applyOfficial, registerThemes } from './theme.js'
 import { transportUrl } from '../../shared/remoteChannel.js'
 import { loadFailureText, probeStatus } from '../loadFailure.js'
 
-export const MONACO_BASE = transportUrl('/edrv/vendor/monaco/vs')
+export const MONACO_BASE = transportUrl('/cstudio/vendor/monaco/vs')
 let monacoPromise = null
 let monacoStage = { phase: 'idle', progress: 0, message: '准备加载 Monaco…' }
 const stageListeners = new Set()

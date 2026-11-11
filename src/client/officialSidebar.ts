@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 官方右侧 Sidebar 桥：探测 DSH 0.1.5-alpha.1+ 的
+ * dsh-code-studio client — 官方右侧 Sidebar 桥：探测 DSH 0.1.5-alpha.1+ 的
  * ctx.sidebarRightTabs / ctx.sidebarRight 服务，两段式注册「文件编辑」Tab
  * （类型定义进注册表，正文进 keyed slot sidebar.right.pane.tab）。
  * 可选依赖模式：服务缺失时调用方回退 better-sidebar / 中央页签；本模块不注册任何东西。
@@ -26,7 +26,7 @@ export const OFFICIAL_SERVICE = 'sidebarRight'
 /** 官方 keyed slot 名（Tab 正文挂点，由官方侧边栏的 rightbar seat 声明）。 */
 export const OFFICIAL_SLOT_NAME = 'sidebar.right.pane.tab'
 /** 本插件 Tab 类型定义 id（官方约定用包名；正文 slot 的 key 与之相同）。 */
-export const OFFICIAL_TAB_ID = 'dsh-vscode-mode'
+export const OFFICIAL_TAB_ID = 'dsh-code-studio'
 /** 本插件 Tab 的类型判别符（ctx.sidebarRight.openTab 的 kind）。 */
 export const OFFICIAL_TAB_KIND = 'edrvEditor'
 /** Tab 标题（与 better-sidebar 形态一致）。 */
@@ -36,12 +36,15 @@ export const OFFICIAL_FILE_PREFIX = 'dsh-resource://file/'
 /** file 地址认领的 patterns（extension 档接管官方 textpreview 的 fallback 认领，注销自动回落）。 */
 export const OFFICIAL_FILE_PATTERN = 'dsh-resource://file/**'
 /** file 资源类型的定义 id（正文 slot 的 key）。 */
-export const OFFICIAL_FILE_TAB_ID = 'dsh-vscode-mode/file'
+export const OFFICIAL_FILE_TAB_ID = 'dsh-code-studio/file'
 /** file 资源类型的 kind（与页类型 edrvEditor 区分：同 kind 只允许一份 extension）。 */
 export const OFFICIAL_FILE_KIND = 'edrvEditorFile'
+/** 接管原生 files 页类型，入口、快捷键与已有文件页签继续使用同一个 kind。 */
+export const WORKSPACE_FILES_TAB_ID = 'dsh-code-studio/workspace'
 
 /** 让位判定用后缀集合（模块级构建一次；小写、无前导点）。 */
 const DEFER_EXT_SET: Set<string> = new Set([...OFFICE_EXT, ...BLIND_EXT])
+const NATIVE_PREVIEW_EXT = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff'])
 
 /**
  * 该路径是否应让位官方查看器（Office 文档 + 官方不可预览的二进制容器）。
@@ -53,7 +56,7 @@ const DEFER_EXT_SET: Set<string> = new Set([...OFFICE_EXT, ...BLIND_EXT])
  * @returns 是否让位官方
  */
 export function deferToOfficial(path: unknown): boolean {
-  return suffixOf(path) !== 'xlsx' && DEFER_EXT_SET.has(suffixOf(path))
+  return DEFER_EXT_SET.has(suffixOf(path)) || NATIVE_PREVIEW_EXT.has(suffixOf(path))
 }
 
 /** 官方 Tab 打开参数（官方运行时不校验的 JSON，正文经 navigation.params 读回）。 */
@@ -285,6 +288,27 @@ function registerBodySlot(slots: SlotsLike, key: string, renderTab: unknown): ((
   }
 }
 
+/** 原生工作区入口直接显示编辑器与相邻文件树；卸载后恢复原生浏览页。 */
+export function registerWorkspaceFilesClaim(options: {
+  tabs: SidebarRightTabsLike; slots: SlotsLike; renderTab: unknown; icon?: unknown
+}): (() => void) | null {
+  let dispose: (() => void) | undefined
+  try {
+    dispose = options.tabs.register({
+      id: WORKSPACE_FILES_TAB_ID, kind: 'files', priority: 'extension', title: () => '文件',
+      guide: [{ id: 'workspace', commandId: 'workspace.files', order: 10, title: () => '工作区文件',
+        description: () => '浏览和编辑当前工作区的文件', icon: options.icon }],
+    })
+    const body = registerBodySlot(options.slots, WORKSPACE_FILES_TAB_ID, options.renderTab)
+    if (!body) { dispose(); return null }
+    return () => { body(); dispose?.() }
+  } catch (error) {
+    dispose?.()
+    log.warn('工作区文件入口注册失败（' + String(error) + '）')
+    return null
+  }
+}
+
 /**
  * 注册官方右侧 Sidebar「文件编辑」Tab 并接管打开路由（两段式 + 路由）。
  * 调用方须把返回值挂进 ctx.effect；类型注册抛错时返回 null，由调用方回退旧形态。
@@ -300,15 +324,16 @@ export function installOfficial(options: {
   guide: { title: () => string; description: () => string }
   /** Tab 标题 thunk（缺省用内置中文常量；传入后由调用方按当前语言解析）。 */
   title?: () => string
+  sessionId?: () => string | undefined
 }): (() => void) | null {
-  const { tabs, service, slots, renderTab, guide } = options
-  const titleOf = typeof options.title === 'function' ? options.title : () => OFFICIAL_TAB_TITLE
+  const { tabs, service, slots, renderTab } = options
   const open = (path: string | null, focusDiff: boolean): boolean => {
     try {
-      // 官方语义：打开即展开侧栏；seat 未挂载（无会话画面）时抛错，降级其他打开器
-      service.openTab(OFFICIAL_TAB_KIND, { params: { openPath: path || undefined, focusDiff } })
+      // 文件走原生资源地址；空请求打开原生文件区。旧 editor kind 只保留迁移入口。
+      if (path && typeof service.openResource === 'function') service.openResource(buildFileAddress(path, options.sessionId?.()))
+      else service.openTab('files')
     } catch (error) {
-      log.warn('官方侧边栏打开失败（' + String(error) + '）')
+      log.warn('原生文件区打开失败（' + String(error) + '）')
       return false
     }
     return true
@@ -320,8 +345,9 @@ export function installOfficial(options: {
       id: OFFICIAL_TAB_ID,
       kind: OFFICIAL_TAB_KIND,
       priority: 'extension',
-      title: () => titleOf(),
-      guide: [{ order: 20, title: guide.title, description: guide.description }],
+      // 仅用于迁移旧版已保存页签，不再提供独立的“文件编辑”入口。
+      title: () => '文件',
+      guide: [],
     })
   } catch (error) {
     log.warn('官方侧边栏 Tab 类型注册失败（' + String(error) + '），回退旧形态')
@@ -365,7 +391,7 @@ export function registerOfficialFileClaim(options: {
       canOpen: (address: string) => {
         const parsed = parseOfficialFileAddress(address)
         if (parsed === null) return false
-        return !deferToOfficial(parsed.path) && (suffixOf(parsed.path) === 'xlsx' || !inNativePath(parsed.path))
+        return !deferToOfficial(parsed.path) && !inNativePath(parsed.path)
       },
       title: (address: string) => officialFileTitle(address),
     })

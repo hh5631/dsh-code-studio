@@ -1,6 +1,5 @@
 /** File explorer fixed-height row model. @author ddj 2026年10月22号 */
 import type { TreeEntry } from '../../../shared/rpc.js'
-import { updateRange } from '../../ui/svnUpdateModel.js'
 
 /** Fixed geometry shared with file and loading row CSS. */
 export const TREE_ROW_HEIGHT = 24
@@ -74,8 +73,22 @@ export function flattenTree(entriesOf: (rel: string) => TreeEntry[] | null,
 }
 
 /**
+ * @private @author ddj 2026年10月22号
+ * @description Overscanned exclusive row range for the fixed row height (local to the tree model).
+ * @param count Complete row count.
+ * @param top Clamped scroll offset.
+ * @param height Measured viewport height.
+ * @returns Overscanned exclusive row range.
+ */
+function rowRange(count: number, top: number, height: number): { start: number; end: number } {
+  const start = Math.min(count, Math.max(0, Math.floor(Math.max(0, top) / TREE_ROW_HEIGHT) - 8))
+  const end = Math.min(count, Math.ceil((Math.max(0, top) + Math.max(0, height)) / TREE_ROW_HEIGHT) + 8)
+  return { start, end }
+}
+
+/**
  * @public @author ddj 2026年10月22号
- * @description Clamp scroll state before reusing the existing fixed-height range calculation.
+ * @description Clamp scroll state before computing the fixed-height row range.
  * @param count Complete row count.
  * @param viewport Latest scroll position and measured viewport height.
  * @returns Clamped scroll offset and overscanned exclusive row range.
@@ -83,7 +96,7 @@ export function flattenTree(entriesOf: (rel: string) => TreeEntry[] | null,
 export function treeWindow(count: number, viewport: TreeViewport) {
   const height = Math.max(0, viewport.height)
   const top = Math.min(Math.max(0, viewport.top), Math.max(0, count * TREE_ROW_HEIGHT - height))
-  return { top, ...updateRange(count, top, height, TREE_ROW_HEIGHT) }
+  return { top, ...rowRange(count, top, height) }
 }
 
 /**

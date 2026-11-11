@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 加载失败诊断（把「加载失败」拆成可定位的四类原因）。
+ * dsh-code-studio client — 加载失败诊断（把「加载失败」拆成可定位的四类原因）。
  *
  * 为什么需要：宿主对非 loopback/bind/trustedHosts 的 Host 一律回 403（Host 围栏），
  * 认证失效回 401，路由或资源缺失回 404，另有纯网络失败。此前 Monaco/pdf.js 的失败面板

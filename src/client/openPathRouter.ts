@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — DSH 对话文件链接的统一打开路由。
+ * dsh-code-studio client — DSH 对话文件链接的统一打开路由。
  * openPath 补丁经 compat.patchMethod 安装（链式恢复，多插件补丁互不踩踏）。
  * 作者 ddj 2026年08月24号
  */
@@ -38,12 +38,12 @@ export function installOpenPathRouter(options: OpenPathRouterOptions): () => voi
 }
 
 /**
- * 创建 VSCodeMode 内置文件打开器。
+ * 创建代码工作台内置文件打开器。
  * @author ddj 2026年08月24号
- * @returns VSCodeMode 打开器
+ * @returns 代码工作台 打开器
  */
 export function vscodeOpener(): { id: string; label: string; priority: number; open: (path: string) => void } {
-  return { id: VSCODE_OPEN_TOOL, label: 'VSCodeMode', priority: 100, open: (path) => openEditorView(path) }
+  return { id: VSCODE_OPEN_TOOL, label: '代码工作台', priority: 100, open: (path) => openEditorView(path) }
 }
 
 /**

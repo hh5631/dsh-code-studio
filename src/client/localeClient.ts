@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — UI 壳层文案的 locale 接入。
+ * dsh-code-studio client — UI 壳层文案的 locale 接入。
  * 此前 `locale` 写在 inject 里却零调用，界面文案全为硬编码中文；
  * 这里只覆盖壳层（slot label、编辑 Tab 标题、侧栏引导），编辑器内部大段文案不动。
  * 所有对外函数都对 locale 服务做可选探测：旧版 DSH 无该服务时回落中文词典。
@@ -7,7 +7,7 @@
  */
 
 /** locale 命名空间（与包名一致，避免与其他插件串词条）。 */
-export const LOCALE_NS = 'dsh-vscode-mode'
+export const LOCALE_NS = 'dsh-code-studio'
 
 /** 支持的语言；zh 为缺省回退语言。 */
 export const LOCALE_FALLBACK = 'zh'
@@ -18,7 +18,7 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
     'slot.fileEditor': '文件编辑',
     'slot.diff': '差异',
     'slot.sessionSize': '会话体积',
-    'slot.settings': 'VSCodeMode',
+    'slot.settings': '代码工作台',
     'guide.title': '文件编辑',
     'guide.description': 'Monaco 文件编辑器：对话与编辑同屏（差异审查/跳转/大纲）',
   },
@@ -26,7 +26,7 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
     'slot.fileEditor': 'File editor',
     'slot.diff': 'Diff',
     'slot.sessionSize': 'Session size',
-    'slot.settings': 'VSCodeMode',
+    'slot.settings': '代码工作台',
     'guide.title': 'File editor',
     'guide.description': 'Monaco file editor: chat and editing side by side (diff review, jump, outline)',
   },

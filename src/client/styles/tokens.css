@@ -1,0 +1,172 @@
+/* ============================================================================
+ * dsh-code-studio 设计系统 —— 令牌层（Design Tokens）
+ *
+ * 定位：在插件既有样式之上建立**一层语义化设计令牌**，把散落在 150KB CSS 里
+ * 的硬编码色值/圆角/阴影收敛为可换肤的变量。既有样式不改写语义，只把
+ * 「颜色怎么取」这件事委托给本层。
+ *
+ * 设计方向：精致现代 · 柔和玻璃质感
+ *   · 层次靠「半透明层叠 + 细微描边 + 柔和投影」建立，而非生硬分割线
+ *   · 强调色取品牌色，饱和度克制，避免与代码高亮抢戏
+ *   · 所有令牌随 DSH 明暗主题自动切换（跟随 --dsw-alias-* 官方令牌）
+ *
+ * 作用域：[data-edrv-view]（插件全部 UI 与浮层的统一根）
+ * 说明：本层**不覆盖** --dsw-* 官方令牌，只在其之上派生插件私有令牌，
+ *       因此插件始终跟随 DSH 主题与第三方皮肤（如壁纸引擎的液态玻璃）。
+ * @author dsh-code-studio 2026-11-10
+ * ========================================================================== */
+
+[data-edrv-view] {
+  /* ── 几何：圆角阶梯（柔和但不失结构感）──────────────────── */
+  --cs-radius-xs: 4px;
+  --cs-radius-sm: 6px;
+  --cs-radius-md: 9px;
+  --cs-radius-lg: 13px;
+  --cs-radius-xl: 18px;
+  --cs-radius-pill: 999px;
+
+  /* ── 间距：4px 基准 ─────────────────────────────────────── */
+  --cs-gap-xs: 3px;
+  --cs-gap-sm: 6px;
+  --cs-gap-md: 10px;
+  --cs-gap-lg: 16px;
+  --cs-gap-xl: 24px;
+
+  /* ── 字体：与 DSH 同族，代码用等宽 ───────────────────────── */
+  --cs-font-ui: var(--dsw-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
+  --cs-font-mono: var(--dsw-font-family-code, ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace);
+
+  /* ── 动效：统一缓动与时长，让界面"活"起来但不打扰 ────────── */
+  --cs-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --cs-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --cs-dur-fast: 110ms;
+  --cs-dur-base: 180ms;
+  --cs-dur-slow: 320ms;
+
+  /* ── 玻璃层：核心视觉语言 ──────────────────────────────────
+   * 三档玻璃：overlay（浮层最上）/ raised（面板）/ sunken（凹陷区）
+   * 每档 = 背景半透明 + 1px 内高光描边 + 柔和外投影
+   */
+  --cs-glass-blur: 18px;
+  --cs-glass-border: 1px solid var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.28));
+
+  /* overlay：浮层 / 弹窗 / 命令面板 —— 最通透，带强投影浮起感 */
+  --cs-glass-overlay-bg: color-mix(in srgb, var(--dsw-alias-bg-overlay, #1c1c1c) 82%, transparent);
+  --cs-glass-overlay-border: 1px solid var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.32));
+  --cs-glass-overlay-shadow:
+    0 1px 0 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 12px 40px -8px rgba(0, 0, 0, 0.45),
+    0 4px 12px -4px rgba(0, 0, 0, 0.3);
+
+  /* raised：面板 / 卡片 / 条状容器 —— 中等通透 */
+  --cs-glass-raised-bg: color-mix(in srgb, var(--dsw-alias-bg-layer-2, #f0f4f4) 55%, transparent);
+  --cs-glass-raised-border: 1px solid var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.22));
+  --cs-glass-raised-shadow:
+    0 1px 0 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 4px 16px -6px rgba(0, 0, 0, 0.28);
+
+  /* sunken：凹陷区 / 输入槽 / 代码底 —— 略实，承托内容 */
+  --cs-glass-sunken-bg: color-mix(in srgb, var(--dsw-alias-bg-base, #111) 60%, transparent);
+  --cs-glass-sunken-border: 1px solid var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.16));
+
+  /* ── 强调色：品牌主色（跟随 DSH 主题品牌色）───────────────── */
+  --cs-accent: var(--dsw-alias-brand-primary, #4f8cff);
+  --cs-accent-hover: color-mix(in srgb, var(--cs-accent) 84%, #fff);
+  --cs-accent-soft: color-mix(in srgb, var(--cs-accent) 16%, transparent);
+  --cs-accent-softer: color-mix(in srgb, var(--cs-accent) 8%, transparent);
+  --cs-accent-ring: color-mix(in srgb, var(--cs-accent) 42%, transparent);
+
+  /* ── 语义色：与官方状态色对齐，但降低饱和以适配玻璃背景 ───── */
+  --cs-success: var(--dsw-alias-state-success-primary, #2e9e44);
+  --cs-warning: var(--dsw-alias-state-warn-primary, #d97706);
+  --cs-danger: var(--dsw-alias-state-error-primary, #d9534f);
+  --cs-info: var(--dsw-alias-state-info-primary, #4d6bfe);
+  --cs-success-soft: color-mix(in srgb, var(--cs-success) 16%, transparent);
+  --cs-warning-soft: color-mix(in srgb, var(--cs-warning) 16%, transparent);
+  --cs-danger-soft: color-mix(in srgb, var(--cs-danger) 16%, transparent);
+
+  /* ── 文本层级：四级，主→辅→弱→禁用 ───────────────────────── */
+  --cs-text-primary: var(--dsw-alias-label-primary, #1f2933);
+  --cs-text-secondary: var(--dsw-alias-label-secondary, #52606d);
+  --cs-text-tertiary: var(--dsw-alias-label-tertiary, #9aa5b1);
+  --cs-text-disabled: var(--dsw-alias-label-disabled, #b8c0c8);
+  --cs-text-inverted: var(--dsw-alias-label-primary-inverted, #fff);
+
+  /* ── 交互态 ─────────────────────────────────────────────── */
+  --cs-hover: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.06));
+  --cs-active: var(--dsw-alias-interactive-bg-active, rgba(255, 255, 255, 0.1));
+  --cs-focus-ring: 0 0 0 2px var(--cs-accent-ring);
+  --cs-focus-ring-strong: 0 0 0 2px var(--cs-accent), 0 0 0 4px var(--cs-accent-ring);
+
+  /* ── 分隔线：渐隐式，比硬分割线柔和 ───────────────────────── */
+  --cs-divider: linear-gradient(
+    to right,
+    transparent,
+    var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.3)) 12%,
+    var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.3)) 88%,
+    transparent
+  );
+  --cs-divider-solid: var(--dsw-alias-border-l1, rgba(140, 150, 165, 0.28));
+
+  /* ── 层级高度：决定 z-index 秩序 ─────────────────────────── */
+  --cs-z-base: 1;
+  --cs-z-sticky: 10;
+  --cs-z-dropdown: 40;
+  --cs-z-overlay: 60;
+  --cs-z-modal: 80;
+  --cs-z-toast: 100;
+
+  /* ── 页签高度（与既有 --edrv-tab-h 协作）──────────────────── */
+  --cs-tab-h: 34px;
+  --cs-statusbar-h: 26px;
+
+  box-sizing: border-box;
+}
+
+/* ============================================================================
+ * 无障碍：尊重系统的减少动态偏好
+ * ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  [data-edrv-view] *,
+  [data-edrv-view] *::before,
+  [data-edrv-view] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+ * 滚动条：细窄、低干扰、悬停才显形（与 DSH 整体观感协调）
+ * ========================================================================== */
+[data-edrv-view] ::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+[data-edrv-view] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-edrv-view] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #9aa5b1) 32%, transparent);
+  border-radius: var(--cs-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background var(--cs-dur-base) var(--cs-ease-out);
+}
+[data-edrv-view] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #9aa5b1) 55%, transparent);
+  background-clip: padding-box;
+}
+[data-edrv-view] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ============================================================================
+ * 焦点可见性：统一焦点环，键盘可达性优先
+ * ========================================================================== */
+[data-edrv-view] :focus-visible {
+  outline: none;
+  box-shadow: var(--cs-focus-ring);
+  border-radius: var(--cs-radius-sm);
+}

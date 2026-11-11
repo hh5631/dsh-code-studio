@@ -6,7 +6,7 @@ describe('file open settings', () => {
   it('normalizes empty and whitespace values to auto', () => {
     expect(normalizeFileOpenTool(undefined)).toBe('auto')
     expect(normalizeFileOpenTool('  ')).toBe('auto')
-    expect(normalizeFileOpenTool('dsh-vscode-mode')).toBe('dsh-vscode-mode')
+    expect(normalizeFileOpenTool('dsh-code-studio')).toBe('dsh-code-studio')
   })
 
   it('installs settings section with keybindings schema when deps are available', async () => {
@@ -31,6 +31,7 @@ describe('file open settings', () => {
     expect(shapes[1].fileOpenTool).toBe('auto')
     expect(shapes[1].keybindings).toEqual({ ...KEYBINDING_DEFAULTS })
     expect(shapes[1].sidebarMinWidth).toBe(300)
+    expect(shapes[1].editorLineHeight).toBe(0)
     // 页签数量上限默认 10（0 = 不限制，见 shared/editorLimit.ts）
     expect(shapes[1].maxOpenEditors).toBe(10)
   })

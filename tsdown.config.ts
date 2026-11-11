@@ -4,7 +4,7 @@ import { basename, dirname, resolve as resolvePath } from 'node:path'
 import type { UserConfig } from 'tsdown'
 
 /**
- * dsh-vscode-mode dual-face bundle config (modeled on the dsh-web-ui family
+ * dsh-code-studio dual-face bundle config (modeled on the dsh-web-ui family
  * preset / dsh-thinking-intensity):
  * - host  : lib/index.js  node ESM; @deepseek-ai/* + cordis + schemastery stay
  *           external (resolved from the profile tree at runtime).
@@ -16,9 +16,9 @@ import type { UserConfig } from 'tsdown'
  */
 
 /** Package id stamped into the __ModuleLoader__ handoff and style tags.
- * 必须等于包的安装名（dsh-vscode-mode），否则 web shell 报
+ * 必须等于包的安装名（dsh-code-studio），否则 web shell 报
  * "loaded without registering '<entry name>' via __ModuleLoader__.load"。 */
-const ID = 'dsh-vscode-mode'
+const ID = 'dsh-code-studio'
 
 /** Browser platform modules resolved from the loader module table. */
 const CLIENT_EXTERNALS = [
@@ -159,4 +159,5 @@ function clientConfig(panel?: 'rules' | 'debug'): UserConfig {
   }
 }
 
-export default [hostConfig(), clientConfig(), clientConfig('rules'), clientConfig('debug')] satisfies UserConfig[]
+// 规则面板与调试面板已移除（2026-11-10），不再产出独立的 rules/debug chunk。
+export default [hostConfig(), clientConfig()] satisfies UserConfig[]

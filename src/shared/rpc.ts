@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode RPC contract — method names, per-method request/ok payloads,
+ * dsh-code-studio RPC contract — method names, per-method request/ok payloads,
  * and the typed handler map shared by the host dispatcher and the client
  * fetch wrapper. 载荷形状与历史实现一字不差，仅把隐式约定类型化。
  *
@@ -15,26 +15,19 @@ import type {
 import type { McpSessionStatus, MpcConfig, MpcProject, MpcProjectSaveInput, MpcServer } from './mcp.js'
 import type { CompatReport, DevFormInfo } from './compat.js'
 import type { ShellIntegrationStatus, UnityListPayload, UnityProjectEntry } from './integration.js'
-import type { RuleInfo, RuleProject, RuleRefInput, RuleSaveInput } from './rules.js'
 import type { SkillCatalog } from './skillCatalog.js'
 import type { SnippetEntry, SnippetInfo, SnippetProject, SnippetRefInput, SnippetSaveInput } from './snippets.js'
-import type { QuickMenuDoc } from './quickMenu.js'
 import type { LspCompletionItem, LspCompletionList, LspEnvInstallState, LspExtInfo, LspExtUpdate, LspHover, LspLocation, LspMarketItem, LspPosition, LspSemanticTokens, LspServerStatus, LspSignatureHelp, LspSymbol } from './lsp.js'
 import type { AiConfigPatch, AiConfigView, AiDirectoryView, AiInlineRequest, AiInlineResult } from './ai.js'
-import type { SvnAction, SvnAiPlan, SvnChangeEntry, SvnConflictArtifact, SvnDiffRevResult, SvnIgnoreItem, SvnLogEntry, SvnRemoteOutdatedEntry, SvnStatusPayload, SvnSumEntry, SvnUpdatePoll, SvnUpdateResult, SvnUpdateState } from './svn.js'
-import type { DapAction, DapAdapterInfo, DapBreakpointAck, DapBreakpointInput, DapConfigSnippet, DapConfigSource, DapDebugConfig, DapFrameView, DapPhase, DapPollResult, DapProcessInfo, DapScopeView, DapVariableView } from './dap.js'
-import { DAP_ACTIONS } from './dap.js'
 import { transportUrl } from './remoteChannel.js'
 import type { LoggerLevel } from './logger.js'
-import type { SvnViewRequest, SvnViewPayload } from './svnExplorer.js'
-import type { DecideReview, KeepAllItem, KeepAllResult, ReviewDetail, ReviewPage, ReviewRequest } from './review.js'
 import type {
   PendingDecide, PendingDetail, PendingHistoryMove, PendingImport,
   PendingItem, PendingPage, PendingRemove, PendingRequest,
 } from './pendingReview.js'
 
 /** webServer 精确路由。 */
-export const RPC_PATH = '/edrv/rpc'
+export const RPC_PATH = '/cstudio/rpc'
 
 /**
  * 图片扩展名（小写、无点）→ MIME。edrv.read base64 响应与 client 图片预览共用，
@@ -135,7 +128,7 @@ let binaryTransport: 'unknown' | 'unwired' = 'unknown'
  */
 export async function readBinaryPreview(
   rpcJson: RpcJsonCall,
-  args: RpcRequestMap['edrv.readBinary'],
+  args: RpcRequestMap['cstudio.readBinary'],
 ): Promise<PreviewRead> {
   const attempted = binaryTransport !== 'unwired'
   if (attempted) {
@@ -151,12 +144,12 @@ export async function readBinaryPreview(
  * @param args edrv.readBinary 请求参数
  * @returns 二进制读取结果或 null（null=回退 base64）
  */
-async function tryBinaryRead(args: RpcRequestMap['edrv.readBinary']): Promise<PreviewRead | null> {
+async function tryBinaryRead(args: RpcRequestMap['cstudio.readBinary']): Promise<PreviewRead | null> {
   try {
     const res = await fetch(transportUrl(RPC_PATH), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ method: 'edrv.readBinary', args }),
+      body: JSON.stringify({ method: 'cstudio.readBinary', args }),
     })
     if (!res.ok) return null
     const type = res.headers.get('content-type') ?? ''
@@ -208,12 +201,12 @@ async function noteJsonBody(res: Response): Promise<null> {
  */
 async function fallbackRead(
   rpcJson: RpcJsonCall,
-  args: RpcRequestMap['edrv.readBinary'],
+  args: RpcRequestMap['cstudio.readBinary'],
   attempted: boolean,
 ): Promise<PreviewRead> {
   const probed = attempted ? { probed: true } : {}
   try {
-    const res = await rpcJson('edrv.read', { sessionId: args.sessionId, path: args.path, encoding: 'base64' })
+    const res = await rpcJson('cstudio.read', { sessionId: args.sessionId, path: args.path, encoding: 'base64' })
     if (!res.ok) {
       const legacy = res as { ok: false; error: string; resolvedPath?: string }
       return { ok: false, error: legacy.error, ...probed, ...(legacy.resolvedPath !== undefined ? { resolvedPath: legacy.resolvedPath } : {}) }
@@ -375,49 +368,27 @@ export interface UiStatePatchInput {
 
 /** 每个方法的请求参数（sessionId 为公共可选字段）。 */
 export interface RpcRequestMap {
-  'edrv.review.list': ReviewRequest & { cursor?: number; history?: boolean; path?: string; all?: boolean }
-  'edrv.review.detail': ReviewRequest & { id: string }
-  'edrv.review.decide': DecideReview
-  'edrv.review.keepAll': ReviewRequest & { batchId: string; items: KeepAllItem[] }
-  'edrv.pending.list': PendingRequest
-  'edrv.pending.detail': PendingRequest & { id: string }
-  'edrv.pending.decide': PendingDecide
-  'edrv.pending.remove': PendingRemove
-  'edrv.pending.refresh': PendingRequest & { id: string }
-  'edrv.pending.history': PendingHistoryMove
-  'edrv.pending.import': PendingImport
-  'edrv.list': { sessionId?: string; callIds?: string[]; skipStale?: boolean }
-  'edrv.accept': { sessionId?: string; callId: string; scope?: RpcScope; hunkIndex?: number }
-  'edrv.reject': { sessionId?: string; callId: string; scope?: RpcScope; hunkIndex?: number }
-  'edrv.decideBatch': { sessionId?: string; items: DecideItem[] }
-  'edrv.textPage': import('./textPages.js').TextPageArgs
-  'edrv.missingReview': { sessionId?: string; path: string }
-  'edrv.missingDecide': { sessionId?: string; token: string; operationId: string; undo: boolean }
-  'edrv.read': { sessionId?: string; path: string; encoding?: 'base64' }
-  'edrv.readBinary': { sessionId?: string; path: string }
-  'edrv.versions': { sessionId?: string; paths: string[] }
-  'edrv.original': { sessionId?: string; path: string }
+  'cstudio.textPage': import('./textPages.js').TextPageArgs
+  'cstudio.read': { sessionId?: string; path: string; encoding?: 'base64'; maxTextBytes?: number }
+  'cstudio.readBinary': { sessionId?: string; path: string }
+  'cstudio.versions': { sessionId?: string; paths: string[] }
   'edrv.save': { sessionId?: string; path: string; content: string; rev?: string }
-  'edrv.saveBinary': { sessionId?: string; path: string; content: string; encoding: 'base64' }
-  'edrv.archiveList': { sessionId?: string }
-  'edrv.archivePage': { sessionId?: string; cursor?: string; limit?: number }
-  'edrv.archiveRead': { sessionId?: string; path?: string; batch?: number | null }
-  'edrv.rollback': { sessionId?: string; path: string; batch?: number }
-  'edrv.debug': { sessionId?: string; text: string; level?: LoggerLevel }
-  'edrv.dlog.list': { sessionId?: string }
-  'edrv.dlog.read': { sessionId?: string; file?: string; maxBytes?: number }
-  'edrv.dlog.clear': { sessionId?: string; file?: string }
-  'edrv.dlog.reveal': { sessionId?: string }
-  'edrv.searchFiles': { sessionId?: string; query: string }
-  'edrv.searchContent': { sessionId?: string; query: string; matchCase?: boolean; wholeWord?: boolean; regex?: boolean; maxResults?: number; include?: string[]; exclude?: string[]; force?: boolean }
-  'edrv.listDir': { sessionId?: string; path: string; force?: boolean }
-  'edrv.revealInExplorer': { sessionId?: string; path: string }
-  'edrv.fsCreateFile': { sessionId?: string; path: string }
-  'edrv.fsCreateDir': { sessionId?: string; path: string }
-  'edrv.fsRename': { sessionId?: string; path: string; newName: string }
-  'edrv.fsDelete': { sessionId?: string; path: string }
-  'edrv.fsCopy': { sessionId?: string; from: string; toDir: string }
-  'edrv.fsMove': { sessionId?: string; from: string; toDir: string }
+  'cstudio.saveBinary': { sessionId?: string; path: string; content: string; encoding: 'base64' }
+  'cstudio.debug': { sessionId?: string; text: string; level?: LoggerLevel }
+  'cstudio.dlog.list': { sessionId?: string }
+  'cstudio.dlog.read': { sessionId?: string; file?: string; maxBytes?: number }
+  'cstudio.dlog.clear': { sessionId?: string; file?: string }
+  'cstudio.dlog.reveal': { sessionId?: string }
+  'cstudio.searchFiles': { sessionId?: string; query: string }
+  'cstudio.searchContent': { sessionId?: string; query: string; matchCase?: boolean; wholeWord?: boolean; regex?: boolean; maxResults?: number; include?: string[]; exclude?: string[]; force?: boolean }
+  'cstudio.listDir': { sessionId?: string; path: string; force?: boolean }
+  'cstudio.revealInExplorer': { sessionId?: string; path: string }
+  'cstudio.fsCreateFile': { sessionId?: string; path: string }
+  'cstudio.fsCreateDir': { sessionId?: string; path: string }
+  'cstudio.fsRename': { sessionId?: string; path: string; newName: string }
+  'cstudio.fsDelete': { sessionId?: string; path: string }
+  'cstudio.fsCopy': { sessionId?: string; from: string; toDir: string }
+  'cstudio.fsMove': { sessionId?: string; from: string; toDir: string }
   'mcp.list': {}
   'mcp.snapshot': {}
   'mcp.sessionSnapshot': {}
@@ -434,176 +405,108 @@ export interface RpcRequestMap {
   'vscode.fileOpenSettingsGet': {}
   'vscode.settingsDocumentPath': {}
   'vscode.fileOpenSettingsUpdate': { fileOpenTool: string; integrationBaseUrl?: string; expectedRevision?: number }
-  'edrv.integration.status': {}
-  'edrv.integration.register': {}
-  'edrv.integration.unregister': {}
-  'edrv.unity.list': {}
-  'edrv.unity.add': { path: string }
-  'edrv.unity.remove': { path: string }
-  'edrv.unity.install': { path: string }
-  'edrv.externalStat': { path: string }
-  'edrv.external.handoff': { paths: string[]; line?: number; column?: number }
-  'edrv.external.pending': { clientId: string; busy?: boolean }
-  'edrv.external.ack': { token: string; clientId: string; leaseId: string; success: boolean; error?: string }
-  'edrv.external.pendingState': { token: string; take?: boolean }
+  'cstudio.integration.status': {}
+  'cstudio.integration.register': {}
+  'cstudio.integration.unregister': {}
+  'cstudio.unity.list': {}
+  'cstudio.unity.add': { path: string }
+  'cstudio.unity.remove': { path: string }
+  'cstudio.unity.install': { path: string }
+  'cstudio.externalStat': { path: string }
+  'cstudio.external.handoff': { paths: string[]; line?: number; column?: number }
+  'cstudio.external.pending': { clientId: string; busy?: boolean }
+  'cstudio.external.ack': { token: string; clientId: string; leaseId: string; success: boolean; error?: string }
+  'cstudio.external.pendingState': { token: string; take?: boolean }
   'vscode.devFormGet': {}
   'vscode.devFormSet': { enabled: boolean; path?: string }
-  'vscode.updateCheck': {}
-  'vscode.updateSelf': {}
   'compat': {}
-  'edrv.lsp.status': { sessionId?: string }
-  'edrv.lsp.detect': {}
-  'edrv.lsp.sync': { sessionId?: string; path: string; text: string; version: number }
-  'edrv.lsp.close': { sessionId?: string; path: string }
-  'edrv.lsp.definition': { sessionId?: string; path: string; position: LspPosition }
-  'edrv.lsp.references': { sessionId?: string; path: string; position: LspPosition; includeDeclaration?: boolean }
-  'edrv.lsp.documentSymbol': { sessionId?: string; path: string }
-  'edrv.lsp.workspaceSymbol': { sessionId?: string; query: string }
-  'edrv.lsp.hover': { sessionId?: string; path: string; position: LspPosition }
-  'edrv.lsp.semanticTokens': { sessionId?: string; path: string }
-  'edrv.lsp.completion': { sessionId?: string; path: string; position: LspPosition; context?: { triggerKind?: number; triggerCharacter?: string }; prefix?: string }
-  'edrv.lsp.resolveCompletion': { sessionId?: string; path: string; item: LspCompletionItem }
-  'edrv.lsp.signatureHelp': { sessionId?: string; path: string; position: LspPosition }
-  'edrv.lsp.redetect': { languageId: string }
-  'edrv.lsp.envInstall': { languageId: string; id: string }
-  'edrv.lsp.envState': {}
-  'edrv.lsp.configGet': {}
-  'edrv.lsp.configUpdate': { languageId: string; enabled?: boolean; command?: string; path?: string }
-  'edrv.lsp.ext.list': {}
-  'edrv.lsp.ext.install': { vsixPath?: string; namespace?: string; name?: string; version?: string }
-  'edrv.lsp.ext.uninstall': { id: string }
-  'edrv.lsp.ext.update': { id: string }
-  'edrv.lsp.ext.updates': {}
-  'edrv.lsp.ext.market': { query: string; size?: number }
-  'edrv.ai.inline': AiInlineRequest
-  'edrv.ai.models': { force?: boolean }
-  'edrv.ai.configGet': {}
-  'edrv.ai.configUpdate': AiConfigPatch
-  'edrv.perf.inventory': { sessionId?: string }
-  'edrv.perf.sessionSize': { sessionId?: string; cwd: string }
-  'edrv.perf.movePlan': { workspaceKey?: string; sessionIds?: string[]; minBytes?: number; olderThanDays?: number }
-  'edrv.perf.moveOut': { workspaceKey: string; sessionIds: string[]; dryRun?: boolean }
-  'edrv.perf.restore': { workspaceKey: string; sessionId: string }
-  'edrv.perf.purgeArchive': { olderThanDays: number }
-  'edrv.perf.sidecarSummary': { sessionId?: string }
-  'edrv.perf.configGet': {}
-  'edrv.perf.configApply': {}
-  'edrv.perf.configUndo': {}
-  'rules.list': {}
-  'rules.read': RuleRefInput
-  'rules.save': RuleSaveInput
-  'rules.remove': RuleRefInput
-  'rules.toggle': RuleRefInput & { enabled: boolean }
+  'cstudio.lsp.status': { sessionId?: string }
+  'cstudio.lsp.detect': {}
+  'cstudio.lsp.sync': { sessionId?: string; path: string; text: string; version: number }
+  'cstudio.lsp.close': { sessionId?: string; path: string }
+  'cstudio.lsp.definition': { sessionId?: string; path: string; position: LspPosition }
+  'cstudio.lsp.references': { sessionId?: string; path: string; position: LspPosition; includeDeclaration?: boolean }
+  'cstudio.lsp.documentSymbol': { sessionId?: string; path: string }
+  'cstudio.lsp.workspaceSymbol': { sessionId?: string; query: string }
+  'cstudio.lsp.hover': { sessionId?: string; path: string; position: LspPosition }
+  'cstudio.lsp.semanticTokens': { sessionId?: string; path: string }
+  'cstudio.lsp.completion': { sessionId?: string; path: string; position: LspPosition; context?: { triggerKind?: number; triggerCharacter?: string }; prefix?: string }
+  'cstudio.lsp.resolveCompletion': { sessionId?: string; path: string; item: LspCompletionItem }
+  'cstudio.lsp.signatureHelp': { sessionId?: string; path: string; position: LspPosition }
+  'cstudio.lsp.redetect': { languageId: string }
+  'cstudio.lsp.envInstall': { languageId: string; id: string }
+  'cstudio.lsp.envState': {}
+  'cstudio.lsp.configGet': {}
+  'cstudio.lsp.configUpdate': { languageId: string; enabled?: boolean; command?: string; path?: string }
+  'cstudio.lsp.ext.list': {}
+  'cstudio.lsp.ext.install': { vsixPath?: string; namespace?: string; name?: string; version?: string }
+  'cstudio.lsp.ext.uninstall': { id: string }
+  'cstudio.lsp.ext.update': { id: string }
+  'cstudio.lsp.ext.updates': {}
+  'cstudio.lsp.ext.market': { query: string; size?: number }
+  'cstudio.ai.inline': AiInlineRequest
+  'cstudio.ai.models': { force?: boolean }
+  'cstudio.ai.configGet': {}
+  'cstudio.ai.configUpdate': AiConfigPatch
+  'cstudio.perf.inventory': { sessionId?: string }
+  'cstudio.perf.sessionSize': { sessionId?: string; cwd: string }
+  'cstudio.perf.movePlan': { workspaceKey?: string; sessionIds?: string[]; minBytes?: number; olderThanDays?: number }
+  'cstudio.perf.moveOut': { workspaceKey: string; sessionIds: string[]; dryRun?: boolean }
+  'cstudio.perf.restore': { workspaceKey: string; sessionId: string }
+  'cstudio.perf.purgeArchive': { olderThanDays: number }
+  'cstudio.perf.sidecarSummary': { sessionId?: string }
+  'cstudio.perf.configGet': {}
+  'cstudio.perf.configApply': {}
+  'cstudio.perf.configUndo': {}
   'skills.list': { cwd?: string }
+  // ── Git 集成（替代已移除的 SVN）───────────────────────────────
+  'git.status': { cwd: string }
+  'git.diff': { cwd: string; path: string; staged: boolean }
+  'git.stage': { cwd: string; paths: string[] }
+  'git.unstage': { cwd: string; paths: string[] }
+  'git.discard': { cwd: string; paths: string[] }
+  'git.log': { cwd: string; limit?: number }
+  'git.branch': { cwd: string }
   'snippets.list': {}
   'snippets.read': SnippetRefInput
   'snippets.save': SnippetSaveInput
   'snippets.remove': SnippetRefInput
   'snippets.entries': { sessionId?: string }
-  'quickMenu.get': {}
-  'quickMenu.save': { doc: QuickMenuDoc; baseRevision: number }
-  'quickMenu.launcher': { x: number | null; y: number | null }
-  'svn.status': { sessionId?: string; force?: boolean }
-  'svn.changes': { sessionId?: string; force?: boolean }
-  'svn.explorerStatus': { sessionId?: string; force?: boolean }
-  'svn.explorerView': SvnViewRequest
-  'svn.diffBase': { sessionId?: string; path: string }
-  'svn.revert': { sessionId?: string; paths: string[]; depth?: 'empty' }
-  'svn.conflictStatus': { sessionId?: string; paths: string[] }
-  'svn.resolve': { sessionId?: string; path: string; accept: import('./svn.js').SvnResolveAccept }
-  'svn.add': { sessionId?: string; paths: string[] }
-  'svn.changelist': { sessionId?: string; paths: string[]; name?: string; remove?: boolean }
-  'svn.log': { sessionId?: string; path?: string; limit?: number; stopOnCopy?: boolean; startRev?: number; endRev?: number; showMerged?: boolean }
-  'svn.diffRev': { sessionId?: string; path: string; revision: number }
-  'svn.diffPair': { sessionId?: string; path: string; revA: number; revB: number }
-  'svn.diffWorking': { sessionId?: string; path: string; revision: number }
-  'svn.wcRev': { sessionId?: string; path?: string }
-  'svn.cleanup': { sessionId?: string; removeUnversioned?: boolean; removeIgnored?: boolean }
-  'svn.update': { sessionId?: string; path?: string }
-  'svn.updateStart': { sessionId?: string; path?: string }
-  'svn.updatePoll': { sessionId?: string; jobId: string; since: number }
-  'svn.updateCancel': { sessionId?: string; jobId: string }
-  'svn.updateActive': { sessionId?: string }
-  'svn.tortoise': { sessionId?: string; action: SvnAction; path?: string }
-  'svn.patchText': { sessionId?: string; path: string; whitespace?: 'none' | 'b' | 'w'; ignoreEol?: boolean; unified?: number }
-  'svn.diffSum': { sessionId?: string; path?: string; revA: number; revB: number }
-  'svn.remoteStatus': { sessionId?: string; path?: string }
-  'svn.conflictArtifacts': { sessionId?: string; path: string }
-  'svn.diffLocalPair': { sessionId?: string; left: string; right: string }
-  'svn.fileSizes': { sessionId?: string; paths: string[] }
   /** AI 智能整理：只读分析全部变更，产出分组/还原/忽略三段方案（不写工作副本）。 */
-  'svn.aiPlan': { sessionId?: string }
   /** AI 智能整理执行段：按目录合并写入 svn:ignore 属性（propget 合并，不整体覆盖）。 */
-  'svn.ignore': { sessionId?: string; items: SvnIgnoreItem[] }
   /** 混合通道投递口：会话 agent 深度分析后把方案 POST 回面板收件箱（免鉴权本地 RPC）。 */
-  'svn.aiPlanSubmit': { sessionId?: string; plan: unknown }
   /** 混合通道取件口：面板轮询取收件箱方案（since = 注入时刻，早于它的旧投递不算新件）。 */
-  'svn.aiPlanPending': { sessionId?: string; since?: number }
-  'edrv.dap.configs': { workspacePath: string }
-  'edrv.dap.snippets': {}
-  'edrv.dap.processes': { processName?: string }
-  'edrv.dap.start': { config: DapDebugConfig; workspacePath: string; pid?: number }
-  'edrv.dap.stop': {}
-  'edrv.dap.poll': { since: number }
-  'edrv.dap.setBreakpoints': { workspacePath: string; file: string; points: DapBreakpointInput[] }
-  'edrv.dap.stackTrace': {}
-  'edrv.dap.scopes': { frameId: number }
-  'edrv.dap.variables': { ref: number }
-  'edrv.dap.evaluate': { expression: string; frameId?: number }
-  'edrv.dap.command': { action: DapAction }
   /** 界面状态镜像读取：回填换 origin（重启换端口）后丢失的 localStorage 界面状态。 */
-  'edrv.uiState.get': { sessionId?: string }
-  /** 界面状态镜像写入：把客户端改动过的 `edrv.*` 键增量同步到 host 文件。 */
-  'edrv.uiState.set': UiStatePatchInput
+  'cstudio.uiState.get': { sessionId?: string }
+  /** 界面状态镜像写入：把客户端改动过的 `cstudio.*` 键增量同步到 host 文件。 */
+  'cstudio.uiState.set': UiStatePatchInput
 }
 
 export type RpcMethod = keyof RpcRequestMap
 
 /** 每个方法成功（ok:true）时的附加载荷。 */
 export interface RpcOkMap {
-  'edrv.review.list': { page: ReviewPage }
-  'edrv.review.detail': { detail: ReviewDetail }
-  'edrv.review.decide': { revision: number }
-  'edrv.review.keepAll': { result: KeepAllResult }
-  'edrv.pending.list': { page: PendingPage }
-  'edrv.pending.detail': { detail: PendingDetail }
-  'edrv.pending.decide': { item: PendingItem; wrote: boolean }
-  'edrv.pending.remove': { removed: boolean }
-  'edrv.pending.refresh': { item: PendingItem }
-  'edrv.pending.history': { item: PendingItem; wrote: boolean }
-  'edrv.pending.import': { imported: number; changes: number }
-  'edrv.list': { records: RecordView[] }
-  'edrv.accept': { record: RecordView }
-  'edrv.reject': { record: RecordView }
-  'edrv.decideBatch': { results: DecideResult[] }
-  'edrv.textPage': Extract<import('./textPages.js').TextPageResult, { ok: true }>
-  'edrv.missingReview': { review: import('./types.js').MissingReview | null }
-  'edrv.missingDecide': { callIds: string[] }
-  'edrv.read': { content: string; size: number; encoding?: 'base64'; mime?: string; version?: string }
-  'edrv.readBinary': { binary: BinaryReadPayload }
-  'edrv.versions': { items: FileVersionItem[] }
-  'edrv.original': { content: string; size: number; stale: StaleHunk[]; fallback: boolean }
+  'cstudio.textPage': Extract<import('./textPages.js').TextPageResult, { ok: true }>
+  'cstudio.read': { content: string; size: number; encoding?: 'base64'; mime?: string; version?: string }
+  'cstudio.readBinary': { binary: BinaryReadPayload }
+  'cstudio.versions': { items: FileVersionItem[] }
   'edrv.save': { rev?: string; conflict?: boolean }
-  'edrv.saveBinary': object
-  'edrv.archiveList': { entries: ArchiveEntry[] }
-  'edrv.archivePage': { entries: ArchiveEntry[]; nextCursor: string | null }
-  'edrv.archiveRead': { batches: ArchiveBatch[] }
-  'edrv.rollback': { path: string; batch: number | null }
-  'edrv.debug': object
-  'edrv.dlog.list': { root: string; files: DebugLogFileInfo[]; current: string | null }
-  'edrv.dlog.read': DebugLogRead
-  'edrv.dlog.clear': { name: string }
-  'edrv.dlog.reveal': { opened: boolean }
-  'edrv.searchFiles': { files: string[]; truncated: boolean }
-  'edrv.searchContent': { matches: SearchContentMatch[]; truncated: boolean; warning?: string }
-  'edrv.listDir': { root: string; path: string; entries: TreeEntry[] }
-  'edrv.revealInExplorer': { revealed: string }
-  'edrv.fsCreateFile': { path: string }
-  'edrv.fsCreateDir': { path: string }
-  'edrv.fsRename': { from: string; to: string }
-  'edrv.fsDelete': { path: string }
-  'edrv.fsCopy': { from: string; to: string }
-  'edrv.fsMove': { from: string; to: string }
+  'cstudio.saveBinary': object
+  'cstudio.debug': object
+  'cstudio.dlog.list': { root: string; files: DebugLogFileInfo[]; current: string | null }
+  'cstudio.dlog.read': DebugLogRead
+  'cstudio.dlog.clear': { name: string }
+  'cstudio.dlog.reveal': { opened: boolean }
+  'cstudio.searchFiles': { files: string[]; truncated: boolean }
+  'cstudio.searchContent': { matches: SearchContentMatch[]; truncated: boolean; warning?: string }
+  'cstudio.listDir': { root: string; path: string; entries: TreeEntry[] }
+  'cstudio.revealInExplorer': { revealed: string }
+  'cstudio.fsCreateFile': { path: string }
+  'cstudio.fsCreateDir': { path: string }
+  'cstudio.fsRename': { from: string; to: string }
+  'cstudio.fsDelete': { path: string }
+  'cstudio.fsCopy': { from: string; to: string }
+  'cstudio.fsMove': { from: string; to: string }
   'mcp.list': { servers: MpcServer[] }
   'mcp.snapshot': { servers: MpcServer[]; projects: MpcProject[] }
   'mcp.sessionSnapshot': { sessions: McpSessionStatus[]; sampledAt: number }
@@ -620,122 +523,75 @@ export interface RpcOkMap {
   'vscode.fileOpenSettingsGet': { fileOpenTool: string; integrationBaseUrl: string; revision?: number }
   'vscode.settingsDocumentPath': { path: string }
   'vscode.fileOpenSettingsUpdate': { fileOpenTool: string; integrationBaseUrl: string; revision?: number }
-  'edrv.integration.status': ShellIntegrationStatus
-  'edrv.integration.register': ShellIntegrationStatus
-  'edrv.integration.unregister': ShellIntegrationStatus
-  'edrv.unity.list': UnityListPayload
-  'edrv.unity.add': { project: UnityProjectEntry }
-  'edrv.unity.remove': object
-  'edrv.unity.install': { project: UnityProjectEntry }
-  'edrv.externalStat': { kind: 'file' | 'directory' | 'missing' }
-  'edrv.external.handoff': { clients: number; token: string }
-  'edrv.external.pending': { open: { paths: string[]; line?: number; column?: number; token: string; leaseId: string } | null }
-  'edrv.external.ack': { accepted: boolean }
-  'edrv.external.pendingState': { delivered: boolean; completed?: boolean; error?: string }
+  'cstudio.integration.status': ShellIntegrationStatus
+  'cstudio.integration.register': ShellIntegrationStatus
+  'cstudio.integration.unregister': ShellIntegrationStatus
+  'cstudio.unity.list': UnityListPayload
+  'cstudio.unity.add': { project: UnityProjectEntry }
+  'cstudio.unity.remove': object
+  'cstudio.unity.install': { project: UnityProjectEntry }
+  'cstudio.externalStat': { kind: 'file' | 'directory' | 'missing' }
+  'cstudio.external.handoff': { clients: number; token: string }
+  'cstudio.external.pending': { open: { paths: string[]; line?: number; column?: number; token: string; leaseId: string } | null }
+  'cstudio.external.ack': { accepted: boolean }
+  'cstudio.external.pendingState': { delivered: boolean; completed?: boolean; error?: string }
   'vscode.devFormGet': { devForm: DevFormInfo }
   'vscode.devFormSet': { devForm: DevFormInfo; restart: boolean }
-  'vscode.updateCheck': { ok: boolean; current?: string; latest?: string; hasUpdate?: boolean; error?: string }
-  'vscode.updateSelf': { ok: boolean; started?: boolean; error?: string }
   'compat': { report: CompatReport }
-  'edrv.lsp.status': { servers: LspServerStatus[] }
-  'edrv.lsp.detect': { servers: LspServerStatus[] }
-  'edrv.lsp.sync': object
-  'edrv.lsp.close': object
-  'edrv.lsp.definition': { locations: LspLocation[]; truncated?: boolean }
-  'edrv.lsp.references': { locations: LspLocation[]; truncated?: boolean }
-  'edrv.lsp.documentSymbol': { symbols: LspSymbol[] }
-  'edrv.lsp.workspaceSymbol': { symbols: LspSymbol[]; truncated?: boolean }
-  'edrv.lsp.hover': { hover?: LspHover }
-  'edrv.lsp.semanticTokens': { tokens?: LspSemanticTokens }
-  'edrv.lsp.completion': { completions?: LspCompletionList }
-  'edrv.lsp.resolveCompletion': { item?: LspCompletionItem }
-  'edrv.lsp.signatureHelp': { signatureHelp?: LspSignatureHelp }
-  'edrv.lsp.redetect': { servers: LspServerStatus[] }
-  'edrv.lsp.envInstall': { started: boolean }
-  'edrv.lsp.envState': { states: LspEnvInstallState[] }
-  'edrv.lsp.configGet': { config: Record<string, unknown> }
-  'edrv.lsp.configUpdate': { config: Record<string, unknown>; servers?: LspServerStatus[] }
-  'edrv.lsp.ext.list': { extensions: LspExtInfo[] }
-  'edrv.lsp.ext.install': { extension: LspExtInfo; updated?: boolean }
-  'edrv.lsp.ext.uninstall': object
-  'edrv.lsp.ext.update': { extension: LspExtInfo; updated: boolean }
-  'edrv.lsp.ext.updates': { updates: LspExtUpdate[] }
-  'edrv.lsp.ext.market': { extensions: LspMarketItem[] }
-  'edrv.ai.inline': AiInlineResult
-  'edrv.ai.models': AiDirectoryView
-  'edrv.ai.configGet': AiConfigView
-  'edrv.ai.configUpdate': AiConfigView
-  'edrv.perf.inventory': { workspaces: PerfWorkspace[]; sessions: PerfSession[]; totals: PerfTotals; activeIds: string[] }
-  'edrv.perf.sessionSize': { bytes: number; exists: boolean }
-  'edrv.perf.movePlan': { items: PerfMoveItem[]; reclaimedBytes: number }
-  'edrv.perf.moveOut': { moved: PerfMoveItem[]; failures: PerfMoveFailure[]; reclaimedBytes: number }
-  'edrv.perf.restore': { restored: boolean; error?: string }
-  'edrv.perf.purgeArchive': { removed: number; reclaimedBytes: number }
-  'edrv.perf.sidecarSummary': SidecarPerfSummary
-  'edrv.perf.configGet': { profileDir?: string; patchPath?: string; applied: boolean; block: string; backup?: string }
-  'edrv.perf.configApply': { applied: boolean; backup: string; restart: boolean }
-  'edrv.perf.configUndo': { restored: boolean; error?: string; backup?: string }
-  'rules.list': { user: RuleInfo[]; projects: RuleProject[] }
-  'rules.read': { content: string }
-  'rules.save': { rule: RuleInfo }
-  'rules.remove': object
-  'rules.toggle': { rule: RuleInfo }
+  'cstudio.lsp.status': { servers: LspServerStatus[] }
+  'cstudio.lsp.detect': { servers: LspServerStatus[] }
+  'cstudio.lsp.sync': object
+  'cstudio.lsp.close': object
+  'cstudio.lsp.definition': { locations: LspLocation[]; truncated?: boolean }
+  'cstudio.lsp.references': { locations: LspLocation[]; truncated?: boolean }
+  'cstudio.lsp.documentSymbol': { symbols: LspSymbol[] }
+  'cstudio.lsp.workspaceSymbol': { symbols: LspSymbol[]; truncated?: boolean }
+  'cstudio.lsp.hover': { hover?: LspHover }
+  'cstudio.lsp.semanticTokens': { tokens?: LspSemanticTokens }
+  'cstudio.lsp.completion': { completions?: LspCompletionList }
+  'cstudio.lsp.resolveCompletion': { item?: LspCompletionItem }
+  'cstudio.lsp.signatureHelp': { signatureHelp?: LspSignatureHelp }
+  'cstudio.lsp.redetect': { servers: LspServerStatus[] }
+  'cstudio.lsp.envInstall': { started: boolean }
+  'cstudio.lsp.envState': { states: LspEnvInstallState[] }
+  'cstudio.lsp.configGet': { config: Record<string, unknown> }
+  'cstudio.lsp.configUpdate': { config: Record<string, unknown>; servers?: LspServerStatus[] }
+  'cstudio.lsp.ext.list': { extensions: LspExtInfo[] }
+  'cstudio.lsp.ext.install': { extension: LspExtInfo; updated?: boolean }
+  'cstudio.lsp.ext.uninstall': object
+  'cstudio.lsp.ext.update': { extension: LspExtInfo; updated: boolean }
+  'cstudio.lsp.ext.updates': { updates: LspExtUpdate[] }
+  'cstudio.lsp.ext.market': { extensions: LspMarketItem[] }
+  'cstudio.ai.inline': AiInlineResult
+  'cstudio.ai.models': AiDirectoryView
+  'cstudio.ai.configGet': AiConfigView
+  'cstudio.ai.configUpdate': AiConfigView
+  'cstudio.perf.inventory': { workspaces: PerfWorkspace[]; sessions: PerfSession[]; totals: PerfTotals; activeIds: string[] }
+  'cstudio.perf.sessionSize': { bytes: number; exists: boolean }
+  'cstudio.perf.movePlan': { items: PerfMoveItem[]; reclaimedBytes: number }
+  'cstudio.perf.moveOut': { moved: PerfMoveItem[]; failures: PerfMoveFailure[]; reclaimedBytes: number }
+  'cstudio.perf.restore': { restored: boolean; error?: string }
+  'cstudio.perf.purgeArchive': { removed: number; reclaimedBytes: number }
+  'cstudio.perf.sidecarSummary': SidecarPerfSummary
+  'cstudio.perf.configGet': { profileDir?: string; patchPath?: string; applied: boolean; block: string; backup?: string }
+  'cstudio.perf.configApply': { applied: boolean; backup: string; restart: boolean }
+  'cstudio.perf.configUndo': { restored: boolean; error?: string; backup?: string }
   'skills.list': SkillCatalog
+  'git.status': { root: string; changes: Array<{ path: string; status: string; staged: boolean; from?: string }> }
+  'git.diff': { text: string }
+  'git.stage': object
+  'git.unstage': object
+  'git.discard': object
+  'git.log': { commits: Array<{ hash: string; subject: string }> }
+  'git.branch': { branch: string | null }
   'snippets.list': { user: SnippetInfo[]; projects: SnippetProject[] }
   'snippets.read': { content: string }
   'snippets.save': { file: SnippetInfo }
   'snippets.remove': object
   'snippets.entries': { entries: SnippetEntry[] }
-  'quickMenu.get': { doc: QuickMenuDoc; warning?: string }
-  'quickMenu.save': { doc: QuickMenuDoc }
-  'quickMenu.launcher': { doc: QuickMenuDoc }
-  'svn.status': SvnStatusPayload
-  'svn.changes': { wcRoot: string; entries: SvnChangeEntry[]; truncated: boolean }
-  'svn.explorerStatus': { entries: SvnChangeEntry[]; truncated: boolean; prefix: string }
-  'svn.explorerView': SvnViewPayload
-  'svn.diffBase': { base: string | null; working: string; reason?: string; error?: string; binary?: boolean; encodingHint?: boolean }
-  'svn.revert': { count: number; summary: string; output: string }
-  'svn.conflictStatus': { states: import('./svn.js').SvnConflictState[] }
-  'svn.resolve': { summary: string; output: string }
-  'svn.add': { count: number; summary: string; output: string }
-  'svn.changelist': { count: number; summary: string; output: string }
-  'svn.log': { entries: SvnLogEntry[]; truncated: boolean; target: string; limit?: number }
-  'svn.diffRev': SvnDiffRevResult
-  'svn.diffPair': SvnDiffRevResult
-  'svn.diffWorking': SvnDiffRevResult
-  'svn.wcRev': { revision: number | null }
-  'svn.cleanup': { summary: string; output: string }
-  'svn.update': SvnUpdateResult
-  'svn.updateStart': SvnUpdateState
-  'svn.updatePoll': SvnUpdatePoll
-  'svn.updateCancel': SvnUpdateState
-  'svn.updateActive': { job: SvnUpdateState | null }
-  'svn.tortoise': { launched: string }
-  'svn.patchText': { text: string; truncated: boolean; binary: boolean }
-  'svn.diffSum': { entries: SvnSumEntry[]; truncated: boolean }
-  'svn.remoteStatus': { outdated: SvnRemoteOutdatedEntry[]; againstRev: number | null; truncated: boolean }
-  'svn.conflictArtifacts': { artifacts: SvnConflictArtifact[] }
-  'svn.diffLocalPair': SvnDiffRevResult
-  'svn.fileSizes': { sizes: Array<{ path: string; size: number | null }> }
-  'svn.aiPlan': { plan: SvnAiPlan; entriesCount: number; diffIncluded: boolean; dropped: number; model?: string }
-  'svn.ignore': { count: number; summary: string; output: string }
   /** accepted = 归一后三段总路径数（0 = ok:false 拒收）；dropped = 幻觉/落选丢弃数。 */
-  'svn.aiPlanSubmit': { accepted: number; dropped: number }
-  'svn.aiPlanPending': { plan: SvnAiPlan | null; dropped: number; at: number }
-  'edrv.dap.configs': { configs: DapDebugConfig[]; adapters: DapAdapterInfo[]; source: DapConfigSource }
-  'edrv.dap.snippets': { snippets: DapConfigSnippet[] }
-  'edrv.dap.processes': { items: DapProcessInfo[] }
-  'edrv.dap.start': { phase: DapPhase }
-  'edrv.dap.stop': object
-  'edrv.dap.poll': DapPollResult
-  'edrv.dap.setBreakpoints': { breakpoints: DapBreakpointAck[] }
-  'edrv.dap.stackTrace': { frames: DapFrameView[] }
-  'edrv.dap.scopes': { scopes: DapScopeView[] }
-  'edrv.dap.variables': { variables: DapVariableView[] }
-  'edrv.dap.evaluate': { result: string; type?: string; ref: number }
-  'edrv.dap.command': object
-  'edrv.uiState.get': UiStateSnapshot
-  'edrv.uiState.set': object
+  'cstudio.uiState.get': UiStateSnapshot
+  'cstudio.uiState.set': object
 }
 
 /** 缺失文件预览的稳定拒绝码：客户端据此显示「已删除」终态，而不是把错误原文当加载失败重试。 */

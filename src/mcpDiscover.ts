@@ -33,6 +33,6 @@ export function discoverPrompt(runtime: McpRuntime, agent: any): () => void {
     if (!names.length) return ''
     return 'Project MCP capabilities (may not be started): ' + JSON.stringify(names) + '. Use discover_project_mcp action=list, then action=connect with serverName when needed. Only use returned real tool schemas. Native tools appear on the next model request; PTC must finish the current program and start a new program to refresh its SDK. Do not eval or bypass tool approval.'
   }
-  const removePrompt = prompt.section({ name: 'vscode-mode:project-mcp', order: 3090, text, interpolate: false })
+  const removePrompt = prompt.section({ name: 'code-studio:project-mcp', order: 3090, text, interpolate: false })
   return removePrompt
 }

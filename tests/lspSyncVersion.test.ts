@@ -13,7 +13,7 @@ import { createLspServer, lspDocVersion } from '../src/lsp/server.js'
 const serverMocks = vi.hoisted(() => ({ notifications: [] as Array<{ method: string; payload: any }> }))
 
 vi.mock('../src/client/rpc.js', () => ({
-  rpc: vi.fn(async (method: string) => method === 'edrv.lsp.status' ? { ok: true, servers: [] } : { ok: true }),
+  rpc: vi.fn(async (method: string) => method === 'cstudio.lsp.status' ? { ok: true, servers: [] } : { ok: true }),
   dbg: vi.fn(),
 }))
 vi.mock('../src/lsp/transport.js', () => ({
@@ -38,7 +38,7 @@ vi.mock('../src/lsp/client.js', () => ({
  */
 function syncVersions(): number[] {
   return vi.mocked(rpc).mock.calls
-    .filter(([method]) => method === 'edrv.lsp.sync')
+    .filter(([method]) => method === 'cstudio.lsp.sync')
     .map(([, payload]) => (payload as { version: number }).version)
 }
 
@@ -49,7 +49,7 @@ function syncVersions(): number[] {
  */
 function syncPayloads(): Array<{ text?: string }> {
   return vi.mocked(rpc).mock.calls
-    .filter(([method]) => method === 'edrv.lsp.sync')
+    .filter(([method]) => method === 'cstudio.lsp.sync')
     .map(([, payload]) => payload as { text?: string })
 }
 

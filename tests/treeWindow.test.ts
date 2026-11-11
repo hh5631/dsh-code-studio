@@ -4,7 +4,7 @@ import { flattenTree, treeAnchorTop, treeRevealTop, treeWindow, TREE_ROW_HEIGHT 
 import type { TreeEntry } from '../src/shared/rpc.js'
 
 const harness = vi.hoisted(() => ({ slots: [] as any[], effects: [] as any[], layout: [] as any[], passive: [] as any[],
-  cursor: 0, effectCursor: 0, entries: {} as Record<string, any[]>, frames: [] as any[], svnRows: [] as any[], observers: [] as any[] }))
+  cursor: 0, effectCursor: 0, entries: {} as Record<string, any[]>, frames: [] as any[], renderedPaths: [] as string[], observers: [] as any[] }))
 vi.mock('react', () => ({ default: {
   createElement: (type: any, props: any, ...children: any[]) => ({ type, props: props ?? {}, children: children.flat(Infinity).filter(Boolean) }),
   memo: (render: any) => render,
@@ -25,17 +25,11 @@ vi.mock('react', () => ({ default: {
 } }))
 vi.mock('../src/client/rpc.js', () => ({ rpc: vi.fn(() => new Promise(() => {})) }))
 vi.mock('../src/client/ui/icons.js', () => ({ IconFolderClose16: null, IconFolderOpen16: null, IconRefreshOutline16: null, fileIconEl: () => null }))
-vi.mock('../src/client/ui/SvnOverlay.js', () => ({ svnOverlayEl: () => null, viewOverlayOf: () => null }))
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({ Button: 'button' }))
 vi.mock('../src/client/ui/ContextMenu.js', () => ({ ContextMenu: 'menu' }))
 vi.mock('../src/client/sidebar/contextMenu.js', () => ({ buildTreeMenu: () => [{ id: 'open', label: 'open', run: vi.fn() }] }))
 vi.mock('../src/client/state/explorerCache.js', () => ({ explorerLoad: vi.fn(() => null), explorerSave: vi.fn() }))
 vi.mock('../src/client/state/explorerEntriesCache.js', () => ({ entriesCacheGet: (_scope: string, rel: string) => harness.entries[rel], entriesCacheIsFresh: () => true, entriesCachePut: vi.fn() }))
-vi.mock('../src/client/svnStatus.js', () => ({ refreshSvnChanges: vi.fn(), refreshSvnStatus: vi.fn() }))
-vi.mock('../src/client/sidebar/panels/useExplorerSvn.js', () => ({ useExplorerSvn: (_ctx: any, rows: any[]) => {
-  harness.svnRows = rows
-  return { local: new Map([['f9999.ts', { kind: 'modified' }]]), remote: new Map([['f9999.ts', 1]]) }
-} }))
 import { FileExplorer } from '../src/client/sidebar/panels/FileExplorer.js'
 import { rpc } from '../src/client/rpc.js'
 import { explorerLoad, explorerSave } from '../src/client/state/explorerCache.js'
@@ -209,12 +203,14 @@ describe('file tree viewport', () => {
     let output = render(ctx, host)
     expect(mounted(output).length).toBeLessThanOrEqual(27)
     expect(mounted(output)[0].props.path).toBe('f0.ts')
-    expect(harness.svnRows).toHaveLength(10000)
+    // 虚拟化：只应渲染可视窗口内的少量行（不因 10000 个文件而全量挂载）
+    expect(mounted(output).length).toBeLessThan(60)
     reveal('f9999.ts')
     render(ctx, host); output = render(ctx, host)
     const last = mounted(output).find((node) => node.props.path === 'f9999.ts')
     expect(last).toBeDefined()
-    expect(last.props).toMatchObject({ reveal: true, pending: 2, remote: 1, mark: { kind: 'modified' } })
+    // SVN 已移除：只断言与虚拟化/展开相关的中性属性
+    expect(last.props).toMatchObject({ reveal: true, pending: 2 })
     const committedRow = last.type(last.props)
     expect(committedRow.props['data-edrv-path']).toBe('f9999.ts')
     expect(committedRow.props.className).toContain('edrv-tree-reveal')
@@ -262,7 +258,6 @@ describe('file tree viewport', () => {
     select('dir', true)
     output = render(ctx, host); output = render(ctx, host)
     expect(host.scrollTop).toBe(2424)
-    expect(harness.svnRows.some((row) => row.path === 'dir/child.meta')).toBe(true)
     context('dir/child.meta', 'file', { clientX: 1, clientY: 2, preventDefault() {}, stopPropagation() {} })
     output = render(ctx, host)
     expect(nodes(output).some((node) => node.type === 'menu')).toBe(true)

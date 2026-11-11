@@ -95,7 +95,7 @@ describe('monaco loader（issue #3 回归）', () => {
     expect(script.src).toMatch(/\/loader\.js$/)
     script.onload?.()
     await expect(promise).resolves.toBeDefined()
-    expect(requireFn.config).toHaveBeenCalledWith({ paths: { vs: '/edrv/vendor/monaco/vs' } })
+    expect(requireFn.config).toHaveBeenCalledWith({ paths: { vs: '/cstudio/vendor/monaco/vs' } })
   })
 
   it('onerror：移除残留标签并 reject 真实原因', async () => {
@@ -116,7 +116,7 @@ describe('monaco loader（issue #3 回归）', () => {
     // 预置残留标签：上次注入失败但标签没清掉（issue #3 原症状）
     const stale: FakeScript = {
       dataset: { edrvMonacoLoader: '1' },
-      src: '/edrv/vendor/monaco/vs/loader.js',
+      src: '/cstudio/vendor/monaco/vs/loader.js',
       onload: null,
       onerror: null,
       parentNode: null,
@@ -144,7 +144,7 @@ describe('monaco loader（issue #3 回归）', () => {
     const { dom, scripts } = makeDom()
     const stale: FakeScript = {
       dataset: { edrvMonacoLoader: '1' },
-      src: '/edrv/vendor/monaco/vs/loader.js',
+      src: '/cstudio/vendor/monaco/vs/loader.js',
       onload: null,
       onerror: null,
       parentNode: null,
@@ -222,11 +222,11 @@ describe('monaco loader（issue #3 回归）', () => {
     const { loadMonaco } = await import('../src/client/monaco/loader.js')
     const promise = loadMonaco(() => {})
     const script = scripts[0]
-    expect(script.src).toBe('/remote/edrv/vendor/monaco/vs/loader.js')
+    expect(script.src).toBe('/remote/cstudio/vendor/monaco/vs/loader.js')
     script.onload?.()
     await expect(promise).resolves.toBeDefined()
     // worker/CSS 由 paths.vs 派生：前缀在这里注入一次即可覆盖全链
-    expect(requireFn.config).toHaveBeenCalledWith({ paths: { vs: '/remote/edrv/vendor/monaco/vs' } })
+    expect(requireFn.config).toHaveBeenCalledWith({ paths: { vs: '/remote/cstudio/vendor/monaco/vs' } })
   })
 
   it('onerror 时探测真实状态码：403 报宿主围栏而非「资源不完整」', async () => {

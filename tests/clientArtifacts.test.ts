@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { checkArtifacts, inspectArtifacts, verifyNativeLoader } from '../scripts/check-client-artifacts.mjs'
 
 const directories: string[] = []
-const OWNER = 'dsh-vscode-mode'
+const OWNER = 'dsh-code-studio'
 const root = `window.__ModuleLoader__.load({id:'${OWNER}',factory:(require)=>{
   const exports = { __lazyShared: {rpc(){},dbg(){},dapStore:{},BP_MODE:{},MODES:[],fieldOfMode(){},ContextMenu(){}}, __setPanelImport(){} };
   exports.__setPanelImport(require.async?.bind(require)); return exports;
@@ -25,7 +25,7 @@ async function fixture(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'edrv-artifacts-'))
   directories.push(directory)
   await Promise.all([
-    writeFile(join(directory, 'index.js'), "export const name='dsh-vscode-mode'; export const inject=[]; export function apply(){}"),
+    writeFile(join(directory, 'index.js'), "export const name='dsh-code-studio'; export const inject=[]; export function apply(){}"),
     writeFile(join(directory, 'client.js'), root),
     writeFile(join(directory, 'client.rules.js'), chunk('client.rules.js', 'RulesPanel')),
     writeFile(join(directory, 'client.debug.js'), chunk('client.debug.js', 'DebugPanel')),

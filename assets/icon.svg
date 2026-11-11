@@ -1,7 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="dsh-vscode-mode">
-  <!-- dsh-vscode-mode 插件图标：深色圆角方块 + 浅色 </> 编辑器符号（VSCode 风格） -->
-  <rect x="8" y="8" width="112" height="112" rx="24" fill="#1e1e2e"/>
-  <path d="M46 44 L30 64 L46 84" fill="none" stroke="#7ee2b8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M82 44 L98 64 L82 84" fill="none" stroke="#7ee2b8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M70 40 L58 88" fill="none" stroke="#d7dce2" stroke-width="9" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="dsh-code-studio">
+  <!-- dsh-code-studio 插件图标：玻璃质感圆角方块 + 代码括号与工作台光带 -->
+  <defs>
+    <linearGradient id="cs-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a2d45"/>
+      <stop offset="0.55" stop-color="#1e2036"/>
+      <stop offset="1" stop-color="#171926"/>
+    </linearGradient>
+    <linearGradient id="cs-edge" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.14"/>
+    </linearGradient>
+    <linearGradient id="cs-accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8ea2ff"/>
+      <stop offset="1" stop-color="#6ee7d5"/>
+    </linearGradient>
+    <filter id="cs-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- 玻璃底座 -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#cs-bg)"/>
+  <rect x="8.75" y="8.75" width="110.5" height="110.5" rx="25.25" fill="none" stroke="url(#cs-edge)" stroke-width="1.5"/>
+
+  <!-- 工作台光带（顶部高光，暗示玻璃反射） -->
+  <path d="M26 26 Q64 14 102 26" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 代码括号 -->
+  <path d="M47 43 L29 64 L47 85" fill="none" stroke="url(#cs-accent)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cs-glow)"/>
+  <path d="M81 43 L99 64 L81 85" fill="none" stroke="url(#cs-accent)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cs-glow)"/>
+
+  <!-- 光标竖线（工作台感） -->
+  <path d="M70 38 L58 90" fill="none" stroke="#e8ecf6" stroke-opacity="0.92" stroke-width="8" stroke-linecap="round"/>
 </svg>

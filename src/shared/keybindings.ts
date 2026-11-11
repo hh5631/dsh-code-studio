@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode shared — 快捷键命令目录与默认键位（双面契约）。
+ * dsh-code-studio shared — 快捷键命令目录与默认键位（双面契约）。
  * 纯数据模块：host（settings schema 默认值）与 client（执行匹配/设置页）共用。
  * 键位格式：修饰符 + 主键，`+` 连接，如 `Ctrl+Shift+F`；空串 = 未绑定；
  * `|` 连接多个候选（任一命中即触发），如 `Alt+ArrowLeft|Ctrl+Alt+-`。
@@ -39,12 +39,6 @@ export const KEYBINDING_DEFAULTS: Record<string, string> = {
   // 故取参考图里的第二候选 Ctrl+F4（Chrome/Edge 默认无行为，可安全拦截）。
   'edrv.closeTab': 'Ctrl+F4',
   // 调试（VS Code 同款键位；F5 在有调试配置或暂停态才吞键，空闲时放行浏览器刷新）
-  'edrv.debugToggleBreakpoint': 'F9',
-  'edrv.debugStartContinue': 'F5',
-  'edrv.debugStepOver': 'F10',
-  'edrv.debugStepInto': 'F11',
-  'edrv.debugStepOut': 'Shift+F11',
-  'edrv.debugStop': 'Shift+F5',
 }
 
 /**
@@ -311,30 +305,6 @@ export const SHORTCUT_PROFILES: Record<string, ShortcutProfiles> = {
     'desktop:linux': bind('F4', ['primary']),
   },
   // 调试 F 键：linux 判 modifier-required（裸 F/全 Shift），仅 desktop:macos/windows
-  'edrv.debugToggleBreakpoint': {
-    'desktop:macos': bind('F9', []),
-    'desktop:windows': bind('F9', []),
-  },
-  'edrv.debugStartContinue': {
-    'desktop:macos': bind('F5', []),
-    'desktop:windows': bind('F5', []),
-  },
-  'edrv.debugStepOver': {
-    'desktop:macos': bind('F10', []),
-    'desktop:windows': bind('F10', []),
-  },
-  'edrv.debugStepInto': {
-    'desktop:macos': bind('F11', []),
-    'desktop:windows': bind('F11', []),
-  },
-  'edrv.debugStepOut': {
-    'desktop:macos': bind('F11', ['shift']),
-    'desktop:windows': bind('F11', ['shift']),
-  },
-  'edrv.debugStop': {
-    'desktop:macos': bind('F5', ['shift']),
-    'desktop:windows': bind('F5', ['shift']),
-  },
 }
 
 //#endregion

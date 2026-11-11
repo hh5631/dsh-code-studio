@@ -10,9 +10,9 @@ afterEach(() => vi.unstubAllGlobals())
 describe('load failure diagnostics', () => {
   it('probes the real status and degrades to 0 on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 403 })))
-    await expect(probeStatus('/remote/edrv/vendor/monaco/vs/loader.js')).resolves.toBe(403)
+    await expect(probeStatus('/remote/cstudio/vendor/monaco/vs/loader.js')).resolves.toBe(403)
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch') }))
-    await expect(probeStatus('/edrv/rpc')).resolves.toBe(0)
+    await expect(probeStatus('/cstudio/rpc')).resolves.toBe(0)
   })
 
   it('separates host fence, expired auth, missing route and network failure', () => {
@@ -24,8 +24,8 @@ describe('load failure diagnostics', () => {
   })
 
   it('names the path and status without leaking the origin or query', () => {
-    const text = loadFailureText('Monaco loader 加载失败', 'https://box.example/prefix/edrv/vendor/monaco/vs/loader.js?token=secret', 403)
-    expect(text).toContain('/edrv/vendor/monaco/vs/loader.js')
+    const text = loadFailureText('Monaco loader 加载失败', 'https://box.example/prefix/cstudio/vendor/monaco/vs/loader.js?token=secret', 403)
+    expect(text).toContain('/cstudio/vendor/monaco/vs/loader.js')
     expect(text).toContain('403')
     expect(text).not.toContain('box.example')
     expect(text).not.toContain('secret')

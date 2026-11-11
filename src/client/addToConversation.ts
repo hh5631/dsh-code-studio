@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 把文件/选中内容注入会话对话输入框（composer draft）。
+ * dsh-code-studio client — 把文件/选中内容注入会话对话输入框（composer draft）。
  * 复用 DSH 官方输入门面：ctx.conversation.input.for(sessions.scope(sessionId)) → SessionInput。
  * 引用 chip：insertReference（reference source，发送时序列化为 @path 文本）；忙态降级为纯文本 setDraft。
  * 纯函数部分 node 可单测。
@@ -313,7 +313,7 @@ async function sendOwned(ctx: CtxLike, sessions: SessionBridge, id: string, text
   let started = false
   let result: TaskSendResult = { status: 'unavailable', legacyOk: false }
   try {
-    remove = ctx.effect?.(() => release, 'vscode-mode: task session reference')
+    remove = ctx.effect?.(() => release, 'code-studio: task session reference')
     const binding = await reference.ready
     if (controller.signal.aborted) result = { status: 'cancelled', legacyOk: false }
     else {

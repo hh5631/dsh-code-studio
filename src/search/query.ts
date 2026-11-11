@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode host — 搜索 query 与路径规范化。
+ * dsh-code-studio host — 搜索 query 与路径规范化。
  * 文件名支持有序子序列；带目录的查询保持连续片段，不解释为正则或 shell 语句。
  * 作者 ddj 2026年08月24号
  */

@@ -1,43 +1,22 @@
 /**
- * dsh-vscode-mode host — RPC 分发：类型化方法表替代巨型 switch。
+ * dsh-code-studio host — RPC 分发：类型化方法表替代巨型 switch。
  * 迁移自原 src/index.ts 的 handleRpc，方法名/载荷/错误文案一字不改。
  * 新功能 = shared/rpc.ts 加方法 + 这里加一个 handler，不改其他模块。
  * 作者 ddj 2026-08-20
  */
-import type { DecideItem, DecideResult, RpcHandlerMap, RpcMethod, RpcRequestMap, RpcResult, RpcScope } from './shared/rpc.js'
+import { gitBranch, gitDiff, gitDiscard, gitLog, gitStage, gitStatus, gitUnstage } from './git.js'
+import type { RpcHandlerMap, RpcMethod, RpcRequestMap, RpcResult } from './shared/rpc.js'
 import { binaryMimeOf, SESSION_MISSING_ERROR, SESSION_NO_WORKSPACE_ERROR } from './shared/rpc.js'
-import type { DiffRecord, RecordView } from './shared/types.js'
 import type { Ctx, Session } from './store.js'
-import {
-  BINARY_READ_CAP,
-  READ_CAP,
-  appendArchiveEntries,
-  archiveRecords,
-  archiveCanceled,
-  autoArchiveStale,
-  retireCovered,
-  policyOf,
-  resolveTarget,
-  resolveTargetIn,
-  saveBucket,
-} from './store.js'
+import { BINARY_READ_CAP, READ_CAP, policyOf, resolveTarget, resolveTargetIn } from './store.js'
 import { cp, mkdir, readFile, rename, rm, stat, writeFile, readdir } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
-import { archiveEntryFor, markDecision, recordResolved, reconstructOriginal } from './model.js'
-import { clearRevertState, listArchives, pageArchives, readArchives, revertState, setRevertState, startReverts } from './archiveDb.js'
-import { hasOfficial } from './reviewDb.js'
-import { log } from './log.js'
 import type { Registry, SessionScope } from './registry.js'
-import { bucketOf, cwdOfSession, resolveScope, sessionOf } from './registry.js'
-import type { SearchOrchestrator } from './search/orchestrator.js'
+import { cwdOfSession, resolveScope, sessionOf } from './registry.js'
 import { newSearcher } from './search/orchestrator.js'
-import type { ContentSearcher } from './search/content.js'
 import { newContentSearcher } from './search/content.js'
-import { restoreFile, revertCall, revertHunk, revertHunks, type Result } from './revert.js'
-import { rulesList, rulesRead, rulesRemove, rulesSave, rulesToggle } from './rules.js'
 import { listSkillCatalog } from './skillCatalog.js'
 import { isSnippetFilePath, snippetsEntries, snippetsList, snippetsRead, snippetsRemove, snippetsSave } from './snippets.js'
-import { patchLauncher, readQuickMenu, saveQuickMenu } from './quickMenu.js'
 import { runtimeOf } from './mcpRuntime.js'
 import { listMcp, refreshMcp, removeMcp, saveMcp, toggleMcp } from './mcp.js'
 import { listProjects, projectRefresh, projectRemove, projectSave, projectToggle, mcpSnapshot } from './mcpProject.js'
@@ -48,11 +27,9 @@ import { unityAdd, unityInstall, unityList, unityRemove } from './unityBridge.js
 import { ackPending, handoffOpen, pendingState, pollPending } from './externalHandoff.js'
 import { buildReport } from './compat.js'
 import { findProfileDir, readDevForm, setDevForm } from './devForm.js'
-import { checkUpdate, startSelfUpdate } from './selfUpdate.js'
 import { normalizeRel } from './tree.js'
 import { baseNameOf, checkNewName, checkRenameName, isSubPath, joinRelPath, parentRelOf } from './shared/fsNames.js'
 import { invalidateIndex, listDirCached } from './treeIndex.js'
-import { findRemoteWs, remoteDisplayOf, type RemoteWs } from './remoteWorkspace.js'
 import { revealInExplorer } from './reveal.js'
 import { dshHome, debugLogFile, pluginLogRoot, uiGlobalsFile, uiStateFile } from './paths.js'
 import { readUiState, writeUiState } from './uiState.js'
@@ -62,65 +39,15 @@ import { patchHasPerfConfig, patchInsertPerfConfig, patchRemovePerfConfig, perfC
 import type { FileVersions } from './fileVersions.js'
 import { settingsDocPath } from './settingsDocPath.js'
 import { createTextPages } from './textPages.js'
-import { reviewHandlers } from './reviewRpc.js'
-import { pendingHandlers } from './pendingRpc.js'
-import { fileAbsent, missingReview, missingDecide, missingPath, refusalCodeOf } from './missingReview.js'
-import { pendingCovers } from './pendingCompat.js'
 
 /** Process-local cursor signer; reads must stay on the Host filesystem capability. */
 const readTextPage = createTextPages()
-
-/** cwd → 上次 stale 自动清理时间：全量轮询（EditorView/DiffBadge/Dock 各自 5s）节流，避免每轮都读文件算指纹。 */
-const staleCheckedAt = new Map<string, number>()
-/** stale 自动清理最小间隔。 */
-const STALE_CHECK_MIN_MS = 10_000
-// #region debug log
-/** 诊断由 client 的 edrv.debug 激活，过期后不再产生 Host 耗时日志。 */
-const diffTraceUntil = new Map<string, { until: number; id: string }>()
-// #endregion
 /**
  * 无会话期诊断的伪 cwd：冷启动早期本插件客户端就会上报界面状态镜像事件
  * （此时 `sessions` 可能尚未就绪，`requireSession` 会失败），退回本固定值落盘
  * `logs/debug.<hashOf(该值)>.log`，保证「换 origin 后没恢复」这类问题的诊断不丢。
  */
 const UI_AUDIT_CWD = 'ui-state'
-
-/** 记录 → 客户端视图（不含 before 全文，仅长度）；远程工作区附远端展示路径（issue #7）。 */
-function recView(record: DiffRecord, ws: RemoteWs | null = null): RecordView {
-  return {
-    callId: record.callId,
-    toolName: record.toolName,
-    path: record.path,
-    beforeLen: typeof record.before === 'string' ? record.before.length : 0,
-    create: record.create === true,
-    callHunk: record.callHunk,
-    hunks: record.hunks,
-    decisions: record.decisions,
-    note: record.note ?? null,
-    superseded: record.superseded === true,
-    after: record.after ?? null,
-    baseFingerprint: record.baseFingerprint ?? null,
-    afterFingerprint: record.afterFingerprint ?? null,
-    conflict: record.conflict === true,
-    legacy: record.legacy === true,
-    at: record.at,
-    ...(ws ? { displayPath: remoteDisplayOf(record.path, ws) ?? undefined } : {}),
-  }
-}
-
-/**
- * 旧写入口守卫：本会话可见的待审累计基线接管了该路径时一律拒绝，避免两套权威同时写同一文件。
- * 只按会话可见范围判定：别的会话在管、本会话看不见的条目不能拦人，否则用户无从处理。
- * @author ddj 2026年11月3号
- * @param sc 会话与工作区
- * @param path 请求涉及的路径（可为空表示无法定位）
- * @returns 拒绝原因，未接管时为 null
- */
-function legacyBlocked(sc: { session: Session; cwd: string }, path: string | undefined): string | null {
-  if (!path) return null
-  if (!pendingCovers(sc.cwd, path, sc.session.id)) return null
-  return '该文件已由待审累计基线接管，请使用面板 Keep/Revert（edrv.review.decide）'
-}
 
 /** 会话/工作区公共前置：返回 {session,cwd} 或错误文案。 */
 async function requireSession(ctx: Ctx, sessionId: string | undefined): Promise<
@@ -131,13 +58,6 @@ async function requireSession(ctx: Ctx, sessionId: string | undefined): Promise<
   const cwd = cwdOfSession(ctx, session)
   if (!cwd) return { err: SESSION_NO_WORKSPACE_ERROR }
   return { session, cwd }
-}
-
-/** 片段文件保存时的沙箱策略：用户显式 GUI 写操作，放开到 danger-full-access（镜像 rules.fullPolicy）。 */
-function snippetPolicy(ctx: Ctx): unknown {
-  const svc = ctx.get('sandboxPolicy')
-  if (!svc || typeof svc.resolve !== 'function') return undefined
-  return svc.resolve({ mode: 'danger-full-access' })
 }
 
 /**
@@ -245,8 +165,7 @@ function isStaleVersion(error: unknown): boolean {
 }
 
 /**
- * 手动保存收尾（edrv.save / edrv.saveBinary 共用）：目录树失效 + 该路径 pending
- * 文本差异记录标记 superseded 并归档（旧文本 diff 不得再应用到新内容上）。
+ * 手动保存后让目录缓存失效，不创建或更新差异审查记录。
  * @author ddj 2026年09月22号
  * @param ctx DSH 上下文
  * @param registry 差异记录桶注册表
@@ -261,210 +180,6 @@ async function afterManualSave(
 ): Promise<void> {
   // 手动保存后目录树可能变化（新建/删除文件）：父目录+祖先进失效，后台自愈。
   invalidateIndex(ctx, sc.cwd, path)
-  // Editing disk is not a review decision. Keep all historical pending records;
-  // location checks may report conflict but must not silently accept or archive them.
-}
-
-/**
- * 批量决策核心：一次会话/桶解析 + 逐项处理 + 统一落盘（accept/reject 单条与 decideBatch 共用）。
- * rejected 项先做回滚，失败记入该项 error 且不改决策；hunk 的新文本已不在文件中
- * （被后续修改覆盖/撤销）时不算失败：不写文件，按已回滚记录决策并归档（结果项带 stale）。
- * 本批次新增"已解决"记录一次性归档，有任何成功项则整桶只写盘一次，避免逐条读写整个 sidecar。
- * @author ddj 2026年08月25号
- * @param items 决策项（按数组顺序处理，rejected 的先后即回滚顺序）
- * @returns 逐项结果（ok 项含更新后的记录视图）
- */
-async function applyDecisions(
-  ctx: Ctx,
-  session: Session,
-  cwd: string,
-  bucket: Map<string, DiffRecord>,
-  items: DecideItem[],
-): Promise<DecideResult[]> {
-  const results: DecideResult[] = []
-  const resolved: DiffRecord[] = []
-  const touched = new Map<string, DiffRecord>()
-  const ws = findRemoteWs(cwd)
-  let changed = false
-  const grouped = new Map<number, Result>()
-  // #region debug log
-  const trace = diffTraceUntil.get(cwd)
-  const traceId = trace && trace.until > Date.now() ? trace.id : null
-  const started = traceId ? performance.now() : 0
-  let revertMs = 0
-  let revertGroups = 0
-  // #endregion
-  for (let index = 0; index < items.length; index++) {
-    const item = items[index]
-    const record = bucket.get(item.callId)
-    if (!record) {
-      results.push({ callId: item.callId, ok: false, error: '记录不存在' })
-      continue
-    }
-    if (hasOfficial(cwd, record.path)) {
-      results.push({ callId: item.callId, ok: false, error: '该文件已有官方审查记录；旧工具记录禁止决策或回滚，请使用官方审查入口' })
-      continue
-    }
-    if (record.archived) {
-      results.push({ callId: item.callId, ok: false, error: '记录已归档，无法重复决策' })
-      continue
-    }
-    try {
-      if (await fileAbsent(ctx, cwd, record.path)) {
-        results.push({ callId: item.callId, ok: false, error: '文件已删除，请刷新后按整文件删除预览执行 Keep / Undo' })
-        continue
-      }
-    } catch (error) {
-      results.push({ callId: item.callId, ok: false, error: '无法确认文件状态：' + String(error) })
-      continue
-    }
-    // 重试已执行的决定只补持久化，不能再次修改磁盘上的同一个 hunk。
-    const previous = item.scope === 'hunk'
-      ? record.decisions.perHunk[item.hunkIndex ?? -1] : record.decisions.call
-    const alreadyDone = previous === item.decision
-    if (alreadyDone) {
-      if (recordResolved(record) && !record.archived) resolved.push(record)
-      changed = true
-      touched.set(record.callId, record)
-      results.push({ callId: item.callId, ok: true, record: recView(record, ws) })
-      continue
-    }
-    let revertedStale = false
-    if (item.decision === 'rejected' && !alreadyDone) {
-      const scope: RpcScope = item.scope ?? 'call'
-      const hunkIndex = scope === 'hunk' ? item.hunkIndex ?? -1 : -1
-      let existingIntent: ReturnType<typeof revertState>
-      try { existingIntent = grouped.has(index) ? null : revertState(cwd, record.callId, scope, hunkIndex) }
-      catch (error) {
-        results.push({ callId: item.callId, ok: false, error: '回滚状态读取失败，未修改文件：' + String(error) })
-        continue
-      }
-      if (existingIntent === 'started') {
-        results.push({ callId: item.callId, ok: false, error: '回滚结果不确定，请人工核对文件后处理；已阻止再次修改文件' })
-        continue
-      }
-      if (existingIntent === 'applied') {
-        markDecision(record, scope, item.hunkIndex, item.decision)
-        changed = true
-        touched.set(record.callId, record)
-        if (recordResolved(record)) resolved.push(record)
-        results.push({ callId: item.callId, ok: true, record: recView(record, ws) })
-        continue
-      }
-      if (!grouped.has(index)) {
-        let last = index + 1
-        if (scope === 'hunk' && !ws && record.toolName !== 'remote_ssh_write') {
-          while (last < items.length && items[last].callId === item.callId
-            && items[last].decision === 'rejected' && items[last].scope === 'hunk') last++
-        }
-        let groupReady = false
-        try {
-          groupReady = last > index + 1 && items.slice(index + 1, last).every((next) =>
-            revertState(cwd, record.callId, 'hunk', next.hunkIndex ?? -1) === null)
-          if (groupReady) startReverts(cwd, record.callId, items.slice(index, last).map((next) => next.hunkIndex ?? -1))
-          else setRevertState(cwd, record.callId, scope, hunkIndex, 'started')
-        } catch (error) {
-          results.push({ callId: item.callId, ok: false, error: '回滚状态无法登记，未修改文件：' + String(error) })
-          continue
-        }
-        if (groupReady) {
-          // #region debug log
-          const revertStart = traceId ? performance.now() : 0
-          // #endregion
-          const outcomes = await revertHunks(ctx, session, record, items.slice(index, last).map((next) => next.hunkIndex ?? -1), traceId ?? undefined)
-          // #region debug log
-          if (traceId) revertMs += performance.now() - revertStart
-          revertGroups++
-          // #endregion
-          outcomes.forEach((outcome, offset) => grouped.set(index + offset, outcome))
-        }
-      }
-      // #region debug log
-      const revertStart = traceId ? performance.now() : 0
-      // #endregion
-      const outcome = grouped.get(index) ?? (scope === 'hunk'
-        ? await revertHunk(ctx, session, record, item.hunkIndex ?? -1, traceId ?? undefined)
-        : await revertCall(ctx, session, record))
-      // #region debug log
-      if (traceId && !grouped.has(index)) revertMs += performance.now() - revertStart
-      // #endregion
-      grouped.delete(index)
-      try {
-        if (outcome.ok) setRevertState(cwd, record.callId, scope, hunkIndex, 'applied')
-        else if (outcome.stale === true || outcome.error === '找不到该差异块' || outcome.error === '回滚失败：文件不存在'
-          || outcome.error === '回滚失败：文件过大，无法安全定位') {
-          clearRevertState(cwd, record.callId, scope, hunkIndex)
-        }
-        // 其余失败可能发生在写盘途中：保留 started，阻止不确定状态下重复回滚。
-      } catch (error) {
-        results.push({ callId: item.callId, ok: false, error: '回滚状态保存失败，请人工核对文件：' + String(error) })
-        continue
-      }
-      if (!outcome.ok) {
-        results.push({ callId: item.callId, ok: false, error: outcome.error || '差异已偏移，未修改文件，保留待处理' })
-        continue
-      }
-    }
-    const wasResolved = recordResolved(record)
-    markDecision(record, item.scope ?? 'call', item.hunkIndex, item.decision)
-    changed = true
-    touched.set(record.callId, record)
-    if (!wasResolved && recordResolved(record)) resolved.push(record)
-    const result: DecideResult = { callId: item.callId, ok: true, record: recView(record, ws) }
-    if (revertedStale) result.stale = true
-    results.push(result)
-  }
-  // #region debug log
-  const decisionMs = traceId ? performance.now() - started : 0
-  const archiveStart = traceId ? performance.now() : 0
-  // #endregion
-  if (resolved.length) {
-    const reason = items.some((item) => item.decision === 'rejected') ? '已处理（回滚）' : '已处理'
-    try {
-      await archiveRecords(ctx, session, cwd, bucket, resolved, reason, { deferSave: true, traceId: traceId ?? undefined, changed: [...touched.values()] })
-    } catch (error) {
-      const failed = new Set(resolved.map((record) => record.callId))
-      for (const result of results) {
-        if (!failed.has(result.callId) || !result.ok) continue
-        result.ok = false
-        result.error = '归档失败：' + String(error)
-        delete result.record
-      }
-      // 决策保留于内存并尝试写回 sidecar，Undo 不再重复反替换。
-      if (changed) {
-        try { await saveBucket(ctx, cwd, bucket, session, { upserts: [...touched.values()], removed: [] }) }
-        catch (saveError) { log.error('归档失败后的 SQLite 补写失败：' + String(saveError)) }
-      }
-      return results
-    }
-  }
-  // #region debug log
-  const archiveMs = traceId ? performance.now() - archiveStart : 0
-  const saveStart = traceId ? performance.now() : 0
-  // #endregion
-  if (changed && !resolved.length) {
-    try {
-      await saveBucket(ctx, cwd, bucket, session, { upserts: [...touched.values()], removed: [] })
-    } catch (error) {
-      for (const result of results) {
-        if (!result.ok) continue
-        result.ok = false
-        result.error = '决策记录保存失败：' + String(error)
-        delete result.record
-      }
-      return results
-    }
-  }
-  // #region debug log
-  try {
-    if (traceId) {
-      const saveMs = performance.now() - saveStart
-      const totalMs = performance.now() - started
-      debugRecord(ctx, cwd, `[DEBUG diffDecision] trace=${traceId} items=${items.length} rejected=${items.filter((item) => item.decision === 'rejected').length} ok=${results.filter((result) => result.ok).length} stale=${results.filter((result) => result.stale === true).length} grouped=${revertGroups} loopMs=${decisionMs.toFixed(1)} revertMs=${revertMs.toFixed(1)} archiveMs=${archiveMs.toFixed(1)} saveMs=${saveMs.toFixed(1)} totalMs=${totalMs.toFixed(1)}`)
-    }
-  } catch { /* 诊断不可影响决策 */ }
-  // #endregion
-  return results
 }
 
 /** 当前活跃会话 id 集合（live sessions，用于移出/恢复护栏）。 */
@@ -606,78 +321,18 @@ export function buildHandlers(
   lspHandlers?: Partial<RpcHandlerMap>,
   aiHandlers?: Partial<RpcHandlerMap>,
   fileVersions?: FileVersions,
-  svnHandlers?: Partial<RpcHandlerMap>,
-  dapHandlers?: Partial<RpcHandlerMap>,
 ): RpcHandlerMap {
   return {
     // edrv.lsp.* 由 createLspRpc 一次性提供（tracker 跨请求保留），这里并入。
     ...((lspHandlers ?? {}) as RpcHandlerMap),
     // edrv.ai.* 由 createAiRpc 提供（AI 内联补全/模型目录/配置读写），这里并入。
     ...((aiHandlers ?? {}) as RpcHandlerMap),
-    // svn.* 由 createSvnRpc 提供（SVN 检测/更新/Tortoise 发射），这里并入。
-    ...((svnHandlers ?? {}) as RpcHandlerMap),
-    // edrv.dap.* 由 createDapRpc 提供（调试会话单例），这里并入。
-    ...((dapHandlers ?? {}) as RpcHandlerMap),
-    ...(reviewHandlers(ctx, registry) as RpcHandlerMap),
-    ...(pendingHandlers(ctx, registry) as RpcHandlerMap),
-    'edrv.list': async (args) => {
-      // #region debug log
-      const start = performance.now()
-      let staleMs = 0
-      let staleChecked = false
-      // #endregion
-      const sc = await resolveScope(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      // #region debug log
-      const loadMs = performance.now() - start
-      // #endregion
-      const want = Array.isArray(args.callIds) ? new Set(args.callIds) : null
-      // 全量轮询时自动清理 stale 幽灵差异（批量决策后的即时刷新可 skipStale 跳过）；
-      // 三个组件各自 5s 全量 list，stale 检查节流到 STALE_CHECK_MIN_MS 一次，
-      // 避免每轮都对全部记录读文件 + 算指纹（keepall 期间多组件同时刷新的主要 host 开销）。
-      // 跨实例冷读没有 live 会话：stale 清理要写侧车与归档，一律跳过（只读语义）。
-      if (sc.session && !want && args.skipStale !== true) {
-        const now = Date.now()
-        if (now - (staleCheckedAt.get(sc.cwd) ?? 0) > STALE_CHECK_MIN_MS) {
-          staleCheckedAt.set(sc.cwd, now)
-          // #region debug log
-          staleChecked = true
-          const staleStart = performance.now()
-          // #endregion
-          await autoArchiveStale(ctx, sc.session, sc.cwd, bucket)
-          await archiveCanceled(ctx, sc.session, sc.cwd, bucket)
-          // 已被待审累计基线接管的路径：旧记录直接结案归档，旧通道的 Keep/Undo 随之从界面消失
-          await retireCovered(ctx, sc.session, sc.cwd, bucket)
-          // #region debug log
-          staleMs = performance.now() - staleStart
-          // #endregion
-        }
-      }
-      const out: RecordView[] = []
-      const ws = findRemoteWs(sc.cwd)
-      for (const rec of bucket.values()) {
-        // 面板全量查询过滤已归档；聊天条按 callId 查询保留（状态徽章仍需正确显示）
-        if (!want && rec.archived) continue
-        if (want && !want.has(rec.callId)) continue
-        out.push(recView(rec, ws))
-      }
-      out.sort((a, b) => (a.at < b.at ? -1 : 1))
-      // #region debug log
-      try {
-        const totalMs = performance.now() - start
-        const trace = diffTraceUntil.get(sc.cwd)
-        if (trace && trace.until > Date.now() && (totalMs >= 20 || staleMs >= 10)) debugRecord(ctx, sc.cwd, `[DEBUG diffListHost] trace=${trace.id} count=${out.length} bucket=${bucket.size} checked=${staleChecked} loadMs=${loadMs.toFixed(1)} staleMs=${staleMs.toFixed(1)} totalMs=${totalMs.toFixed(1)}`)
-      } catch { /* 诊断不可影响列表 */ }
-      // #endregion
-      return { ok: true, records: out }
-    },
     /**
      * 界面状态镜像读取：回填换 origin（Web GUI 重启换端口）后丢失的 localStorage 界面状态。
      * 文件缺失/损坏 → 空表（客户端自然不动作）。
      * @author ddj 2026年09月28号
      */
-    'edrv.uiState.get': async (args) => {
+    'cstudio.uiState.get': async (args) => {
       const sc = await resolveScope(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
       const keys = await readUiState(uiStateFile(sc.cwd))
@@ -685,11 +340,11 @@ export function buildHandlers(
       return { ok: true, keys, globals }
     },
     /**
-     * 界面状态镜像写入：把客户端改动过的 `edrv.*` 键增量同步到 host 文件（空补丁不落盘）。
+     * 界面状态镜像写入：把客户端改动过的 `cstudio.*` 键增量同步到 host 文件（空补丁不落盘）。
      * 失败时写一条诊断日志（默认静默的客户端 dbg 之外的可查证据），并如实回错误由客户端逐键回退。
      * @author ddj 2026年09月28号 / 2026年09月29号
      */
-    'edrv.uiState.set': async (args) => {
+    'cstudio.uiState.set': async (args) => {
       const sc = await resolveScope(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
       const tasks: Array<Promise<{ ok: true } | { ok: false; error: string }>> = []
@@ -706,65 +361,8 @@ export function buildHandlers(
       }
       return { ok: true }
     },
-    'edrv.accept': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      const blocked = legacyBlocked(sc, bucket.get(args.callId)?.path)
-      if (blocked) return { ok: false, error: blocked }
-      const results = await applyDecisions(ctx, sc.session, sc.cwd, bucket, [{ callId: args.callId, scope: args.scope, hunkIndex: args.hunkIndex, decision: 'accepted' }])
-      const item = results[0]
-      if (!item?.ok) return { ok: false, error: item?.error ?? '操作失败' }
-      return { ok: true, record: item.record! }
-    },
-    'edrv.reject': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      const blocked = legacyBlocked(sc, bucket.get(args.callId)?.path)
-      if (blocked) return { ok: false, error: blocked }
-      const results = await applyDecisions(ctx, sc.session, sc.cwd, bucket, [{ callId: args.callId, scope: args.scope, hunkIndex: args.hunkIndex, decision: 'rejected' }])
-      const item = results[0]
-      if (!item?.ok) return { ok: false, error: item?.error ?? '操作失败' }
-      return { ok: true, record: item.record! }
-    },
-    'edrv.missingReview': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const blocked = legacyBlocked(sc, args.path)
-      if (blocked) return { ok: false, error: blocked }
-      try {
-        const bucket = await bucketOf(registry, ctx, sc.cwd)
-        if (!await fileAbsent(ctx, sc.cwd, args.path)) return { ok: true, review: null }
-        return { ok: true, review: await missingReview(ctx, sc.session, sc.cwd, bucket, args.path) }
-      } catch (error) {
-        // 可预期的拒绝带稳定错误码：客户端据此显示「已删除」终态，而不是把错误原文当加载失败重试
-        const code = refusalCodeOf(error)
-        return { ok: false, error: String(error), ...(code ? { code } : {}) }
-      }
-    },
-    'edrv.missingDecide': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const blocked = legacyBlocked(sc, missingPath(args.token))
-      if (blocked) return { ok: false, error: blocked }
-      try {
-        const bucket = await bucketOf(registry, ctx, sc.cwd)
-        return { ok: true, callIds: await missingDecide(ctx, sc.session, sc.cwd, bucket, args.token, args.operationId, args.undo === true) }
-      } catch (error) { return { ok: false, error: String(error) } }
-    },
-    'edrv.decideBatch': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      const items = Array.isArray(args.items) ? args.items : []
-      const blocked = items.map((item) => legacyBlocked(sc, bucket.get(item.callId)?.path)).find((reason) => reason !== null)
-      if (blocked) return { ok: false, error: blocked }
-      const results = await applyDecisions(ctx, sc.session, sc.cwd, bucket, items)
-      return { ok: true, results }
-    },
     /** @author ddj 2026年10月22号 @param args Read-only request. @returns Bounded official range read, or unsupported on older providers; never bypasses Host IO. */
-    'edrv.textPage': async (args) => {
+    'cstudio.textPage': async (args) => {
       const sc = await resolveScope(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err, reason: 'read-failed' }
       try {
@@ -781,7 +379,7 @@ export function buildHandlers(
         return readTextPage({ identity: JSON.stringify([sc.cwd, targetKey]), stat: statPage, readRange }, args)
       } catch (error) { return { ok: false, error: '读取失败：' + String(error), reason: 'read-failed' } }
     },
-    'edrv.read': async (args) => {
+    'cstudio.read': async (args) => {
       const settingsTarget = settingsTargetOf(ctx, args.path)
       if (settingsTarget && args.encoding !== 'base64') {
         try {
@@ -810,6 +408,9 @@ export function buildHandlers(
       if ('err' in sc) return { ok: false, error: sc.err }
       const prep = await readTargetOf(ctx, sc, args.path)
       if ('err' in prep) return targetErrOf(prep)
+      const maxText = typeof args.maxTextBytes === 'number' && Number.isFinite(args.maxTextBytes)
+        ? Math.max(512 * 1024, Math.min(READ_CAP, args.maxTextBytes)) : READ_CAP
+      if (args.encoding !== 'base64' && (prep.info.size ?? 0) > maxText) return { ok: false, code: 'file-too-large', error: '文件较大，使用分页只读预览' }
       try {
         if (args.encoding === 'base64') {
           // 图片/PDF 等二进制预览：readBytes 无解码、无二进制拒绝；超上限已由 readTargetOf 拦截
@@ -819,12 +420,14 @@ export function buildHandlers(
         }
         if ((prep.info.size ?? 0) > READ_CAP) return { ok: false, error: '文件过大（>8MB），不支持整文件预览', code: 'file-too-large' }
         const content = await prep.fs.readText(prep.target)
-        return { ok: true, content, size: content.length, version: String(prep.info.version ?? '') }
+        const size = Buffer.byteLength(content, 'utf8')
+        if (size > maxText) return { ok: false, code: 'file-too-large', error: '文件较大，使用分页只读预览' }
+        return { ok: true, content, size, version: String(prep.info.version ?? '') }
       } catch (error) {
         return { ok: false, error: '读取失败：' + String(error) }
       }
     },
-    'edrv.readBinary': async (args) => {
+    'cstudio.readBinary': async (args) => {
       // 二进制直读通道（图片/PDF 预览）：与 edrv.read base64 分支共用 readTargetOf 前置，
       // 返回 Uint8Array 信封；routes 接线后以 octet-stream + x-edrv-* 头直出，
       // 未接线时信封被 JSON 化，由 client 探测到后自动回退 base64 路径（见 shared/rpc readBinaryPreview）。
@@ -842,7 +445,7 @@ export function buildHandlers(
         return { ok: false, error: '读取失败：' + String(error) }
       }
     },
-    'edrv.versions': async (args) => {
+    'cstudio.versions': async (args) => {
       // 工作区外的 settings 文档按同一精确授权路径直接观察，其余路径保持工作区版本服务策略。
       const items = []
       const regularPaths: string[] = []
@@ -863,32 +466,6 @@ export function buildHandlers(
       if (!fileVersions) return { ok: false, error: '文件版本观察器未装配' }
       const regular = await fileVersions.versions({ ...args, paths: regularPaths })
       return { ...regular, items: [...items, ...regular.items] }
-    },
-    'edrv.original': async (args) => {
-      // 重建"本批次修改前"内容：DiffEditor 原始侧。仅反解 pending 块；
-      // 全部反解失败时回退到最早记录的整体 before（若存在）。
-      const sc = await resolveScope(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const fs = ctx.get('fs')
-      if (!fs) return { ok: false, error: '缺少 fs' }
-      try {
-        const target = await resolveTargetIn(ctx, sc.cwd, args.path)
-         debugRecord(ctx, sc.cwd, '[DEBUG path.resolve] input=' + String(args.path ?? '') + ' resolved=' + fs.processPath(target), 'debug')
-        const info = await fs.stat(target)
-        if (!info || info.type !== 'file') return { ok: false, error: '文件不存在' }
-        if ((info.size ?? 0) > READ_CAP) return { ok: false, error: '文件过大（>8MB），不支持差异重建' }
-        const content = await fs.readText(target)
-        const bucket = await bucketOf(registry, ctx, sc.cwd)
-        const records = [...bucket.values()].filter((r) => r.path === args.path && !r.archived).sort((a, b) => (a.at < b.at ? -1 : 1))
-        if (!records.length) return { ok: true, content, size: content.length, stale: [], fallback: false }
-        const rebuilt = reconstructOriginal(records, content)
-        if (rebuilt.stale.length && records[0].before !== null) {
-          return { ok: true, content: records[0].before, size: records[0].before.length, stale: rebuilt.stale, fallback: true }
-        }
-        return { ok: true, content: rebuilt.content, size: rebuilt.content.length, stale: rebuilt.stale, fallback: false }
-      } catch (error) {
-        return { ok: false, error: '重建失败：' + String(error) }
-      }
     },
     'edrv.save': async (args) => {
       const settingsTarget = settingsTargetOf(ctx, args.path)
@@ -936,7 +513,7 @@ export function buildHandlers(
         return { ok: false, error: '保存失败：' + String(error) }
       }
     },
-    'edrv.saveBinary': async (args) => {
+    'cstudio.saveBinary': async (args) => {
       if (args.encoding !== 'base64') return { ok: false, error: '仅支持 base64 编码' }
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -962,88 +539,8 @@ export function buildHandlers(
         return { ok: false, error: '二进制保存失败：' + String(error) }
       }
     },
-    'edrv.archiveList': async (args) => {
-      const sc = await resolveScope(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      try {
-        const ws = findRemoteWs(sc.cwd)
-        const entries = listArchives(sc.cwd).map((item) => ({
-          ...item, ...(ws ? { displayPath: remoteDisplayOf(item.path, ws) ?? undefined } : {}),
-        }))
-        return { ok: true, entries }
-      } catch (error) {
-        return { ok: false, error: '归档列表读取失败：' + String(error) }
-      }
-    },
-    'edrv.archivePage': async (args) => {
-      const sc = await resolveScope(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      try {
-        const ws = findRemoteWs(sc.cwd)
-        const page = pageArchives(sc.cwd, args.cursor, args.limit)
-        return { ok: true, entries: page.entries.map((item) => ({
-          ...item, ...(ws ? { displayPath: remoteDisplayOf(item.path, ws) ?? undefined } : {}),
-        })), nextCursor: page.nextCursor }
-      } catch (error) {
-        return { ok: false, error: '归档分页读取失败：' + String(error) }
-      }
-    },
-    'edrv.archiveRead': async (args) => {
-      const sc = await resolveScope(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      try {
-        if (args.batch !== undefined && (!args.path || (args.batch !== null && !Number.isInteger(args.batch)))) return { ok: false, error: '归档批次参数无效' }
-        return { ok: true, batches: readArchives(sc.cwd, args.path, args.batch) }
-      } catch (error) {
-        return { ok: false, error: '归档详情读取失败：' + String(error) }
-      }
-    },
-    'edrv.rollback': async (args) => {
-      const sc = await requireSession(ctx, args.sessionId)
-      if ('err' in sc) return { ok: false, error: sc.err }
-      const fs = ctx.get('fs')
-      if (!fs) return { ok: false, error: '缺少 fs' }
-      const batch = args.batch
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      if (hasOfficial(sc.cwd, args.path)) return { ok: false, error: '该文件已有官方审查记录，禁止使用旧版批次回滚覆盖当前文件' }
-      try {
-        let affected: DiffRecord[] = []
-        let beforeRec: DiffRecord | null = null
-        if (batch !== undefined) {
-          const all = readArchives(sc.cwd, args.path, batch)
-          const recs: DiffRecord[] = []
-          for (const b of all) if (b.batch === batch) for (const r of (b.records || [])) recs.push(r as unknown as DiffRecord)
-          if (!recs.length) return { ok: false, error: '归档中找不到该批次' }
-          recs.sort((a, b2) => (a.at < b2.at ? -1 : 1))
-          beforeRec = recs[0]
-          affected = recs
-        } else {
-          for (const r of bucket.values()) if (r.path === args.path && !r.archived) affected.push(r)
-          if (!affected.length) return { ok: false, error: '该文件没有可回滚的差异' }
-          affected.sort((a, b2) => (a.at < b2.at ? -1 : 1))
-          beforeRec = affected[0]
-        }
-        const rerr = await restoreFile(ctx, sc.session, beforeRec)
-        if (rerr) return { ok: false, error: rerr }
-        if (batch === undefined) {
-          await archiveRecords(ctx, sc.session, sc.cwd, bucket, affected, '已回滚')
-        } else {
-          const all = readArchives(sc.cwd, args.path, batch)
-          const sumRecs = all.reduce((s, b) => s + ((b.records || []).length), 0)
-          const logRec = Object.assign({}, affected[0], { note: (affected[0].note ? affected[0].note + '；' : '') + '回滚至本批次前（批次 ' + batch + '）' })
-          await appendArchiveEntries(ctx, sc.cwd, [archiveEntryFor([logRec], sc.cwd, '已回滚（批次 ' + batch + '，' + sumRecs + ' 条）')], sc.session)
-          // 批次回滚恢复的是旧内容，文件当前活跃差异已失效，一并归档
-          const activeRecs: DiffRecord[] = []
-          for (const r of bucket.values()) if (r.path === args.path && !r.archived) activeRecs.push(r)
-          if (activeRecs.length) await archiveRecords(ctx, sc.session, sc.cwd, bucket, activeRecs, '已回滚（批次回滚覆盖）')
-        }
-        return { ok: true, path: args.path, batch: batch ?? null }
-      } catch (error) {
-        return { ok: false, error: '回滚/归档失败：' + String(error) }
-      }
-    },
-    'edrv.debug': async (args) => {
-      // 诊断日志：client 上报 → debugLog 模块缓冲批量落盘 ~/.dsh/dsh-vscode-mode/logs/
+    'cstudio.debug': async (args) => {
+      // 诊断日志：client 上报 → debugLog 模块缓冲批量落盘 ~/.dsh/dsh-code-studio/logs/
       // （console 不一定落盘，文件可靠）。只出现在调试开关开启时（client dbg 默认关）。
       const text = String(args.text ?? '')
       const sc = await requireSession(ctx, args.sessionId)
@@ -1053,16 +550,10 @@ export function buildHandlers(
         debugRecord(ctx, UI_AUDIT_CWD, text, args.level)
         return { ok: true }
       }
-      // #region debug log
-      try {
-        const match = /^\[DEBUG diffAction\] stage=start trace=(\d+-\d+) /.exec(text)
-        if (match) diffTraceUntil.set(sc.cwd, { until: Date.now() + 15_000, id: match[1] })
-      } catch { /* 诊断不可影响日志路由 */ }
-      // #endregion
       debugRecord(ctx, sc.cwd, text, args.level)
       return { ok: true }
     },
-    'edrv.dlog.list': async (args) => {
+    'cstudio.dlog.list': async (args) => {
       // 诊断日志清单：日志根下全部 debug.*.log + 当前会话对应文件名（可能尚不存在）
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1070,7 +561,7 @@ export function buildHandlers(
       const current = basename(debugLogFile(sc.cwd))
       return { ok: true, root: pluginLogRoot(), files, current }
     },
-    'edrv.dlog.read': async (args) => {
+    'cstudio.dlog.read': async (args) => {
       // 尾部读取：file 缺省读当前会话那份；maxBytes 夹取 [1KB, 512KB]
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1080,7 +571,7 @@ export function buildHandlers(
       if (!read) return { ok: false, error: '日志不存在：' + name + '（开启诊断日志并触发一次操作后生成）' }
       return { ok: true, ...read }
     },
-    'edrv.dlog.clear': async (args) => {
+    'cstudio.dlog.clear': async (args) => {
       // 清空：file 缺省清当前会话那份；白名单外直接拒绝
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1089,22 +580,19 @@ export function buildHandlers(
       if (!cleared) return { ok: false, error: '清空失败：日志不存在或名字非法' }
       return { ok: true, name }
     },
-    'edrv.dlog.reveal': async () => {
+    'cstudio.dlog.reveal': async () => {
       // 打开日志根目录（OS 文件管理器；目录形态 → 直接打开）
       const revealed = await revealInExplorer(pluginLogRoot(), true)
       if (!revealed.ok) return { ok: false, error: revealed.error }
       return { ok: true, opened: true }
     },
-    'edrv.searchFiles': async (args) => {
+    'cstudio.searchFiles': async (args) => {
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
-      const bucket = await bucketOf(registry, ctx, sc.cwd)
-      const activePaths: string[] = []
-      for (const record of bucket.values()) if (record.path) activePaths.push(record.path)
-      const result = await searcher.search({ session: sc.session, cwd: sc.cwd, query: args.query, activePaths })
+      const result = await searcher.search({ session: sc.session, cwd: sc.cwd, query: args.query, activePaths: [] })
       return { ok: true, ...result }
     },
-    'edrv.searchContent': async (args) => {
+    'cstudio.searchContent': async (args) => {
       // 工作区内容搜索：rg --json 主路径；provider 失败转错误响应（无 fallback）。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1126,7 +614,7 @@ export function buildHandlers(
         return { ok: false, error: '搜索失败：' + String(error) }
       }
     },
-    'edrv.listDir': async (args) => {
+    'cstudio.listDir': async (args) => {
       // 目录树（侧边栏文件管理用）：树索引命中直出（内存，0 IO）；失效/force 时
       // 走快路径（resolve + listDirCheap + putIndex）；同路径在途请求去重复用。
       const sc = await resolveScope(ctx, args.sessionId)
@@ -1137,7 +625,7 @@ export function buildHandlers(
       if ('error' in res) return { ok: false, error: res.error }
       return { ok: true, root: res.root, path: rel, entries: res.entries }
     },
-    'edrv.revealInExplorer': async (args) => {
+    'cstudio.revealInExplorer': async (args) => {
       // 在 OS 文件浏览器中打开/定位路径（树行/编辑器右键菜单用），相对工作区解析。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1157,7 +645,7 @@ export function buildHandlers(
         return { ok: false, error: '打开失败：' + String(error) }
       }
     },
-    'edrv.fsCreateFile': async (args) => {
+    'cstudio.fsCreateFile': async (args) => {
       // 新建文件（资源管理器右键「新建文件…」）：空内容独占创建（同名拒绝），
       // 名称可含 a/b.c 嵌套段（父目录按需创建）；名称校验与客户端弹窗共用 shared/fsNames。
       const sc = await requireSession(ctx, args.sessionId)
@@ -1176,7 +664,7 @@ export function buildHandlers(
       invalidateIndex(ctx, sc.cwd, args.path)
       return { ok: true, path: args.path }
     },
-    'edrv.fsCreateDir': async (args) => {
+    'cstudio.fsCreateDir': async (args) => {
       // 新建文件夹（资源管理器右键「新建文件夹」）：名称可含嵌套段（父目录按需创建），已存在拒绝。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1194,7 +682,7 @@ export function buildHandlers(
       invalidateIndex(ctx, sc.cwd, args.path)
       return { ok: true, path: args.path }
     },
-    'edrv.fsRename': async (args) => {
+    'cstudio.fsRename': async (args) => {
       // 重命名（仅名称段、同父目录内）：目标已存在拒绝；名称未变化按幂等成功返回。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1220,7 +708,7 @@ export function buildHandlers(
       invalidateIndex(ctx, sc.cwd, toRel)
       return { ok: true, from: fromRel, to: toRel }
     },
-    'edrv.fsDelete': async (args) => {
+    'cstudio.fsDelete': async (args) => {
       // 删除（文件/文件夹递归；「删除/永久删除」共用）：根拒绝；破坏性由客户端确认框把关。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1236,7 +724,7 @@ export function buildHandlers(
       invalidateIndex(ctx, sc.cwd, rel)
       return { ok: true, path: rel }
     },
-    'edrv.fsCopy': async (args) => {
+    'cstudio.fsCopy': async (args) => {
       // 复制到目标目录（文件/文件夹递归）：同名拒绝覆盖（细节见 fsTransfer）。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1244,7 +732,7 @@ export function buildHandlers(
       if ('err' in r) return { ok: false, error: r.err }
       return { ok: true, from: r.from, to: r.to }
     },
-    'edrv.fsMove': async (args) => {
+    'cstudio.fsMove': async (args) => {
       // 移动到目标目录（文件/文件夹）：同名拒绝覆盖（细节见 fsTransfer）。
       const sc = await requireSession(ctx, args.sessionId)
       if ('err' in sc) return { ok: false, error: sc.err }
@@ -1340,50 +828,42 @@ export function buildHandlers(
         return { ok: false, error: String(error) }
       }
     },
-    'vscode.updateCheck': async () => {
-      try { return await checkUpdate(ctx) }
-      catch (error) { return { ok: false, error: String(error) } }
-    },
-    'vscode.updateSelf': async () => {
-      try { return await startSelfUpdate(ctx) }
-      catch (error) { return { ok: false, error: String(error) } }
-    },
-    'edrv.integration.status': async () => {
+    'cstudio.integration.status': async () => {
       try {
         return { ok: true, ...(await shellMenuStatus(ctx, await integrationBaseUrlOf(ctx))) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.integration.register': async () => {
+    'cstudio.integration.register': async () => {
       try {
         return { ok: true, ...(await shellMenuRegister(ctx, await integrationBaseUrlOf(ctx))) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.integration.unregister': async () => {
+    'cstudio.integration.unregister': async () => {
       try {
         return { ok: true, ...(await shellMenuRemove(ctx, await integrationBaseUrlOf(ctx))) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.unity.list': async () => {
+    'cstudio.unity.list': async () => {
       try {
         return { ok: true, ...(await unityList()) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.unity.add': async (args) => {
+    'cstudio.unity.add': async (args) => {
       try {
         return { ok: true, project: await unityAdd(args.path) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.unity.remove': async (args) => {
+    'cstudio.unity.remove': async (args) => {
       try {
         await unityRemove(args.path)
         return { ok: true }
@@ -1391,14 +871,14 @@ export function buildHandlers(
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.unity.install': async (args) => {
+    'cstudio.unity.install': async (args) => {
       try {
         return { ok: true, project: await unityInstall(args.path, undefined, { ctx, baseUrl: await integrationBaseUrlOf(ctx) }) }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.externalStat': async (args) => {
+    'cstudio.externalStat': async (args) => {
       // 深链判型（无会话依赖）：绝对路径直过 resolve；缺失/其他类型归入 missing
       const fs = ctx.get('fs')
       if (!fs) return { ok: false, error: '缺少 fs' }
@@ -1411,17 +891,17 @@ export function buildHandlers(
         return { ok: false, error: String(error) }
       }
     },
-    'edrv.external.handoff': async (args) => ({
+    'cstudio.external.handoff': async (args) => ({
       ok: true,
       ...handoffOpen({ paths: args.paths, line: args.line, column: args.column }),
     }),
-    'edrv.external.pending': async (args) => ({ ok: true, open: pollPending(args) }),
-    'edrv.external.ack': async (args) => ({ ok: true, accepted: ackPending(args) }),
-    'edrv.external.pendingState': async (args) => ({
+    'cstudio.external.pending': async (args) => ({ ok: true, open: pollPending(args) }),
+    'cstudio.external.ack': async (args) => ({ ok: true, accepted: ackPending(args) }),
+    'cstudio.external.pendingState': async (args) => ({
       ok: true,
       ...pendingState(args.token, args.take === true),
     }),
-    'edrv.perf.inventory': async () => {
+    'cstudio.perf.inventory': async () => {
       try {
         const home = dshHome()
         const inventory = await scanSessionInventory(home, sessionsArchiveRoot(home))
@@ -1433,7 +913,7 @@ export function buildHandlers(
         return { ok: false, error: '盘点失败：' + String(error) }
       }
     },
-    'edrv.perf.sessionSize': async (args) => {
+    'cstudio.perf.sessionSize': async (args) => {
       try {
         const size = await sessionSizeOf(dshHome(), args.cwd, args.sessionId ?? '')
         return { ok: true, ...size }
@@ -1441,7 +921,7 @@ export function buildHandlers(
         return { ok: false, error: '读取会话体积失败：' + String(error) }
       }
     },
-    'edrv.perf.movePlan': async (args) => {
+    'cstudio.perf.movePlan': async (args) => {
       try {
         const home = dshHome()
         const inventory = await scanSessionInventory(home, sessionsArchiveRoot(home))
@@ -1452,7 +932,7 @@ export function buildHandlers(
         return { ok: false, error: '移出规划失败：' + String(error) }
       }
     },
-    'edrv.perf.moveOut': async (args) => {
+    'cstudio.perf.moveOut': async (args) => {
       try {
         const home = dshHome()
         const items = (args.sessionIds ?? []).map((sessionId) => ({ workspaceKey: args.workspaceKey, sessionId, bytes: 0 }))
@@ -1462,7 +942,7 @@ export function buildHandlers(
         return { ok: false, error: '移出失败：' + String(error) }
       }
     },
-    'edrv.perf.restore': async (args) => {
+    'cstudio.perf.restore': async (args) => {
       try {
         const result = await restoreSession(dshHome(), sessionsArchiveRoot(dshHome()), args.workspaceKey, args.sessionId)
         if (!result.ok) return { ok: false, error: result.error ?? '恢复失败' }
@@ -1473,7 +953,7 @@ export function buildHandlers(
         return { ok: false, error: '恢复失败：' + String(error) }
       }
     },
-    'edrv.perf.purgeArchive': async (args) => {
+    'cstudio.perf.purgeArchive': async (args) => {
       try {
         const result = await purgeArchive(sessionsArchiveRoot(dshHome()), args.olderThanDays)
         return { ok: true, ...result }
@@ -1481,7 +961,7 @@ export function buildHandlers(
         return { ok: false, error: '清除失败：' + String(error) }
       }
     },
-    'edrv.perf.sidecarSummary': async (args) => {
+    'cstudio.perf.sidecarSummary': async (args) => {
       const sc = await requireSession(ctx, args.sessionId)
       const cwd = 'err' in sc ? null : sc.cwd
       try {
@@ -1491,7 +971,7 @@ export function buildHandlers(
         return { ok: false, error: '读取侧车摘要失败：' + String(error) }
       }
     },
-    'edrv.perf.configGet': async () => {
+    'cstudio.perf.configGet': async () => {
       try {
         const { profileDir, patchPath } = await patchFileInfo(ctx)
         const block = perfConfigBlock()
@@ -1503,7 +983,7 @@ export function buildHandlers(
         return { ok: false, error: '读取压缩配置失败：' + String(error) }
       }
     },
-    'edrv.perf.configApply': async () => {
+    'cstudio.perf.configApply': async () => {
       try {
         const { patchPath } = await patchFileInfo(ctx)
         if (!patchPath) return { ok: false, error: '未找到依赖本插件的 profile（检查 DSH_HOME/profiles）' }
@@ -1517,7 +997,7 @@ export function buildHandlers(
         return { ok: false, error: '写入压缩配置失败：' + String(error) }
       }
     },
-    'edrv.perf.configUndo': async () => {
+    'cstudio.perf.configUndo': async () => {
       try {
         const { patchPath } = await patchFileInfo(ctx)
         if (!patchPath) return { ok: false, error: '未找到依赖本插件的 profile（检查 DSH_HOME/profiles）' }
@@ -1539,40 +1019,57 @@ export function buildHandlers(
         return { ok: false, error: '撤销压缩配置失败：' + String(error) }
       }
     },
-    'rules.list': async () => {
+    // ── Git 集成（替代已移除的 SVN；cwd 由客户端按会话作用域传入）──────
+    'git.status': async (args) => {
       try {
-        return { ok: true, ...(await rulesList(ctx)) }
+        const result = await gitStatus(String(args?.cwd ?? ''))
+        return result.ok ? { ok: true, root: result.root, changes: result.changes } : result
       } catch (error) {
-        return { ok: false, error: '读取规则失败：' + String(error) }
+        return { ok: false, error: '读取 Git 状态失败：' + String(error) }
       }
     },
-    'rules.read': async (args) => {
+    'git.diff': async (args) => {
       try {
-        return { ok: true, content: await rulesRead(ctx, args) }
+        const result = await gitDiff(String(args?.cwd ?? ''), String(args?.path ?? ''), args?.staged === true)
+        return result.ok ? { ok: true, text: result.text } : result
       } catch (error) {
-        return { ok: false, error: '读取规则失败：' + String(error) }
+        return { ok: false, error: '读取差异失败：' + String(error) }
       }
     },
-    'rules.save': async (args) => {
+    'git.stage': async (args) => {
       try {
-        return { ok: true, rule: await rulesSave(ctx, args) }
+        return await gitStage(String(args?.cwd ?? ''), (args?.paths ?? []).map(String))
       } catch (error) {
-        return { ok: false, error: '保存规则失败：' + String(error) }
+        return { ok: false, error: '暂存失败：' + String(error) }
       }
     },
-    'rules.remove': async (args) => {
+    'git.unstage': async (args) => {
       try {
-        await rulesRemove(ctx, args)
-        return { ok: true }
+        return await gitUnstage(String(args?.cwd ?? ''), (args?.paths ?? []).map(String))
       } catch (error) {
-        return { ok: false, error: '删除规则失败：' + String(error) }
+        return { ok: false, error: '取消暂存失败：' + String(error) }
       }
     },
-    'rules.toggle': async (args) => {
+    'git.discard': async (args) => {
       try {
-        return { ok: true, rule: await rulesToggle(ctx, args, args.enabled === true) }
+        return await gitDiscard(String(args?.cwd ?? ''), (args?.paths ?? []).map(String))
       } catch (error) {
-        return { ok: false, error: '切换规则失败：' + String(error) }
+        return { ok: false, error: '丢弃改动失败：' + String(error) }
+      }
+    },
+    'git.log': async (args) => {
+      try {
+        const result = await gitLog(String(args?.cwd ?? ''), args?.limit ?? 30)
+        return result.ok ? { ok: true, commits: result.commits } : result
+      } catch (error) {
+        return { ok: false, error: '读取提交历史失败：' + String(error) }
+      }
+    },
+    'git.branch': async (args) => {
+      try {
+        return { ok: true, branch: await gitBranch(String(args?.cwd ?? '')) }
+      } catch (error) {
+        return { ok: false, error: '读取分支失败：' + String(error) }
       }
     },
     'skills.list': async (args) => {
@@ -1622,33 +1119,6 @@ export function buildHandlers(
         return { ok: false, error: '读取代码片段条目失败：' + String(error) }
       }
     },
-    'quickMenu.get': async () => {
-      try {
-        const state = await readQuickMenu()
-        return { ok: true, doc: state.doc, warning: state.warning }
-      } catch (error) {
-        return { ok: false, error: '读取快捷菜单失败：' + String(error) }
-      }
-    },
-    'quickMenu.save': async (args) => {
-      try {
-        const result = await saveQuickMenu(args.doc, args.baseRevision)
-        // 冲突时只回错误文案：客户端收到后重拉最新文档，避免用旧版本覆盖别人的写入
-        if (!result.ok) return { ok: false, error: result.error }
-        return { ok: true, doc: result.doc }
-      } catch (error) {
-        return { ok: false, error: '保存快捷菜单失败：' + String(error) }
-      }
-    },
-    'quickMenu.launcher': async (args) => {
-      try {
-        const result = await patchLauncher({ x: args.x, y: args.y })
-        if (!result.ok) return { ok: false, error: result.error }
-        return { ok: true, doc: result.doc }
-      } catch (error) {
-        return { ok: false, error: '保存悬浮按钮位置失败：' + String(error) }
-      }
-    },
   }
 }
 
@@ -1666,10 +1136,8 @@ export async function handleRpc<M extends RpcMethod>(
   lspHandlers?: Partial<RpcHandlerMap>,
   aiHandlers?: Partial<RpcHandlerMap>,
   fileVersions?: FileVersions,
-  svnHandlers?: Partial<RpcHandlerMap>,
-  dapHandlers?: Partial<RpcHandlerMap>,
 ): Promise<RpcResult<M>> {
-  const handlers = buildHandlers(ctx, registry, searcher, contentSearcher, lspHandlers, aiHandlers, fileVersions, svnHandlers, dapHandlers)
+  const handlers = buildHandlers(ctx, registry, searcher, contentSearcher, lspHandlers, aiHandlers, fileVersions)
   const handler = Object.hasOwn(handlers, method) ? handlers[method] : undefined
   if (typeof handler !== 'function') return { ok: false, error: '未知方法: ' + String(method) } as RpcResult<M>
   return handler(args)

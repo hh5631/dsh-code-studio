@@ -10,8 +10,8 @@ import { VENDOR_PREFIX, imageDirOf, vendorDirOf } from './paths.js'
 import { admitRoute, readRpc, replyJson } from './httpGuard.js'
 
 const IMG_ROUTES = [
-  { url: '/edrv/assets/compare-idle.png', file: 'compare_idle.png' },
-  { url: '/edrv/assets/compare-select.png', file: 'compare_select.png' },
+  { url: '/cstudio/assets/compare-idle.png', file: 'compare_idle.png' },
+  { url: '/cstudio/assets/compare-select.png', file: 'compare_select.png' },
 ]
 const VENDOR_MIME: Record<string, string> = {
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',

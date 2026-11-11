@@ -1,23 +1,32 @@
 /**
- * dsh-vscode-mode client — 兼容层：设置桥选择 / slot 安全注册 / openPath 链式补丁 / 外部插件常量。
+ * dsh-code-studio client — 兼容层：设置桥选择 / slot 安全注册 / openPath 链式补丁 / 外部插件常量。
  * 纯逻辑与薄 ctx 胶水，node 环境可单测（不依赖 DOM）。
  * 作者 ddj 2026年08月24号
  */
 import { log } from './log.js'
 
 /** 本插件包名（与 host compat.PLUGIN_NAME 对应）。 */
-export const PLUGIN_NAME = 'dsh-vscode-mode'
+export const PLUGIN_NAME = 'dsh-code-studio'
 /** 外部侧栏插件名（dsh-web-ui-all 家族的文件打开能力提供方）。 */
 export const SIDEBAR_PLUGIN = 'dsh-better-sidebar'
 
 /** 设置值的已知业务字段（各设置桥透传的 namespace 内容）。 */
 export interface SettingsValueLike {
+  editorFontFamily?: unknown
+  editorFontSize?: unknown
+  editorLineHeight?: unknown
+  uiFontFamily?: unknown
+  uiFontSize?: unknown
   fileOpenTool?: unknown
   keybindings?: Record<string, string>
   sidebarMinWidth?: unknown
   maxOpenEditors?: unknown
   /** 原生打开范围（逗号分隔后缀；0.1.7 批次新增，旧版 undefined → 默认集）。 */
   nativeOpenExts?: unknown
+  /** 外观皮肤（glass / classic）。 */
+  appearanceSkin?: unknown
+  /** 界面密度（comfortable / compact）。 */
+  appearanceDensity?: unknown
 }
 
 /** 设置 scope 的跨组件上下文形状（与设置桥绑定的最小面：settingsScope / configForms 适配后同形）。 */

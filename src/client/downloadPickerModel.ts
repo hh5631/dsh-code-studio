@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 「下载到本机」弹窗的目录树与勾选模型（纯逻辑）。
+ * dsh-code-studio client — 「下载到本机」弹窗的目录树与勾选模型（纯逻辑）。
  *
  * 与 React 解耦：组件只读 rowList 渲染、只调这里的函数改状态，因此本文件可在
  * node 环境单测（vitest 无可视 DOM）。状态全部不可变返回，便于 React 直接替换。

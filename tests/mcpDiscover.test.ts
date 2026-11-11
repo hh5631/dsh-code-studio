@@ -21,7 +21,7 @@ describe('scoped project discovery', () => {
     const host = fixture()
     expect(await host.tool.execute({ action: 'list' }, { agent: host.agent })).toEqual([{ serverName: 'code', phase: 'idle' }])
     expect(host.runtime.connect).not.toHaveBeenCalled()
-    const text = host.sections.get('vscode-mode:project-mcp').text()
+    const text = host.sections.get('code-studio:project-mcp').text()
     expect(text).toContain('PTC must finish the current program')
     expect(text).not.toContain('command')
     host.remove()

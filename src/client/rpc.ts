@@ -1,10 +1,9 @@
 /**
- * dsh-vscode-mode client — 类型化 RPC 包装 + 诊断日志。
+ * dsh-code-studio client — 类型化 RPC 包装 + 诊断日志。
  * 迁移自原 src/client/index.ts 的 rpc/dbg，语义不改。
  * 诊断开关运行时化：内存缓存 + localStorage 持久（日志弹窗开关即改即生效，免刷新）。
  * 作者 ddj 2026-08-20 / 2026-09-17
  */
-import { svnNotice } from './svnNotice.js'
 import { channelPrefix, transportUrl } from '../shared/remoteChannel.js'
 import { RPC_PATH } from '../shared/rpc.js'
 import type { RpcMethod, RpcRequestMap, RpcResult } from '../shared/rpc.js'
@@ -48,9 +47,8 @@ export function setDebugEnabled(on: boolean): void {
 export async function rpc<M extends RpcMethod>(method: M, args: RpcRequestMap[M], signal?: AbortSignal): Promise<RpcResult<M>> {
   try {
     const out = await rpcFetch(method, args, signal)
-    svnNotice(method, args, out.ok)
     return out
-  } catch (error) { svnNotice(method, args, false); throw error }
+  } catch (error) { throw error }
 }
 
 /** @private @author ddj 2026年10月10号 @param method Typed method. @param args Request. @param signal Fetch lifetime. @returns Validated authenticated business response. @throws Transport/format errors. */
@@ -85,7 +83,7 @@ async function failureMessage(res: Response): Promise<string> {
     return 'DSH 拒绝了当前页面的访问（HTTP 403，Host 校验未通过）' + channelNote()
   }
   if (res.status === 401) return 'DSH 登录已失效，请重新打开已登录的应用页面'
-  if (res.status === 404) return '插件路由不存在（HTTP 404），请确认 dsh-vscode-mode 与宿主版本匹配'
+  if (res.status === 404) return '插件路由不存在（HTTP 404），请确认 dsh-code-studio 与宿主版本匹配'
   if (res.status === 413) return '请求超过支持的文件大小'
   if (res.status === 503) return 'DSH 认证服务尚未就绪'
   return 'DSH 请求失败（HTTP ' + res.status + '）'
@@ -134,6 +132,6 @@ function channelNote(): string {
 export function dbg(sessionId: string | undefined, text: string, level: LoggerLevel = 'debug'): void {
   if (!debugEnabled) return
   try {
-    rpc('edrv.debug', { sessionId, text, level }).catch(() => {})
+    rpc('cstudio.debug', { sessionId, text, level }).catch(() => {})
   } catch (e) { /* 日志失败忽略 */ }
 }

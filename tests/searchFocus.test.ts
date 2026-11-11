@@ -122,7 +122,7 @@ describe('SearchPanel commit-time selection', () => {
     commit()
     expectSelection('new selected text')
     expect(hooks.rpc).toHaveBeenCalledTimes(1)
-    expect(hooks.rpc).toHaveBeenLastCalledWith('edrv.searchContent', expect.objectContaining({ query: 'new selected text', regex: true }))
+    expect(hooks.rpc).toHaveBeenLastCalledWith('cstudio.searchContent', expect.objectContaining({ query: 'new selected text', regex: true }))
     setSearchSeed('another seed')
     focusSearch()
     expectSelection('another seed')
@@ -148,7 +148,7 @@ describe('SearchPanel commit-time selection', () => {
     setSearchScope('Assets/Module')
     focusSearch()
     expectSelection('folder word')
-    expect(hooks.rpc).toHaveBeenLastCalledWith('edrv.searchContent', expect.objectContaining({ include: ['Assets/Module/**'] }))
+    expect(hooks.rpc).toHaveBeenLastCalledWith('cstudio.searchContent', expect.objectContaining({ include: ['Assets/Module/**'] }))
     unmount()
     window.dispatchEvent(new Event('edrv:search-focus'))
     expect(input.select).toHaveBeenCalledTimes(2)
@@ -186,13 +186,13 @@ describe('SearchPanel refresh on file change', () => {
     commit()
     search('alpha')
     expect(hooks.rpc).toHaveBeenCalledTimes(1)
-    expect(hooks.rpc).toHaveBeenLastCalledWith('edrv.searchContent', expect.objectContaining({ query: 'alpha' }))
+    expect(hooks.rpc).toHaveBeenLastCalledWith('cstudio.searchContent', expect.objectContaining({ query: 'alpha' }))
     expect(hooks.rpc.mock.calls[0][1]).not.toHaveProperty('force')
     notify('text')
     vi.advanceTimersByTime(300)
     commit()
     expect(hooks.rpc).toHaveBeenCalledTimes(2)
-    expect(hooks.rpc).toHaveBeenLastCalledWith('edrv.searchContent', expect.objectContaining({ query: 'alpha', force: true }))
+    expect(hooks.rpc).toHaveBeenLastCalledWith('cstudio.searchContent', expect.objectContaining({ query: 'alpha', force: true }))
   })
 
   it('merges the duplicate refresh/file-changed notices of one write', () => {
@@ -218,7 +218,7 @@ describe('SearchPanel refresh on file change', () => {
     vi.advanceTimersByTime(300)
     commit()
     expect(hooks.rpc).toHaveBeenCalledTimes(2)
-    expect(hooks.rpc).toHaveBeenLastCalledWith('edrv.searchContent', expect.objectContaining({ query: 'alpha', force: true }))
+    expect(hooks.rpc).toHaveBeenLastCalledWith('cstudio.searchContent', expect.objectContaining({ query: 'alpha', force: true }))
   })
 
   it('does not search on a notice while the query is too short', () => {

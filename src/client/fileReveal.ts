@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 「在文件浏览器中打开」RPC 包装（树菜单与 Monaco 右键共用）。
+ * dsh-code-studio client — 「在文件浏览器中打开」RPC 包装（树菜单与 Monaco 右键共用）。
  * 归一化为 { ok, error? }，不抛异常；无会话/异常降级返回错误文案。
  * 作者 ddj 2026-08-27
  */
@@ -20,7 +20,7 @@ export interface RevealOutcome {
 export async function revealInExplorer(sessionId: string | undefined, path: string): Promise<RevealOutcome> {
   if (!sessionId) return { ok: false, error: '无活动会话' }
   try {
-    const res = await rpc('edrv.revealInExplorer', { sessionId, path })
+    const res = await rpc('cstudio.revealInExplorer', { sessionId, path })
     return res.ok ? { ok: true } : { ok: false, error: res.error }
   } catch (error) {
     return { ok: false, error: '打开异常:' + String(error) }

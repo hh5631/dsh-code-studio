@@ -100,7 +100,7 @@ describe('旧写入口守卫', () => {
     const handlers = buildHandlers(fakeCtx(fs), registry)
     setPendingCovers(CWD, 's1', [CWD + '/a.ts'])
 
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'accepted' }] })
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'accepted' }] })
 
     expect(res).toMatchObject({ ok: false, error: expect.stringContaining('待审累计基线') })
     expect(fs.writeText).not.toHaveBeenCalled()
@@ -113,10 +113,10 @@ describe('旧写入口守卫', () => {
     const handlers = buildHandlers(fakeCtx(fs), registry)
     setPendingCovers(CWD, 's1', [CWD + '/a.ts'])
 
-    expect(await handlers['edrv.accept']({ sessionId: 's1', callId: 'c1' })).toMatchObject({
+    expect(await handlers['cstudio.accept']({ sessionId: 's1', callId: 'c1' })).toMatchObject({
       ok: false, error: expect.stringContaining('待审累计基线'),
     })
-    expect(await handlers['edrv.reject']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false })
+    expect(await handlers['cstudio.reject']({ sessionId: 's1', callId: 'c1' })).toMatchObject({ ok: false })
     expect(fs.writeText).not.toHaveBeenCalled()
   })
 
@@ -127,7 +127,7 @@ describe('旧写入口守卫', () => {
     // s1 与 s2 看到同一份待审投影，不允许跨对话绕过接管。
     setPendingCovers(CWD, 's2', [CWD + '/a.ts'])
 
-    const res = await handlers['edrv.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'accepted' }] })
+    const res = await handlers['cstudio.decideBatch']({ sessionId: 's1', items: [{ callId: 'c1', decision: 'accepted' }] })
 
     expect(res).toMatchObject({ ok: false, error: expect.stringContaining('待审累计基线') })
     expect(fs.writeText).not.toHaveBeenCalled()

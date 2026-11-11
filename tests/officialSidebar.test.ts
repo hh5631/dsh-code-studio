@@ -2,7 +2,7 @@
  * client officialSidebar 纯函数与装配测试（不触 DOM/窗口事件，mock ctx/slots）。
  * 作者 ddj 2026-09-09
  */
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import {
   detectOfficial,
   installOfficial,
@@ -14,6 +14,8 @@ import {
   deferToOfficial,
   forwardToEditor,
   registerOfficialFileClaim,
+  registerWorkspaceFilesClaim,
+  WORKSPACE_FILES_TAB_ID,
   resolveNavLine,
   resolveNavOpen,
   restoreEditorTab,
@@ -43,6 +45,27 @@ function ctxOf(map: Record<string, unknown>, boom = false): { get: (name: string
 /** 合格的一对官方服务。 */
 const goodTabs = { register: () => () => {} }
 const goodService = { openTab: () => {} }
+
+describe('工作区文件入口', () => {
+  it('接管原生 files kind，保留工作区入口与快捷键，卸载撤销认领', () => {
+    const unregister = vi.fn(), unmount = vi.fn(), renderTab = () => null
+    const tabs = { register: vi.fn(() => unregister) }
+    const slots = { inject: (_: string, mount: () => unknown) => mount(), register: vi.fn(() => unmount) }
+    const dispose = registerWorkspaceFilesClaim({ tabs, slots, renderTab })
+    expect(tabs.register.mock.calls[0][0]).toMatchObject({ id: WORKSPACE_FILES_TAB_ID, kind: 'files', priority: 'extension',
+      guide: [{ id: 'workspace', commandId: 'workspace.files' }] })
+    expect(slots.register).toHaveBeenCalledWith({ name: OFFICIAL_SLOT_NAME, key: WORKSPACE_FILES_TAB_ID }, renderTab)
+    dispose?.()
+    expect(unregister).toHaveBeenCalledOnce()
+    expect(unmount).toHaveBeenCalledOnce()
+  })
+  it('正文注册失败时释放页类型，恢复原生浏览页', () => {
+    const unregister = vi.fn()
+    expect(registerWorkspaceFilesClaim({ tabs: { register: () => unregister },
+      slots: { inject: () => { throw new Error('unavailable') }, register: vi.fn() }, renderTab: () => null })).toBeNull()
+    expect(unregister).toHaveBeenCalledOnce()
+  })
+})
 
 describe('detectOfficial', () => {
   it('缺服务/缺 register 或 openTab 时返回 undefined', () => {
@@ -118,13 +141,13 @@ describe('forwardToEditor', () => {
 })
 
 describe('installOfficial', () => {
-  it('注册类型定义 + keyed slot 正文，路由透传到 openTab', () => {
+  it('旧页签只用于迁移，文件直接路由到原生资源', () => {
     const definitions: unknown[] = []
     const slotSpecs: unknown[] = []
     const slotRenders: unknown[] = []
-    const openCalls: Array<{ kind: string; options?: { params?: unknown } }> = []
+    const openCalls: Array<{ address: string; options?: { params?: unknown } }> = []
     const tabs = { register: (d: unknown) => { definitions.push(d); return () => {} } }
-    const service = { openTab: (kind: string, options?: { params?: unknown }) => { openCalls.push({ kind, options }) } }
+    const service = { openTab: () => {}, openResource: (address: string, options?: { params?: unknown }) => { openCalls.push({ address, options }) } }
     const slots = {
       inject: (name: string, register: () => unknown) => {
         expect(name).toBe(OFFICIAL_SLOT_NAME)
@@ -136,7 +159,7 @@ describe('installOfficial', () => {
     }
     setEnsureSideEditor(null)
     const dispose = installOfficial({
-      tabs, service, slots,
+      tabs, service, slots, sessionId: () => 's-native',
       renderTab: () => null,
       guide: { title: () => OFFICIAL_TAB_TITLE, description: () => 'd' },
     })
@@ -146,18 +169,19 @@ describe('installOfficial', () => {
     expect(definition['id']).toBe(OFFICIAL_TAB_ID)
     expect(definition['kind']).toBe(OFFICIAL_TAB_KIND)
     expect(definition['priority']).toBe('extension')
-    expect((definition['title'] as () => string)()).toBe(OFFICIAL_TAB_TITLE)
+    expect((definition['title'] as () => string)()).toBe('文件')
+    expect(definition['guide']).toEqual([])
     // 正文 slot：key = 定义 id
     expect(slotSpecs[0]).toEqual({ name: OFFICIAL_SLOT_NAME, key: OFFICIAL_TAB_ID })
     expect(typeof slotRenders[0]).toBe('function')
     // 路由：ensure → openTab(kind, params)
     expect(routeSideEditor('src/a.ts', true)).toBe(true)
-    expect(openCalls).toEqual([{ kind: OFFICIAL_TAB_KIND, options: { params: { openPath: 'src/a.ts', focusDiff: true } } }])
+    expect(openCalls).toEqual([{ address: buildFileAddress('src/a.ts', 's-native'), options: undefined }])
     // 卸载后路由撤销
     dispose!()
     expect(routeSideEditor('src/a.ts', false)).toBe(false)
   })
-  it('空路径打开时 params.openPath 为 undefined', () => {
+  it('空路径打开原生 files 页面', () => {
     const openCalls: Array<{ params?: unknown } | undefined> = []
     setEnsureSideEditor(null)
     const dispose = installOfficial({
@@ -168,7 +192,7 @@ describe('installOfficial', () => {
       guide: { title: () => 't', description: () => 'd' },
     })
     expect(routeSideEditor(null, false)).toBe(true)
-    expect(openCalls[0]?.params).toEqual({ openPath: undefined, focusDiff: false })
+    expect(openCalls[0]).toBeUndefined()
     dispose!()
   })
   it('openTab 抛错时路由返回 false（降级其他打开器）', () => {
@@ -278,15 +302,15 @@ describe('registerOfficialFileClaim', () => {
     expect(canOpen('dsh-resource://file/session/s1/%zz.ts')).toBe(false)
     // G2：Office/不可预览后缀让位官方（不认领 → 回落官方预览/提示）
     expect(canOpen('dsh-resource://file/session/s1/a.docx')).toBe(false)
-    expect(canOpen('dsh-resource://file/session/s1/a.xlsx')).toBe(true)
+    expect(canOpen('dsh-resource://file/session/s1/a.xlsx')).toBe(false)
     expect(canOpen('dsh-resource://file/session/s1/a.pptx')).toBe(false)
     expect(canOpen('dsh-resource://file/session/s1/a.zip')).toBe(false)
     expect(canOpen('dsh-resource://file/session/s1/a.mp4')).toBe(false)
-    // 自研保留：文本/代码/图片/PDF/Markdown 仍归本插件编辑器
+    // 文本和 Markdown 可编辑，图片 / PDF / Office 交给原生预览
     expect(canOpen('dsh-resource://file/session/s1/a.md')).toBe(true)
-    expect(canOpen('dsh-resource://file/session/s1/a.png')).toBe(true)
-    expect(canOpen('dsh-resource://file/session/s1/a.avif')).toBe(true)
-    expect(canOpen('dsh-resource://file/session/s1/a.pdf')).toBe(true)
+    expect(canOpen('dsh-resource://file/session/s1/a.png')).toBe(false)
+    expect(canOpen('dsh-resource://file/session/s1/a.avif')).toBe(false)
+    expect(canOpen('dsh-resource://file/session/s1/a.pdf')).toBe(false)
     const title = definition['title'] as (a: string) => string
     expect(title('dsh-resource://file/session/s1/src/a%20b.txt')).toBe('a b.txt')
     dispose!()
@@ -324,7 +348,7 @@ describe('registerOfficialFileClaim', () => {
 describe('deferToOfficial（G2：Office / 不可预览后缀让位官方）', () => {
   it('Office 文档后缀让位（含同类文档补全）', () => {
     expect(OFFICE_EXT).toContain('docx')
-    for (const ext of OFFICE_EXT) expect(deferToOfficial('a.' + ext)).toBe(ext !== 'xlsx')
+    for (const ext of OFFICE_EXT) expect(deferToOfficial('a.' + ext)).toBe(true)
   })
 
   it('官方不可预览二进制容器让位', () => {
@@ -344,15 +368,14 @@ describe('deferToOfficial（G2：Office / 不可预览后缀让位官方）', ()
     expect(deferToOfficial(42)).toBe(false)
   })
 
-  it('自研能力不受影响：图片/文本/代码/PDF/Markdown 不 让位', () => {
-    for (const p of ['a.png', 'a.jpg', 'a.jpeg', 'a.gif', 'a.webp', 'a.bmp', 'a.ico', 'a.svg', 'a.md', 'a.ts', 'a.lua', 'a.cs', 'a.json', 'a.pdf']) {
+  it('文本/代码/Markdown 可编辑，图片和 PDF 继续使用原生预览', () => {
+    for (const p of ['a.md', 'a.ts', 'a.lua', 'a.cs', 'a.json']) {
       expect(deferToOfficial(p)).toBe(false)
     }
   })
 
-  it('avif 为例外：官方列不可预览，但本插件支持图片预览故不让位', () => {
-    expect(BLIND_EXT).not.toContain('avif')
-    expect(deferToOfficial('a.avif')).toBe(false)
+  it('图片和 PDF 不再被文本编辑器认领', () => {
+    for (const ext of ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'pdf']) expect(deferToOfficial('a.' + ext)).toBe(true)
   })
 
   it('csv/tsv 不让位：0.1.7 官方只读表格预览 vs 本插件 Monaco 可编辑', () => {

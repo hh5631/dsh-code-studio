@@ -56,7 +56,7 @@ async function deletedOfficialFixture() {
 describe('deleted file with official review records', () => {
   it('refuses the whole-file preview with a stable code instead of a raw SQL error', async () => {
     const { handlers } = await deletedOfficialFixture()
-    const result = await handlers['edrv.missingReview']({ sessionId: 'fixture', path }) as { ok: boolean; error?: string; code?: string }
+    const result = await handlers['cstudio.missingReview']({ sessionId: 'fixture', path }) as { ok: boolean; error?: string; code?: string }
     expect(result.ok).toBe(false)
     expect(result.code).toBe('official-covered')
     expect(result.error).toContain('官方审查记录')
@@ -65,9 +65,9 @@ describe('deleted file with official review records', () => {
 
   it('keeps Keep available and explains why Undo cannot run on a deleted file', async () => {
     const { review } = await deletedOfficialFixture()
-    const list = await review['edrv.review.list']!({ sessionId: 'fixture' })
+    const list = await review['cstudio.review.list']!({ sessionId: 'fixture' })
     const id = list.ok ? list.page.items[0].id : ''
-    const detail = await review['edrv.review.detail']!({ sessionId: 'fixture', id })
+    const detail = await review['cstudio.review.detail']!({ sessionId: 'fixture', id })
     expect(detail.ok).toBe(true)
     if (!detail.ok) return
     expect(detail.detail.capability.keep).toBe(true)
@@ -77,11 +77,11 @@ describe('deleted file with official review records', () => {
 
   it('switches to the closed-out state once every official record is decided', async () => {
     const { handlers, review } = await deletedOfficialFixture()
-    const list = await review['edrv.review.list']!({ sessionId: 'fixture' })
+    const list = await review['cstudio.review.list']!({ sessionId: 'fixture' })
     const id = list.ok ? list.page.items[0].id : ''
-    const keep = await review['edrv.review.decide']!({ sessionId: 'fixture', id, seq: 10, revision: 0, operationId: 'o1', decision: 'accepted' })
+    const keep = await review['cstudio.review.decide']!({ sessionId: 'fixture', id, seq: 10, revision: 0, operationId: 'o1', decision: 'accepted' })
     expect(keep.ok).toBe(true)
-    const after = await handlers['edrv.missingReview']({ sessionId: 'fixture', path }) as { ok: boolean; error?: string; code?: string }
+    const after = await handlers['cstudio.missingReview']({ sessionId: 'fixture', path }) as { ok: boolean; error?: string; code?: string }
     expect(after.ok).toBe(false)
     expect(after.code).toBe('official-decided')
     expect(String(after.error)).toContain('关闭该标签页')

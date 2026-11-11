@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 计划地址直通。
+ * dsh-code-studio client — 计划地址直通。
  *
  * 背景：官方计划卡片「查看全文」调 `ctx.sidebarRight.openResource(planAddress)`，
  * 侧栏会先创建计划页签、再由本插件认领并立刻关闭，桌面端表现为「快速打开又迅速关闭」。

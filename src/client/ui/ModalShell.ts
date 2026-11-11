@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — 通用弹窗外壳（居中卡片 + 遮罩 + Esc/遮罩关闭）。
+ * dsh-code-studio client — 通用弹窗外壳（居中卡片 + 遮罩 + Esc/遮罩关闭）。
  *
  * 为什么抽：仓库里已有三处「自建遮罩 + createPortal + Esc 监听」的近似实现
  * （代码片段选择器、工作区选择、以及 P3 日志与 P4 提交弹窗要新增的两处）。
@@ -68,7 +68,9 @@ export function ModalShell(props: ModalShellProps) {
     onClick: () => { if (closeOnMask) onClose?.() },
   },
     React.createElement('div', {
-      className: 'vsm-mcp-dialog' + (dialogClass ? ' ' + dialogClass : ''),
+      // cs2-dialog：studio.css 的仪器面板皮肤挂点（顶部色带用 ::before 伪元素实现，
+      // 不新增 DOM 子节点，避免影响既有弹窗的 flex/grid 布局假设）
+      className: 'vsm-mcp-dialog cs2-dialog' + (dialogClass ? ' ' + dialogClass : ''),
       style: width || cardStyle ? Object.assign({}, width ? { width } : null, cardStyle || null) : undefined,
       // 卡片内点击不冒泡到遮罩（否则点内容就关闭）
       onClick: (event) => event.stopPropagation(),

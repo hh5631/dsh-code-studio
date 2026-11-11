@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — UI 原语图标跨版本出口（消费方导出名保持 ≤0.1.6 旧名）。
+ * dsh-code-studio client — UI 原语图标跨版本出口（消费方导出名保持 ≤0.1.6 旧名）。
  * 背景：DSH 0.1.7 图标命名重构——`Icon<Name>16`（0.1.6 及更旧）→
  * `Icon<Name>Regular/Medium`（0.1.7+，size 参数化 + 双笔画档），旧名在 0.1.7
  * 全树已不存在（整树 grep 实证）。解析策略：namespace import 属性探测，旧名优先
@@ -14,7 +14,7 @@ import { classifyFileType, FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primi
 import type { EdrvIconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /** 图标组件形状（与垫片 EdrvIconProps 兼容）。 */
-type IconComponent = (props: EdrvIconProps) => unknown
+type IconComponent = (props: EdrvIconProps) => React.ReactElement | null
 
 /**
  * 通用占位图标（两代皆缺的第三态兜底：空态方框，不抛错不白屏）。
@@ -22,7 +22,7 @@ type IconComponent = (props: EdrvIconProps) => unknown
  * @param props 图标 props（size/className 透传）
  * @returns React 元素
  */
-function fallbackIcon(props: EdrvIconProps): unknown {
+function fallbackIcon(props: EdrvIconProps): React.ReactElement {
   return React.createElement('svg', {
     width: props.size ?? 16,
     height: props.size ?? 16,

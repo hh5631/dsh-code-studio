@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode client — 外部深链落地（Windows 右键菜单 / Unity 外部编辑器）。
+ * dsh-code-studio client — 外部深链落地（Windows 右键菜单 / Unity 外部编辑器）。
  * 启动时解析 location.search 的 edrvOpen 深链：跨源 referrer 守卫防外部网页诱导；
  * 处理完剥离 URL 参数防刷新重开；执行委托 openFlow 打开规则引擎（工作区/对话智能路由）。
  * 另挂 3s 移交轮询（兼活跃心跳）：launcher 投递的打开请求由已打开页面就地执行，避免重复开新页。
@@ -53,7 +53,7 @@ export function setupExtOpen(ctx: unknown, options: ExtOpenOptions = {}): () => 
   stripCurrentUrl()
   void openDeepLink(ctx, params).catch((error) => {
     log.warn('深链打开失败：' + String(error))
-    toastDom('深链打开失败：' + String((error as Error)?.message ?? error))
+    toastDom('深链打开失败：' + String((error as Error)?.message ?? error), 'error')
   })
   return dispose
 }
@@ -94,7 +94,7 @@ function startPresencePoll(ctx: unknown): () => void {
     executing = true
     try {
       const success = await openDeepLink(ctx, open)
-      if (!disposed) await rpc('edrv.external.ack', { token: open.token, leaseId: open.leaseId, clientId, success, error: success ? undefined : '编辑器打开失败或取消' })
+      if (!disposed) await rpc('cstudio.external.ack', { token: open.token, leaseId: open.leaseId, clientId, success, error: success ? undefined : '编辑器打开失败或取消' })
     } finally { executing = false }
   }
   /** @private @author ddj 2026年09月28号 Poll while opening to renew the lease without accepting a second request. */
@@ -102,7 +102,7 @@ function startPresencePoll(ctx: unknown): () => void {
     if (disposed || polling) return
     polling = true
     try {
-      const result = await rpc('edrv.external.pending', { clientId, busy: executing })
+      const result = await rpc('cstudio.external.pending', { clientId, busy: executing })
       if (!disposed && result.ok && result.open && !executing) void execute(result.open).catch(() => {})
     } finally { polling = false }
   }
@@ -158,19 +158,39 @@ function stripCurrentUrl(): void {
 
 /**
  * 轻量 toast（编辑器未挂载也能提示；5s 自隐；openFlow 通知与错误呈现共用）。
- * @author ddj 2026年09月07号
+ *
+ * 视觉：玻璃质感卡片 + 左侧语义色带 + 图标；不做纯灰黑方块。
+ * 用 class 而非纯内联样式，让 studio.css 的设计令牌能接管（换肤/亮暗主题一致）。
+ * 内联样式只保留定位与动画基线（脱离 CSS 也能工作 —— 编辑器未挂载的降级场景）。
+ *
+ * @author ddj 2026年09月07号 / dsh-code-studio 2026-11-10
  * @param text 提示文本
+ * @param kind 语义类别：info（默认）/ success / error / warn
  */
-export function toastDom(text: string): void {
+export function toastDom(text: string, kind: 'info' | 'success' | 'error' | 'warn' = 'info'): void {
   if (typeof document === 'undefined') return
   const toast = document.createElement('div')
-  toast.textContent = text
+  toast.className = 'cs2-toast cs2-toast-' + kind
+  toast.setAttribute('role', 'status')
+  const icon = document.createElement('span')
+  icon.className = 'cs2-toast-icon'
+  icon.textContent = kind === 'success' ? '✓' : kind === 'error' ? '!' : kind === 'warn' ? '△' : 'i'
+  const label = document.createElement('span')
+  label.className = 'cs2-toast-text'
+  label.textContent = text
+  toast.appendChild(icon)
+  toast.appendChild(label)
+  // 定位与动效基线内联（CSS 未加载时仍可用）；配色/圆角/阴影交给 studio.css
   toast.setAttribute('style', [
     'position:fixed', 'left:50%', 'bottom:28px', 'transform:translateX(-50%)',
-    'z-index:99999', 'padding:8px 14px', 'border-radius:8px', 'max-width:80vw',
-    'background:#2a2a2a', 'color:#ddd', 'border:1px solid #444', 'font-size:12px',
-    'box-shadow:0 4px 16px rgba(0,0,0,.35)',
+    'z-index:99999', 'max-width:min(80vw,520px)', 'display:flex', 'align-items:flex-start',
+    'gap:10px', 'padding:10px 16px 10px 12px', 'border-radius:11px', 'font-size:12.5px',
+    'line-height:1.5', 'box-sizing:border-box', 'pointer-events:none',
+    'animation:cs2-toast-in .22s cubic-bezier(.22,1,.36,1) both',
   ].join(';'))
   document.body?.appendChild(toast)
+  // 退出动效：自隐前先淡出，避免生硬消失
+  const EXIT_LEAD = 220
+  setTimeout(() => { toast.style.animation = 'cs2-toast-out .2s ease-in both' }, Math.max(0, TOAST_MS - EXIT_LEAD))
   setTimeout(() => toast.remove(), TOAST_MS)
 }

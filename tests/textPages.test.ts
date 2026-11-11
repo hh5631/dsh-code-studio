@@ -54,29 +54,29 @@ function rangeFixture() {
 describe('official range adapter RPC', () => {
   it('reauthorizes each page and keeps reads bounded with opaque targets', async () => {
     const sample = rangeFixture()
-    const first = await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f' })
+    const first = await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f' })
     expect(first).toMatchObject({ ok: true, text: 'a'.repeat(TEXT_PAGE_BYTES - 1), eof: false })
-    const second = await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor })
+    const second = await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor })
     expect(second).toMatchObject({ ok: true, text: '中\r\nend', eof: true })
     expect(sample.evidence.resolves).toBe(2)
     expect(sample.evidence.ranges.every((range) => range.length <= TEXT_PAGE_BYTES)).toBe(true)
   })
   it('rejects workspace rebound and changed versions before reading another page', async () => {
     const sample = rangeFixture()
-    const first = await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f' })
+    const first = await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f' })
     sample.session.header.cwd = '/other'
-    expect(await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor }))
+    expect(await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor }))
       .toMatchObject({ ok: false, reason: 'invalid-cursor' })
     sample.session.header.cwd = '/workspace'
     sample.mutate()
-    expect(await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor }))
+    expect(await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f', cursor: first.nextCursor }))
       .toMatchObject({ ok: false, reason: 'stale' })
     expect(sample.evidence.ranges).toHaveLength(1)
   })
   it('preserves official provider denial without whole-file fallback', async () => {
     const sample = rangeFixture()
     sample.fs.readByteRange = async () => { throw new Error('FS_PERMISSION_DENIED') }
-    expect(await handleRpc(sample.ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f' }))
+    expect(await handleRpc(sample.ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f' }))
       .toMatchObject({ ok: false, reason: 'read-failed', error: expect.stringContaining('FS_PERMISSION_DENIED') })
   })
 })
@@ -98,13 +98,13 @@ describe('actual official local provider', () => {
         if (name === 'fs') return fs
         return undefined
       } }
-      const first = await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 's', path })
+      const first = await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path })
       expect(first).toMatchObject({ ok: true, eof: false })
-      const second = await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 's', path, cursor: first.nextCursor })
+      const second = await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path, cursor: first.nextCursor })
       expect(second).toMatchObject({ ok: true, eof: true })
       expect(first.text + second.text).toBe(text)
       await writeFile(path, 'replaced', 'utf8')
-      expect(await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 's', path, cursor: first.nextCursor }))
+      expect(await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path, cursor: first.nextCursor }))
         .toMatchObject({ ok: false, reason: 'stale' })
     } finally {
       // directory is the exact absolute mkdtemp result created by this test, never a user-provided target.
@@ -117,19 +117,19 @@ describe('actual official local provider', () => {
 describe('actual textPage RPC fail-closed wiring', () => {
   it('returns unsupported without attempting a whole-file read', async () => {
     const { ctx, evidence } = rpcFixture()
-    expect(await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f' }))
+    expect(await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f' }))
       .toMatchObject({ ok: false, reason: 'unsupported' })
     expect(evidence).toEqual({ resolves: 1, reads: 0 })
   })
   it('rejects missing sessions before resolving or reading a path', async () => {
     const { ctx, evidence } = rpcFixture()
-    expect(await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 'other', path: 'f' }))
+    expect(await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 'other', path: 'f' }))
       .toMatchObject({ ok: false, reason: 'read-failed' })
     expect(evidence).toEqual({ resolves: 0, reads: 0 })
   })
   it('propagates path resolution denial without reading bytes', async () => {
     const { ctx, evidence } = rpcFixture(true)
-    expect(await handleRpc(ctx, new Map(), 'edrv.textPage', { sessionId: 's', path: 'f' }))
+    expect(await handleRpc(ctx, new Map(), 'cstudio.textPage', { sessionId: 's', path: 'f' }))
       .toMatchObject({ ok: false, reason: 'read-failed', error: expect.stringContaining('FS_PERMISSION_DENIED') })
     expect(evidence).toEqual({ resolves: 1, reads: 0 })
   })

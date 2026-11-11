@@ -10,29 +10,29 @@ afterEach(() => vi.unstubAllGlobals())
 describe('remote channel prefix', () => {
   it('keeps the local path outside a browser', () => {
     expect(channelPrefix()).toBe('')
-    expect(transportPath('/edrv/rpc')).toBe('/edrv/rpc')
-    expect(transportUrl('/edrv/rpc')).toBe('/edrv/rpc')
+    expect(transportPath('/cstudio/rpc')).toBe('/cstudio/rpc')
+    expect(transportUrl('/cstudio/rpc')).toBe('/cstudio/rpc')
   })
 
   it('prefixes every internal path once the remote channel seat is installed', () => {
     vi.stubGlobal('window', { [CHANNEL_SEAT]: { restore: () => {} } })
     vi.stubGlobal('document', { baseURI: 'https://box.example/prefix/' })
     expect(channelPrefix()).toBe(CHANNEL_PREFIX)
-    expect(transportUrl('/edrv/rpc')).toBe('https://box.example/prefix/remote/edrv/rpc')
-    expect(transportUrl('/edrv/vendor/monaco/vs/loader.js'))
-      .toBe('https://box.example/prefix/remote/edrv/vendor/monaco/vs/loader.js')
+    expect(transportUrl('/cstudio/rpc')).toBe('https://box.example/prefix/remote/cstudio/rpc')
+    expect(transportUrl('/cstudio/vendor/monaco/vs/loader.js'))
+      .toBe('https://box.example/prefix/remote/cstudio/vendor/monaco/vs/loader.js')
   })
 
   it('ignores a seat that is not the boot object', () => {
     vi.stubGlobal('window', { [CHANNEL_SEAT]: true })
     expect(channelPrefix()).toBe('')
-    expect(transportUrl('/edrv/rpc')).toBe('/edrv/rpc')
+    expect(transportUrl('/cstudio/rpc')).toBe('/cstudio/rpc')
   })
 
   it('keeps the desktop protocol when the channel is present', () => {
     vi.stubGlobal('window', { [CHANNEL_SEAT]: {} })
     vi.stubGlobal('document', { baseURI: 'dsh-app://app/' })
-    expect(transportUrl('/edrv/rpc')).toBe('dsh-app://app/remote/edrv/rpc')
+    expect(transportUrl('/cstudio/rpc')).toBe('dsh-app://app/remote/cstudio/rpc')
   })
 
   it('still rejects external paths', () => {

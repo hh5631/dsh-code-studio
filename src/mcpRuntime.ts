@@ -100,7 +100,7 @@ export class McpRuntime {
   private defKey(def: ProjectDef): string { return JSON.stringify([def.config, parseMcpPolicy(def.policy)]) }
 
   /** @private @author ddj 2026年09月28号 Refreshes existing isolation restrictions synchronously. */
-  private changed(): void { this.ctx.emit?.('vscode-mode/mcp-change') }
+  private changed(): void { this.ctx.emit?.('code-studio/mcp-change') }
 
   /** @private @author ddj 2026年10月20号 @param instance Public lease to revoke. Revokes synchronously before lease release. */
   private revoke(instance: Instance): void { instance.binding.dispose(); instance.lease.release() }
@@ -406,7 +406,7 @@ export async function installMcpRuntime(ctx: Ctx): Promise<void> {
   const offDispose = ctx.on('agent/disposed', disposed)
   /** @author ddj 2026年10月20号 @returns Full lifecycle teardown. */
   const cleanup = async (): Promise<void> => { offCreate?.(); offDispose?.(); await runtime.dispose(); runtimes.delete(ctx.root ?? ctx) }
-  ctx.effect(() => cleanup, 'vscode-mode:mcp-runtime')
+  ctx.effect(() => cleanup, 'code-studio:mcp-runtime')
   ready = initialize()
   await ready
   await Promise.all((ctx.get('agents')?.list?.() ?? []).map((agent: any) => runtime.attach(agent)))

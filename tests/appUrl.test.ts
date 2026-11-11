@@ -7,21 +7,21 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('application URLs', () => {
   it.each([
-    ['http://127.0.0.1:9131/?token=private', 'http://127.0.0.1:9131/edrv/rpc'],
-    ['https://example.test/tools/dsh/', 'https://example.test/tools/dsh/edrv/rpc'],
-    ['https://example.test/tools/dsh/index.html?session=x', 'https://example.test/tools/dsh/edrv/rpc'],
-    ['dsh-app://app/', 'dsh-app://app/edrv/rpc'],
+    ['http://127.0.0.1:9131/?token=private', 'http://127.0.0.1:9131/cstudio/rpc'],
+    ['https://example.test/tools/dsh/', 'https://example.test/tools/dsh/cstudio/rpc'],
+    ['https://example.test/tools/dsh/index.html?session=x', 'https://example.test/tools/dsh/cstudio/rpc'],
+    ['dsh-app://app/', 'dsh-app://app/cstudio/rpc'],
   ])('keeps the application base and drops launch query: %s', (base, expected) => {
-    expect(appUrl('/edrv/rpc', base)).toBe(expected)
+    expect(appUrl('/cstudio/rpc', base)).toBe(expected)
   })
   it('uses document base for vendor assets including worker paths', () => {
     vi.stubGlobal('document', { baseURI: 'https://example.test/prefix/' })
-    expect(appUrl('/edrv/vendor/pdfjs/build/pdf.worker.mjs')).toBe('https://example.test/prefix/edrv/vendor/pdfjs/build/pdf.worker.mjs')
+    expect(appUrl('/cstudio/vendor/pdfjs/build/pdf.worker.mjs')).toBe('https://example.test/prefix/cstudio/vendor/pdfjs/build/pdf.worker.mjs')
   })
   it('refuses external and unsupported origins', () => {
     expect(() => appUrl('//evil.test/')).toThrow()
     expect(() => appUrl('https://evil.test/')).toThrow()
-    expect(() => appUrl('/edrv/rpc', 'file:///tmp/index.html')).toThrow()
+    expect(() => appUrl('/cstudio/rpc', 'file:///tmp/index.html')).toThrow()
   })
 })
 
@@ -32,7 +32,7 @@ describe('RPC transport', () => {
     vi.stubGlobal('fetch', fetcher)
     const controller = new AbortController()
     await expect(rpc('mcp.list', {}, controller.signal)).resolves.toEqual({ ok: true, servers: [] })
-    expect(fetcher).toHaveBeenCalledWith('dsh-app://app/edrv/rpc', expect.objectContaining({ method: 'POST', credentials: 'same-origin', signal: controller.signal }))
+    expect(fetcher).toHaveBeenCalledWith('dsh-app://app/cstudio/rpc', expect.objectContaining({ method: 'POST', credentials: 'same-origin', signal: controller.signal }))
   })
   it.each([401, 403, 413, 503])('reports HTTP %s without trying to parse an authentication page', async (status) => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('private diagnostics', { status })))
@@ -44,7 +44,7 @@ describe('RPC transport', () => {
     const fetcher = vi.fn(async () => Response.json({ ok: true, servers: [] }))
     vi.stubGlobal('fetch', fetcher)
     await expect(rpc('mcp.list', {})).resolves.toEqual({ ok: true, servers: [] })
-    expect(fetcher).toHaveBeenCalledWith('dsh-app://app/remote/edrv/rpc', expect.objectContaining({ method: 'POST' }))
+    expect(fetcher).toHaveBeenCalledWith('dsh-app://app/remote/cstudio/rpc', expect.objectContaining({ method: 'POST' }))
   })
   it('names an unpaired remote device on the channel 403', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ result: { ok: false, error: { code: 'unpaired' } } }, { status: 403 })))

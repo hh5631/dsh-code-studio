@@ -1,6 +1,6 @@
 /**
- * dsh-vscode-mode shared contract — the single source of truth for the
- * host↔client data shapes that cross the /edrv/rpc boundary.
+ * dsh-code-studio shared contract — the single source of truth for the
+ * host↔client data shapes that cross the /cstudio/rpc boundary.
  *
  * Purity rule: this module MUST NOT import node or react (or anything that
  * pulls them). It is consumed by the host (tsc/tsdown node build) and bundled

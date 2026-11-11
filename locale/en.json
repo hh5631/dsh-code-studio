@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "VSCodeMode",
-    "description": "VSCode-like coding on DSH: Monaco editor with tabs and QuickOpen, command palette, agent edit review, SVN integration, and LSP smartness."
+    "title": "代码工作台",
+    "description": "Minimal code and Markdown editing, workspace search, and Git changes. Images, PDF and Office use native previews."
   }
 }

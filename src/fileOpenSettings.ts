@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode host — 文件链接打开工具 + 快捷键的持久化设置。
+ * dsh-code-studio host — 文件链接打开工具 + 快捷键的持久化设置。
  * 依赖守卫：schemastery 动态加载；@deepseek-ai/dsh-settings 仅作 legacy 探测——
  * rc 线导出 installSettingsSection free function，0.1.2-alpha 起移除（改由 settings
  * 服务的 installSection 方法承载），0.1.7 再移除 installSection（设置并入 profile
@@ -13,14 +13,14 @@ import type { Ctx } from './store.js'
 import { KEYBINDING_DEFAULTS } from './shared/keybindings.js'
 import { EDITOR_LIMIT_DEFAULT } from './shared/editorLimit.js'
 import { INTEGRATION_BASE_DEFAULT } from './shared/integration.js'
-import { TORTOISE_DIR_DEFAULT } from './shared/svn.js'
 import type { AiConfigPatch, AiConfigView } from './shared/ai.js'
 import { DEFAULT_NATIVE_CSV } from './shared/nativeOpen.js'
+import { TYPOGRAPHY_DEFAULTS } from './shared/typography.js'
 import { log } from './log.js'
 
-export const FILE_OPEN_SETTINGS_NS = 'dsh-vscode-mode'
+export const FILE_OPEN_SETTINGS_NS = 'dsh-code-studio'
 export const FILE_OPEN_DEFAULT = 'auto'
-export interface FileOpenSettings { fileOpenTool: string; integrationBaseUrl: string; svnPath: string; tortoisePath: string }
+export interface FileOpenSettings { fileOpenTool: string; integrationBaseUrl: string }
 export interface FileOpenSettingsState { value: string; revision?: number; update: (value: string, expectedRevision?: number) => Promise<void> }
 
 /** AI 配置默认值（补全默认关；路由空 = 自动；档位空 = 跟随模型默认；任务模型空 = 跟随补全配置）。 */
@@ -383,7 +383,7 @@ export async function updateSection(provider: SettingsProvider | undefined, ns: 
 /**
  * 构建设置 section schema（install 路径与插件 Config 声明共用，保证两代形状同源）。
  * 字段集 = fileOpenTool/keybindings/sidebarMinWidth/maxOpenEditors/integrationBaseUrl/
- * aiInline/aiProvider/aiModel/aiEffort/svnPath/tortoisePath/nativeOpenExts，全部带默认值
+ * aiInline/aiProvider/aiModel/aiEffort/nativeOpenExts，全部带默认值
  * （keybindings 自 2026-10 起废弃停写：键位持久化归官方 shortcuts 存储
  *   userData/keybindings.json / dsh.keybindings.v1；字段保留仅为旧档迁移读取与降级回滚，
  *   见 client/shortcutsOfficial.ts 的 migrateLegacyKeybindings。）
@@ -425,11 +425,16 @@ export function buildSettingsSchema(z: SettingsDeps['z'], options?: { volatile?:
     aiTaskProvider: withVol(z.string().default(AI_CONFIG_DEFAULT.taskProvider)),
     aiTaskModel: withVol(z.string().default(AI_CONFIG_DEFAULT.taskModel)),
     aiTaskEffort: withVol(z.string().default(AI_CONFIG_DEFAULT.taskEffort)),
-    // SVN 能力：svn CLI 覆盖（空 = PATH）与 TortoiseSVN 目录（Windows 过渡增强）
-    svnPath: withVol(z.string().default('')),
-    tortoisePath: withVol(z.string().default(TORTOISE_DIR_DEFAULT)),
     // 原生打开范围（逗号分隔后缀；默认 = 让位清单并集，csv/tsv 决策见 shared/nativeOpen.ts）
     nativeOpenExts: withVol(z.string().default(DEFAULT_NATIVE_CSV)),
+    // 外观：皮肤（glass 精致玻璃 / classic 经典原生）+ 界面密度（comfortable / compact）
+    editorFontFamily: withVol(z.string().default(TYPOGRAPHY_DEFAULTS.editorFontFamily)),
+    editorFontSize: withVol(z.number().default(TYPOGRAPHY_DEFAULTS.editorFontSize)),
+    editorLineHeight: withVol(z.number().default(TYPOGRAPHY_DEFAULTS.editorLineHeight)),
+    uiFontFamily: withVol(z.string().default(TYPOGRAPHY_DEFAULTS.uiFontFamily)),
+    uiFontSize: withVol(z.number().default(TYPOGRAPHY_DEFAULTS.uiFontSize)),
+    appearanceSkin: withVol(z.string().default('glass')),
+    appearanceDensity: withVol(z.string().default('comfortable')),
   }
   if (wantVolatile) configVolatile = { requested: true, marked, total: Object.keys(shape).length }
   return z.object(shape)
@@ -517,17 +522,7 @@ function baseValueOf(config: unknown): string {
   return typeof raw === 'string' && raw.trim() ? raw.trim() : INTEGRATION_BASE_DEFAULT
 }
 
-/** 配置/设置里的 svn CLI 覆盖（空 = 从 PATH 解析 'svn'）。 */
-function svnPathValueOf(config: unknown): string {
-  const raw = configField(config, 'svnPath')
-  return typeof raw === 'string' ? raw.trim() : ''
-}
 
-/** 配置/设置里的 TortoiseSVN 目录（空 = 默认安装目录）。 */
-function tortoiseDirValueOf(config: unknown): string {
-  const raw = configField(config, 'tortoisePath')
-  return typeof raw === 'string' && raw.trim() ? raw.trim() : TORTOISE_DIR_DEFAULT
-}
 
 /**
  * 安装设置 section（版本自适应；任一策略不可用返回 false 不抛错）。
@@ -583,7 +578,7 @@ function aiValueOf(stored: unknown): { enabled: boolean; provider: string; model
  * @param onChange 设置变化回调
  * @returns 设置状态（fileOpenTool 值 + AI 补全配置读写）
  */
-export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: string) => void): FileOpenSettingsState & { ai: () => AiConfigView; aiUpdate: (patch: AiConfigPatch, expectedRevision?: number) => Promise<AiConfigView>; svn: () => { svnPath: string; tortoisePath: string } } {
+export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: string) => void): FileOpenSettingsState & { ai: () => AiConfigView; aiUpdate: (patch: AiConfigPatch, expectedRevision?: number) => Promise<AiConfigView> } {
   let current = configValue(config)
   let revision: number | undefined
   let provider: SettingsProvider | undefined
@@ -601,14 +596,6 @@ export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: s
     aiCurrent = stored !== undefined ? aiValueOf(stored) : aiCurrent
   }
 
-  /** SVN 路径当前值（settings 未就绪回退配置值）。 */
-  let svnCurrent: { svnPath: string; tortoisePath: string } = {
-    svnPath: svnPathValueOf(config),
-    tortoisePath: tortoiseDirValueOf(config),
-  }
-  const svnSync = (stored: unknown): void => {
-    svnCurrent = { svnPath: svnPathValueOf(stored), tortoisePath: tortoiseDirValueOf(stored) }
-  }
   /** 读取 settings 存储值（describe 未就绪返回 undefined）。 */
   const storedValue = (): unknown => {
     return readSectionValue(provider, FILE_OPEN_SETTINGS_NS)
@@ -617,13 +604,10 @@ export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: s
   void installOpenSettingsSection(ctx, FILE_OPEN_SETTINGS_NS, {
     fileOpenTool: current,
     integrationBaseUrl: baseValueOf(config),
-    svnPath: svnCurrent.svnPath,
-    tortoisePath: svnCurrent.tortoisePath,
   }, {
     setSource: (source) => {
       notify(source().fileOpenTool)
       aiCurrent = aiValueOf(source())
-      svnSync(source())
       syncRevision()
     },
     onChange: settingsChange,
@@ -635,7 +619,6 @@ export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: s
     const section = stored as { fileOpenTool?: unknown } | undefined
     if (section?.fileOpenTool !== undefined) notify(section.fileOpenTool)
     aiCurrent = stored !== undefined ? aiValueOf(stored) : aiCurrent
-    svnSync(stored)
     syncRevision()
   })
 
@@ -651,7 +634,6 @@ export function setupOpenSettings(ctx: Ctx, config: unknown, onChange: (value: s
       syncRevision()
     },
     ai: () => aiCurrent,
-    svn: () => svnCurrent,
     aiUpdate: async (patch: AiConfigPatch, expectedRevision?: number): Promise<AiConfigView> => {
       const stored = { ...aiCurrent }
       const body: Record<string, unknown> = {}

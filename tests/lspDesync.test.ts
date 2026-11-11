@@ -133,7 +133,7 @@ beforeAll(() => {
   home = mkdtempSync(join(tmpdir(), 'dsh-lsp-desync-'))
   process.env.DSH_HOME = home
   // 隔离真实机器扩展：扫描列表指向不存在的临时目录
-  process.env.DSH_LSP_EXT_DIRS = join(home, 'dsh-vscode-mode', 'extensions')
+  process.env.DSH_LSP_EXT_DIRS = join(home, 'dsh-code-studio', 'extensions')
 })
 
 afterAll(() => {
@@ -145,7 +145,7 @@ afterAll(() => {
 describe('lsp/rpc tracker 与 manager 一致性', () => {
   it('首次 sync 建立服务器并写入文档', async () => {
     const { manager, handlers } = makeRpc()
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 1 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 1 })
     expect(res.ok).toBe(true)
     expect(manager.acquires).toBe(1)
     expect(manager.has(ROOT, 'lua')).toBe(true)
@@ -154,15 +154,15 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 
   it('重新检测后同一文档再 sync 必须自愈补建（核心回归）', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 1 })
     expect(manager.acquires).toBe(1)
 
     // 重新检测：manager 条目被摘除（tracker 侧一并重置）
-    await handlers['edrv.lsp.redetect']!({ languageId: 'lua' })
+    await handlers['cstudio.lsp.redetect']!({ languageId: 'lua' })
     expect(manager.has(ROOT, 'lua')).toBe(false)
 
     // 客户端重检测后会重新同步已打开模型：同文档必须成功，且不得再报「语言服务器未注册」
-    const again = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 2 })
+    const again = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'local a = 1\n', version: 2 })
     expect(errOf(again)).toBe('')
     expect(again.ok).toBe(true)
     expect(manager.acquires).toBe(2)
@@ -171,21 +171,21 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 
   it('自愈补建不产生重复 acquire（同文档反复 sync 只建一次）', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.redetect']!({ languageId: 'lua' })
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.redetect']!({ languageId: 'lua' })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
     // 再同步两次：tracker 已跟踪该文档 → 复用既有实例，不再 acquire
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 3 })
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 4 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 3 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 4 })
     expect(manager.acquires).toBe(2)
     expect(manager.entryCount()).toBe(1)
   })
 
   it('自愈后按新文档 sync 亦可用，且同语言共享同一实例', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.redetect']!({ languageId: 'lua' })
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: 'b.lua', text: 'y', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.redetect']!({ languageId: 'lua' })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: 'b.lua', text: 'y', version: 1 })
     expect(res.ok).toBe(true)
     expect(manager.acquires).toBe(2)
     expect(manager.entryCount()).toBe(1) // a.lua 与 b.lua 共用同一 root|lang 实例
@@ -193,9 +193,9 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 
   it('重置只作用于目标语言：另一语言实例不受影响', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: CS_DOC, text: 'y', version: 1 })
-    await handlers['edrv.lsp.redetect']!({ languageId: 'lua' })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: CS_DOC, text: 'y', version: 1 })
+    await handlers['cstudio.lsp.redetect']!({ languageId: 'lua' })
     expect(manager.has(ROOT, 'lua')).toBe(false)
     expect(manager.has(ROOT, 'csharp')).toBe(true)
   })
@@ -204,11 +204,11 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
     const { manager, handlers } = makeRpc()
     // 两个会话各自 cwd 不同，但假 fs 让 root 相同——用显式 root 区分不可行，
     // 故此处只断言"重置后两者都能继续 sync"，覆盖跨会话计数不被误清导致失败。
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.sync']!({ sessionId: 's2', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.redetect']!({ languageId: 'lua' })
-    const r1 = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
-    const r2 = await handlers['edrv.lsp.sync']!({ sessionId: 's2', path: LUA_DOC, text: 'x', version: 2 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's2', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.redetect']!({ languageId: 'lua' })
+    const r1 = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
+    const r2 = await handlers['cstudio.lsp.sync']!({ sessionId: 's2', path: LUA_DOC, text: 'x', version: 2 })
     expect(r1.ok).toBe(true)
     expect(r2.ok).toBe(true)
     expect(manager.entryCount()).toBe(1)
@@ -216,14 +216,14 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 
   it('manager 条目单侧丢失（tracker 仍在跟踪）时 sync 自愈，不报「未注册」', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
     expect(manager.acquires).toBe(1)
 
     // 绕过 redetect 直接摘除 manager 条目，复现"只清一侧"的失步（任何未来调用方都可能触发）
     manager.reset(ROOT, 'lua')
     expect(manager.has(ROOT, 'lua')).toBe(false)
 
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
     expect(errOf(res)).toBe('')
     expect(res.ok).toBe(true)
     expect(manager.acquires).toBe(2)
@@ -231,17 +231,17 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 
   it('close 释放后实例摘除，再 sync 会重建', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    await handlers['edrv.lsp.close']!({ sessionId: 's1', path: LUA_DOC })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.close']!({ sessionId: 's1', path: LUA_DOC })
     expect(manager.entryCount()).toBe(0)
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 2 })
     expect(res.ok).toBe(true)
     expect(manager.acquires).toBe(2)
   })
 
   it('会话销毁释放引用，不残留实例', async () => {
     const { manager, handlers, disposeSession } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
     disposeSession('s1')
     expect(manager.entryCount()).toBe(0)
   })
@@ -250,15 +250,15 @@ describe('lsp/rpc tracker 与 manager 一致性', () => {
 describe('lsp/rpc detect 相位', () => {
   it('无运行实例 → idle', async () => {
     const { handlers } = makeRpc()
-    const res = await handlers['edrv.lsp.detect']!({})
+    const res = await handlers['cstudio.lsp.detect']!({})
     const lua = (res.servers as LspServerStatus[]).find((s) => s.languageId === 'lua')
     expect(lua!.phase).toBe('idle')
   })
 
   it('已有运行实例 → 反映真实相位（不再恒 idle）', async () => {
     const { handlers } = makeRpc()
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
-    const res = await handlers['edrv.lsp.detect']!({})
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: LUA_DOC, text: 'x', version: 1 })
+    const res = await handlers['cstudio.lsp.detect']!({})
     const lua = (res.servers as LspServerStatus[]).find((s) => s.languageId === 'lua')
     expect(lua!.phase).toBe('ready')
     expect(lua!.progressMessage).toBe('解析完成')
@@ -266,7 +266,7 @@ describe('lsp/rpc detect 相位', () => {
 
   it('detect 不启动服务器（保持只读探测语义）', async () => {
     const { manager, handlers } = makeRpc()
-    await handlers['edrv.lsp.detect']!({})
+    await handlers['cstudio.lsp.detect']!({})
     expect(manager.acquires).toBe(0)
     expect(manager.entryCount()).toBe(0)
   })
@@ -280,7 +280,7 @@ describe('lsp/rpc 绝对路径与相对路径等价（差异文件场景）', ()
     const { manager, handlers } = makeRpc(ABS_ROOT)
     // 差异记录 rec.path 取自工具参数 file_path，是绝对路径（Windows 反斜杠形态）
     const abs = 'D:\\ws\\Assets\\Scripts\\a.lua'
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: abs, text: 'x', version: 1 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: abs, text: 'x', version: 1 })
     expect(errOf(res)).toBe('')
     // 未归一化时这里是绝对路径，server.sync 会拼出 <root>/<root>/... 的畸形 file:// URI
     expect(manager.peek(ABS_ROOT, 'lua')!.synced).toEqual(['Assets/Scripts/a.lua'])
@@ -290,8 +290,8 @@ describe('lsp/rpc 绝对路径与相对路径等价（差异文件场景）', ()
     const { manager, handlers } = makeRpc(ABS_ROOT)
     const rel = 'Assets/Scripts/a.lua'
     const abs = 'D:\\ws\\' + rel.split('/').join('\\')
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: rel, text: 'x', version: 1 })
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: abs, text: 'x', version: 2 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: rel, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: abs, text: 'x', version: 2 })
     // 归一化后是同一个 tracker 键 → 只 acquire 一次；两次 sync 落到的 path 形态一致
     expect(manager.acquires).toBe(1)
     expect(manager.peek(ABS_ROOT, 'lua')!.synced).toEqual([rel, rel])
@@ -301,16 +301,16 @@ describe('lsp/rpc 绝对路径与相对路径等价（差异文件场景）', ()
     const { manager, handlers } = makeRpc(ABS_ROOT)
     const rel = 'Assets/Scripts/a.lua'
     const abs = 'D:\\ws\\Assets\\Scripts\\a.lua'
-    await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: rel, text: 'x', version: 1 })
+    await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: rel, text: 'x', version: 1 })
     expect(manager.entryCount()).toBe(1)
-    await handlers['edrv.lsp.close']!({ sessionId: 's1', path: abs })
+    await handlers['cstudio.lsp.close']!({ sessionId: 's1', path: abs })
     // 键若不一致，close 会落空 → 引用计数泄漏 → 服务器永不释放
     expect(manager.entryCount()).toBe(0)
   })
 
   it('大小写不同的绝对路径同样归一（Windows 盘符常见）', async () => {
     const { manager, handlers } = makeRpc(ABS_ROOT)
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: 'd:/ws/Assets/Scripts/a.lua', text: 'x', version: 1 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: 'd:/ws/Assets/Scripts/a.lua', text: 'x', version: 1 })
     expect(errOf(res)).toBe('')
     expect(manager.peek(ABS_ROOT, 'lua')!.synced).toEqual(['Assets/Scripts/a.lua'])
   })
@@ -318,7 +318,7 @@ describe('lsp/rpc 绝对路径与相对路径等价（差异文件场景）', ()
   it('工作区外绝对路径不归一为相对（保持既有行为，不误判）', async () => {
     const { manager, handlers } = makeRpc(ABS_ROOT)
     const outside = 'D:/Other/place/a.lua'
-    const res = await handlers['edrv.lsp.sync']!({ sessionId: 's1', path: outside, text: 'x', version: 1 })
+    const res = await handlers['cstudio.lsp.sync']!({ sessionId: 's1', path: outside, text: 'x', version: 1 })
     expect(errOf(res)).toBe('')
     expect(manager.peek(ABS_ROOT, 'lua')!.synced).toEqual([outside])
   })

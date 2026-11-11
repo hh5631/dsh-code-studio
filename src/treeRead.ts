@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode host — 目录快速列取（edrv.listDir 数据来源，树索引 miss 时走这里）。
+ * dsh-code-studio host — 目录快速列取（edrv.listDir 数据来源，树索引 miss 时走这里）。
  * dsh-fs.listDir 对每个子项顺序 realpath+stat（2 次 open/项），在本部署被中介的
  * open（0.3–3s/次）下大目录呈分钟级；这里用原生 readdir(withFileTypes) 一次取型
  * （O(1) open），仅对 symlink/junction（Windows junction 在 dirent 中报 symlink，
@@ -16,6 +16,13 @@ import type { DirChildLike } from './tree.js'
 export const SYMLINK_CONCURRENCY = 32
 /** symlink 并行 stat 总数上限：超出部分按 other（防御病态 symlink 目录）。 */
 export const MAX_SYMLINK_STATS = 256
+/**
+ * 文件体积采集的条目数上限。
+ * 背景：本部署的 open 延迟被中介放大（0.3–3s/次），对大目录逐项 stat 会让
+ * 文件树卡住数秒。故只有条目数不超过该阈值时才采集 size，超出则整体省略
+ * （UI 侧 size 缺省即不显示）。
+ */
+export const MAX_SIZE_STATS = 200
 // --endregion
 
 /** 列取失败（带稳定语义 code，调用方转文案）。 */
@@ -55,9 +62,11 @@ async function statTypes(paths: string[], out: Map<string, 'directory' | 'file' 
 
 /**
  * 快速列取目录：一次 readdir(withFileTypes) 判型；symlink 并行 follow-stat。
+ * 体积采集：条目数 ≤ {@link MAX_SIZE_STATS} 时并行 stat 一次取 size（供文件树显示），
+ * 超出则整体省略（避免大目录逐项 stat 的秒级延迟）。
  * @author ddj 2026年08月31号
  * @param absDir 绝对目录路径（fs.resolve 后的 targetKey）
- * @returns 子项列表（name/type；size 缺省，树界面不展示大小）
+ * @returns 子项列表（name/type/size；size 仅在小目录时给出）
  * @throws DirListError 目录不存在/不是目录/权限不足/IO 失败
  */
 export async function listDirCheap(absDir: string): Promise<DirChildLike[]> {
@@ -83,5 +92,27 @@ export async function listDirCheap(absDir: string): Promise<DirChildLike[]> {
       out.push({ name: syms[i], type: types.get(symAbs[i]) ?? 'other' })
     }
   }
+  await attachSizes(absDir, out)
   return out
+}
+
+/**
+ * 并行 stat 文件条目补齐体积（小目录才调用）。
+ * 失败静默：拿不到 size 只是不显示体积，不影响列取本身。
+ * @author dsh-code-studio 2026-11-10
+ * @param absDir 目录绝对路径
+ * @param out 子项列表（就地补 size 字段）
+ */
+async function attachSizes(absDir: string, out: DirChildLike[]): Promise<void> {
+  if (out.length === 0 || out.length > MAX_SIZE_STATS) return
+  const files = out.filter((item) => item.type === 'file')
+  if (!files.length) return
+  await Promise.all(files.map(async (item) => {
+    try {
+      const info = await stat(join(absDir, item.name))
+      if (info.isFile()) item.size = info.size
+    } catch (error) {
+      /* 体积取不到静默：仅不显示体积 */
+    }
+  }))
 }

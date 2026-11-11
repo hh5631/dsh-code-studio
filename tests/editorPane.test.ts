@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { EditorPane, GroupPathbar, bindPaneView, type PaneProps } from '../src/client/ui/EditorPane.js'
+import { EditorPane, GroupPathbar, TabScrollArrow, bindPaneView, type PaneProps } from '../src/client/ui/EditorPane.js'
 import { buildTabMenu } from '../src/client/tabMenu.js'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
@@ -205,6 +205,41 @@ describe('actual workbench adapters', () => {
 })
 
 describe('actual editor pane interaction', () => {
+  it('renders overflow scroll arrows only while the tab strip overflows', () => {
+    // 箭头组件自持可见性状态（EditorPane 被当普通函数调用，不能在其中用 Hook）。
+    const stateHook = vi.spyOn(React, 'useState')
+    const layoutHook = vi.spyOn(React, 'useLayoutEffect').mockImplementation(() => {})
+    try {
+      const strip = { current: { scrollWidth: 900, clientWidth: 300, scrollLeft: 0 } } as any
+      // 未溢出：箭头不渲染
+      stateHook.mockReturnValueOnce([false, vi.fn()] as any)
+      expect(TabScrollArrow({ strip, side: 1 })).toBeNull()
+      // 溢出：渲染右箭头，类名与 title 齐备
+      stateHook.mockReturnValueOnce([true, vi.fn()] as any)
+      const arrow = TabScrollArrow({ strip, side: 1 })
+      expect(arrow.props.className).toBe('edrv-tab-scroll edrv-tab-scroll-right')
+      expect(arrow.props.title).toBe('向右滚动页签')
+      stateHook.mockReturnValueOnce([true, vi.fn()] as any)
+      expect(TabScrollArrow({ strip, side: -1 }).props.className).toBe('edrv-tab-scroll edrv-tab-scroll-left')
+    } finally {
+      stateHook.mockRestore()
+      layoutHook.mockRestore()
+    }
+  })
+  it('scrolls the strip by one step when an arrow is clicked', () => {
+    const stateHook = vi.spyOn(React, 'useState').mockReturnValue([true, vi.fn()] as any)
+    const layoutHook = vi.spyOn(React, 'useLayoutEffect').mockImplementation(() => {})
+    try {
+      const host = { scrollWidth: 900, clientWidth: 300, scrollLeft: 100, ownerDocument: { defaultView: null } }
+      const strip = { current: host } as any
+      const arrow = TabScrollArrow({ strip, side: 1 })
+      arrow.props.onClick({ preventDefault: vi.fn(), stopPropagation: vi.fn() })
+      expect(host.scrollLeft).toBe(260)
+    } finally {
+      stateHook.mockRestore()
+      layoutHook.mockRestore()
+    }
+  })
   it('renders a static pathbar per group with a stable height and focus click (ddj 2026年10月16号)', () => {
     const onFocus = vi.fn()
     const withFile = GroupPathbar({ path: 'Assets/GameData/Scheme/ItemScheme.lua', onFocus })
@@ -281,10 +316,32 @@ describe('actual editor pane interaction', () => {
     tab.props.onKeyDown({ key: 'Enter', preventDefault: vi.fn() })
     expect(callbacks.onSelect).toHaveBeenCalledWith('main', 'pin.ts')
   })
-  it('has real split/float menu alternatives with capability guards', () => {
+  it('closes a tab on middle-button release and never selects it', () => {
+    const { nodes, callbacks } = pane()
+    const tab = nodes.find((node) => node.props['data-edrv-tab-path'] === 'a.ts')
+    const middle = { button: 1, type: 'mouseup', preventDefault: vi.fn(), stopPropagation: vi.fn() }
+    tab.props.onMouseUp(middle)
+    expect(callbacks.onClose).toHaveBeenCalledWith('a.ts')
+    expect(callbacks.onSelect).not.toHaveBeenCalled()
+    // 主键抬起不是关闭手势
+    const primary = { button: 0, type: 'mouseup', preventDefault: vi.fn(), stopPropagation: vi.fn() }
+    tab.props.onMouseUp(primary)
+    expect(callbacks.onClose).toHaveBeenCalledTimes(1)
+  })
+  it('keeps the close glyph click away from the tab switch gesture', () => {
+    const { nodes, callbacks } = pane()
+    const close = nodes.find((node) => node.props['aria-label'] === '关闭 a.ts')
+    // 关闭按钮的鼠标抬起必须吞掉事件：否则会冒泡到页签（顺带触发中键关闭判定）。
+    const up = { button: 1, type: 'mouseup', preventDefault: vi.fn(), stopPropagation: vi.fn() }
+    close.props.onMouseUp(up)
+    expect(up.stopPropagation).toHaveBeenCalled()
+    expect(callbacks.onClose).not.toHaveBeenCalled()
+  })
+  it('offers split alternatives and no floating-window entry (removed 2026-11-10)', () => {
     const entries = buildTabMenu({ path: 'a', tabs: [{ path: 'a' }], active: 'a', dirty: {}, hasSession: true, canAddToConversation: true, canSplit: false, canFloat: true, canReturn: false })
     expect(entries.find((item) => item.id === 'split-right')?.disabled).toBe(true)
-    expect(entries.find((item) => item.id === 'move-new-window')?.disabled).toBe(false)
+    // 「移到页面内浮窗」已按需求移除，菜单里不应再有该项
+    expect(entries.find((item) => item.id === 'move-new-window')).toBeUndefined()
     expect(entries.find((item) => item.id === 'return-main')?.disabled).toBe(true)
   })
   it('keeps layout ownership after legacy tab reconciliation', () => {

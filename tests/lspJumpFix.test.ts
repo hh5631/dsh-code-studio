@@ -1,5 +1,5 @@
 /**
- * dsh-vscode-mode tests — LSP 跳转修复纯函数：
+ * dsh-code-studio tests — LSP 跳转修复纯函数：
  *  - server.nudgeToWordEnd：EmmyLua 0.9.41 词边界怪癖（位置在标识符前半 → 空/"unknown"）的规避
  *  - derive.deriveCrossFileDeclaration：definition 空时从 references 推导跨文件字段声明
  * 作者 ddj 2026-10-15

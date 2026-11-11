@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * dsh-vscode-mode client — LSP 会话与文档同步（模块级单例）。
+ * dsh-code-studio client — LSP 会话与文档同步（模块级单例）。
  * 跟踪当前会话 + Monaco 打开文档（model 事件驱动），去抖推送 edrv.lsp.sync；
  * 并提供 definition/references/documentSymbol/hover/status 的 RPC 薄封装。
  * 作者 ddj 2026-08-27
@@ -124,7 +124,7 @@ export async function syncDoc(path, text, immediate = false) {
     clearPending(path)
     const value = resolveText(text)
     if (value === null) return
-    await rpc('edrv.lsp.sync', { sessionId, path, text: value, version: nextDocVer(path) }).catch(() => {})
+    await rpc('cstudio.lsp.sync', { sessionId, path, text: value, version: nextDocVer(path) }).catch(() => {})
     return
   }
   clearPending(path)
@@ -132,7 +132,7 @@ export async function syncDoc(path, text, immediate = false) {
     syncTimers.delete(path)
     const value = resolveText(text)
     if (value === null) return
-    rpc('edrv.lsp.sync', { sessionId, path, text: value, version: nextDocVer(path) }).catch(() => {})
+    rpc('cstudio.lsp.sync', { sessionId, path, text: value, version: nextDocVer(path) }).catch(() => {})
   }, SYNC_DEBOUNCE_MS))
 }
 
@@ -162,7 +162,7 @@ function clearPending(path) {
 export function closeDoc(path) {
   clearPending(path)
   docVersions.delete(path)
-  void rpc('edrv.lsp.close', { sessionId, path }).catch(() => {})
+  void rpc('cstudio.lsp.close', { sessionId, path }).catch(() => {})
 }
 
 /**
@@ -187,7 +187,7 @@ async function queryLsp(action, method, args) {
 /** 立即推送 + 查询定义；返回 [{ uri, range }]（uri 已转 edrv://）。 */
 export async function findDefinition(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('转到定义', 'edrv.lsp.definition', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp('转到定义', 'cstudio.lsp.definition', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res || !Array.isArray(res.locations)) return []
   return res.locations.map(toClientLocation)
 }
@@ -195,7 +195,7 @@ export async function findDefinition(path, text, position) {
 /** 立即推送 + 查询引用。 */
 export async function findReferences(path, text, position, includeDeclaration = false) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查找引用', 'edrv.lsp.references', { path, position: monoToLsp(position.lineNumber, position.column), includeDeclaration })
+  const res = await queryLsp('查找引用', 'cstudio.lsp.references', { path, position: monoToLsp(position.lineNumber, position.column), includeDeclaration })
   if (!res || !Array.isArray(res.locations)) return []
   return res.locations.map(toClientLocation)
 }
@@ -203,7 +203,7 @@ export async function findReferences(path, text, position, includeDeclaration = 
 /** 查询大纲符号（documentSymbol）。 */
 export async function fetchDocumentSymbols(path, text) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询大纲', 'edrv.lsp.documentSymbol', { path })
+  const res = await queryLsp('查询大纲', 'cstudio.lsp.documentSymbol', { path })
   if (!res || !Array.isArray(res.symbols)) return []
   return res.symbols
 }
@@ -211,7 +211,7 @@ export async function fetchDocumentSymbols(path, text) {
 /** 查询 hover 内容。 */
 export async function fetchHover(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询悬停', 'edrv.lsp.hover', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp('查询悬停', 'cstudio.lsp.hover', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res) return null
   return res.hover || null
 }
@@ -267,7 +267,7 @@ export async function fetchCompletions(path, text, position, context, prefix) {
   const args = { path, position: monoToLsp(position.lineNumber, position.column) }
   if (context) args.context = context
   if (prefix) args.prefix = prefix
-  const res = await queryLsp('查询补全', 'edrv.lsp.completion', args)
+  const res = await queryLsp('查询补全', 'cstudio.lsp.completion', args)
   if (!res || !res.completions) return null
   const list = res.completions
   if (list.truncated === true) {
@@ -285,7 +285,7 @@ export async function fetchCompletions(path, text, position, context, prefix) {
  * @returns 补全后的条目；失败时回落原条目
  */
 export async function resolveCompletion(path, item) {
-  const res = await queryLsp('解析补全', 'edrv.lsp.resolveCompletion', { path, item })
+  const res = await queryLsp('解析补全', 'cstudio.lsp.resolveCompletion', { path, item })
   if (!res || !res.item) return item
   return res.item
 }
@@ -300,7 +300,7 @@ export async function resolveCompletion(path, item) {
  */
 export async function fetchSignatureHelp(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询签名', 'edrv.lsp.signatureHelp', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp('查询签名', 'cstudio.lsp.signatureHelp', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res) return null
   return res.signatureHelp || null
 }
@@ -308,7 +308,7 @@ export async function fetchSignatureHelp(path, text, position) {
 /** 查询当前文档的 semantic tokens（host 已归一化 legend 与 delta data）。 */
 export async function fetchSemanticTokens(path, text) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询语义分色', 'edrv.lsp.semanticTokens', { path })
+  const res = await queryLsp('查询语义分色', 'cstudio.lsp.semanticTokens', { path })
   if (!res || !res.tokens || !Array.isArray(res.tokens.data)) return null
   return res.tokens
 }
@@ -324,7 +324,7 @@ export async function refreshStatus(force = false) {
   if (typeof document !== 'undefined' && document.hidden) return statusCache.servers
   if (!force && Date.now() - statusCache.at < 1500) return statusCache.servers
   const epoch = statusEpoch, owner = sessionId
-  const request = { epoch, promise: rpc('edrv.lsp.status', { sessionId: owner }).catch(() => null) }
+  const request = { epoch, promise: rpc('cstudio.lsp.status', { sessionId: owner }).catch(() => null) }
   statusRequest = request
   try {
     const res = await request.promise
