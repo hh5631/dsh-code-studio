@@ -6,7 +6,7 @@ import { createContext, runInContext } from 'node:vm'
 import ts from 'typescript'
 
 const OWNER = 'dsh-code-studio'
-const CHUNKS = ['client.editor.js']
+const CHUNKS = ['client.editor.js', 'client.codemirror.js']
 const SHARED = ['rpc', 'dbg', 'ContextMenu']
 
 /** @private @author ddj 2026年10月22号 @param source Bundle source. @param filename Diagnostic filename. @returns Registration without materializing its factory. */
@@ -169,6 +169,9 @@ export async function verifyNativeLoader(artifacts, loaderPath) {
   const refreshed = await system.makeRequire(OWNER, new Set()).async(`./${file}`)
   assert.notEqual(refreshed, first, 'HMR must replace chunk exports')
   assert.equal(arrivals.at(-1), `/base/${OWNER}/${file}?rev=two`)
+  const trial = await system.makeRequire(OWNER, new Set()).async('./client.codemirror.js')
+  assert.equal(typeof trial.EditorView, 'function', 'missing CodeMirror trial entry')
+  assert.notEqual(trial, refreshed, 'the two editor chunks must load independently')
   return { arrivals, sharedKeys: SHARED, loader: 'actual ClientModuleSystem' }
 }
 

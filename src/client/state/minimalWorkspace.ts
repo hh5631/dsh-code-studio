@@ -3,10 +3,11 @@ import { createDocStore, type SaveResult } from './documentStore.js'
 import { modelsForScope, rememberModel, retainModels } from './modelCache.js'
 import { rpc } from '../rpc.js'
 import { addReloadGuard } from '../pageReload.js'
+import type { CreateEditorModel, EditorModel } from '../editorTypes.js'
 
 export const MAX_EDIT_TEXT_BYTES = 2 * 1024 * 1024
 
-export interface OpenDocument { model: any; view: any; silent: boolean; subscription: { dispose(): void } }
+export interface OpenDocument { model: EditorModel; silent: boolean; subscription: { dispose(): void } }
 const workspaces = new Map<string, MinimalWorkspace>()
 export function minimalWorkspace(scope: string, sessionId?: string): MinimalWorkspace {
   let state = workspaces.get(scope)
@@ -67,12 +68,12 @@ export class MinimalWorkspace {
   snapshot = (): number => this.revision
   notify(): void { this.revision += 1; for (const listener of this.listeners) listener() }
   /** 并发打开只读取一次；缓存命中保留内容及撤销历史。 */
-  load(path: string, monaco: any, force = false): Promise<OpenDocument> {
+  load(path: string, createModel?: CreateEditorModel, force = false): Promise<OpenDocument> {
     let old = this.documents.get(path)
     if (old?.model.isDisposed()) {
       old.subscription.dispose(); this.documents.delete(path); this.saves.release(path); old = undefined
     }
-    if (old && !old.model.isDisposed() && !force) return Promise.resolve(old)
+    if (old && !force) return Promise.resolve(old)
     const pending = this.loads.get(path)
     if (pending) return pending
     const sessionId = this.sessionId, version = old?.model.getVersionId()
@@ -90,12 +91,12 @@ export class MinimalWorkspace {
         this.saves.baseline(path, result.version, false)
         return old
       }
-      const uri = monaco.Uri.from({ scheme: 'cstudio', path: `/${encodeURIComponent(this.scope)}/${path.replace(/^\/+/, '')}` })
-      // 先挂可编辑文本；首帧之后再由当前可见的编辑器激活对应语言。
-      const model = monaco.editor.getModel(uri) ?? monaco.editor.createModel(result.content, 'plaintext', uri)
-      const entry: OpenDocument = { model, view: null, silent: false, subscription: { dispose() {} } }
+      if (!createModel) throw new Error('文件模型不可用')
+      const model = createModel(this.scope, path, result.content)
       this.saves.bind(path, model, result.version)
-      entry.subscription = model.onDidChangeContent(() => { if (!entry.silent) this.saves.edit(path, 900) })
+      const entry: OpenDocument = { model, silent: false, subscription: model.onDidChangeContent(() => {
+        if (!entry.silent) this.saves.edit(path, 900)
+      }) }
       this.documents.set(path, entry); rememberModel(this.models, path, model); this.notify()
       return entry
     })().finally(() => { this.loads.delete(path) })
@@ -103,7 +104,7 @@ export class MinimalWorkspace {
     return task
   }
   /** 聚焦/切页签只校验版本，没有后台逐文件轮询；外部改动时保护未保存内容。 */
-  async refresh(path: string, monaco: any): Promise<void> {
+  async refresh(path: string): Promise<void> {
     const entry = this.documents.get(path)
     if (!entry || this.checking.has(path) || Date.now() - (this.checked.get(path) ?? 0) < 1500) return
     this.checking.add(path); this.checked.set(path, Date.now())
@@ -117,7 +118,7 @@ export class MinimalWorkspace {
       if (state.dirty) {
         this.saves.baseline(path, undefined, true)
         this.error = '文件已被外部修改；自动保存已暂停，请先处理本地编辑'; this.notify()
-      } else await this.load(path, monaco, true)
+      } else await this.load(path, undefined, true)
     } catch { /* 校验失败不清空内容、不影响输入。 */ }
     finally { this.checking.delete(path) }
   }

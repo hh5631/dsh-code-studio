@@ -1,11 +1,9 @@
-/** 极简文件工作台：复用 Monaco 与文件模型，只保留 Git 差异入口。 */
+/** 原生文件编辑、保存与 Git 差异的共用界面。 */
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
-import { langOf, loadMonaco } from '../monaco/loader.js'
-import { applyOfficial, editorFont, observeScheme } from '../monaco/theme.js'
-import { setupLsp, setSession } from '../monaco/lsp/index.js'
-import { createViewKeeper } from '../state/editorViewState.js'
+import { editorName, loadEditorEngine } from '../editorEngine.js'
+import type { DocumentEditor, EditorEngine, EditorModel } from '../editorTypes.js'
 import { MAX_EDIT_TEXT_BYTES, minimalWorkspace } from '../state/minimalWorkspace.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 import { normalizeTabs, tabPathOf, remapPathOf } from '../tabActions.js'
@@ -18,7 +16,6 @@ import { deferToOfficial } from '../officialSidebar.js'
 import { tryNativeOpen, inNativePath } from '../nativeOpenStore.js'
 import { GitPanel } from '../sidebar/panels/GitPanel.js'
 import { IconFolderOpenOutline16, IconBranchOutline16 } from './icons.js'
-import { TYPOGRAPHY_EVENT } from '../typography.js'
 import { QuickOpen } from './QuickOpen.js'
 import { CommandPalette } from './CommandPalette.js'
 import { GitDiffView } from './GitDiffView.js'
@@ -30,7 +27,7 @@ import { rpc } from '../rpc.js'
 import { LargeTextView } from './LargeTextView.js'
 import { afterPaint } from '../afterPaint.js'
 
-export { disposeLsp } from '../monaco/lsp/index.js'
+export { disposeLsp } from '../editorEngine.js'
 
 export interface Props {
   sessionId?: string; sessions?: any; visible?: boolean; ownerId?: string
@@ -67,11 +64,11 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   const [saved] = React.useState(() => embedded ? props.filePath ? { tabs: [{ path: tabPathOf(props.filePath, cwd) }], active: tabPathOf(props.filePath, cwd) } : { tabs: [], active: null } : restoreTabs(scope, cwd))
   const [tabs, setTabs] = React.useState<Tabs>(saved.tabs)
   const [active, setActive] = React.useState<string | null>(saved.active)
-  const [monaco, setMonaco] = React.useState<any>(null)
+  const [engine, setEngine] = React.useState<EditorEngine | null>(null)
   const [ready, setReady] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
   const [largePath, setLargePath] = React.useState<string | null>(null)
-  const [presented, setPresented] = React.useState<{ path: string; model: any } | null>(null)
+  const [presented, setPresented] = React.useState<{ path: string; model: EditorModel } | null>(null)
   const [loadStage, setLoadStage] = React.useState('正在打开…')
   const [error, setError] = React.useState('')
   const [sidebar, setSidebar] = React.useState(false)
@@ -80,12 +77,12 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   const [quick, setQuick] = React.useState(false)
   const [gitDiff, setGitDiff] = React.useState<{ cwd: string; path: string; staged: boolean } | null>(null)
   const visible = props.visible !== false
-  // 原生右栏会预挂载文件页签。空工作台、后台页签和纯 Git 对比都不需要 Monaco。
+  // 原生右栏会预挂载文件页签。空工作台、后台页签和纯 Git 对比都不需要加载编辑器。
   const sizeTooLarge = typeof props.documentSize === 'number' && props.documentSize > MAX_EDIT_TEXT_BYTES
   const large = !!active && (sizeTooLarge || largePath === active)
-  const needsMonaco = visible && !!active && !gitDiff && !large
+  const needsEditor = visible && !!active && !gitDiff && !large
   const host = React.useRef<HTMLDivElement>(null), root = React.useRef<HTMLDivElement>(null)
-  const editor = React.useRef<any>(null), keeper = React.useRef<any>(null)
+  const editor = React.useRef<DocumentEditor | null>(null)
   const bound = React.useRef<string | null>(null)
   const lastLoad = React.useRef<{ path: string; revision?: number } | null>(null)
   const onDocumentLoad = React.useRef(props.onDocumentLoad)
@@ -100,11 +97,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
 
   const persist = React.useCallback(() => {
     if (!embedded) try { localStorage.setItem(CACHE_KEY.editor + scope, JSON.stringify({ tabs: latest.current.tabs, active: latest.current.active })) } catch {}
-    if (bound.current && editor.current) {
-      const document = workspace.documents.get(bound.current)
-      if (document) document.view = editor.current.saveViewState()
-    }
-    keeper.current?.save?.()
+    editor.current?.save()
   }, [scope, workspace, embedded])
   React.useEffect(() => {
     const timer = setTimeout(persist, 400); workspace.retain(tabs.map(tab => tab.path))
@@ -135,7 +128,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     const normalized = tabPathOf(path, cwd)
     if (!normalized) return
     if (line && bound.current === normalized && editor.current) {
-      editor.current.setPosition({ lineNumber: line, column: column || 1 }); editor.current.revealLineInCenter(line); editor.current.focus()
+      editor.current.goTo(line, column || 1)
     } else if (line) pendingLine.current = { path: normalized, line, column: column || 1 }
     setTabs(previous => {
       if (embedded) return [{ path: normalized }]
@@ -212,101 +205,83 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     window.addEventListener('edrv:path-renamed', renamed); window.addEventListener('edrv:path-deleted', deleted)
     return () => { window.removeEventListener('edrv:path-renamed', renamed); window.removeEventListener('edrv:path-deleted', deleted) }
   }, [cwd, workspace, scope])
+  const openRef = React.useRef(open)
+  openRef.current = open
   React.useEffect(() => {
-    if (!needsMonaco || monaco) return
+    if (!needsEditor || engine) return
     let alive = true
     const cancel = afterPaint(() => {
-      void loadMonaco((stage: { message: string }) => { if (alive) setLoadStage(stage.message) }).then((value: any) => {
-        if (alive) setMonaco(value)
+      void loadEditorEngine(message => { if (alive) setLoadStage(message) }).then(value => {
+        if (alive) setEngine(value)
       }).catch((cause: unknown) => {
         if (alive) { setError(String(cause)); onDocumentLoad.current?.(false) }
       })
     })
     return () => { alive = false; cancel() }
-  }, [needsMonaco, monaco, active])
+  }, [needsEditor, engine, active])
   React.useEffect(() => { if (sizeTooLarge && visible && active) onDocumentLoad.current?.(true) },
     [sizeTooLarge, visible, active, props.documentRevision])
   React.useLayoutEffect(() => {
-    if (!monaco || !host.current) return
-    const theme = applyOfficial(monaco)
-    const instance = monaco.editor.create(host.current, {
-      model: null, theme, ...editorFont(), automaticLayout: false,
-      minimap: { enabled: false }, glyphMargin: false, overviewRulerLanes: 0,
-      scrollBeyondLastLine: false, smoothScrolling: true, cursorSmoothCaretAnimation: 'on',
-      renderLineHighlight: 'line', folding: true, wordWrap: 'off',
-      stickyScroll: { enabled: false }, codeLens: false, padding: { top: 10, bottom: 10 },
+    if (!engine || !host.current) return
+    const instance = engine.mount(host.current, {
+      scope, open: (...args) => openRef.current(...args), notify: setError,
+      save: () => { const path = bound.current; if (path) void workspace.save(path) },
     })
-    editor.current = instance; keeper.current = createViewKeeper(instance); setReady(value => value + 1)
-    const syncFont = () => { instance.updateOptions(editorFont()); monaco.editor.remeasureFonts?.() }
-    const syncTheme = () => { applyOfficial(monaco); syncFont() }
-    const stopTheme = observeScheme(syncTheme)
-    window.addEventListener(TYPOGRAPHY_EVENT, syncFont)
-    window.addEventListener('edrv:theme-change', syncTheme)
-    let frame: number | undefined
-    const measure = () => { if (frame === undefined) frame = requestAnimationFrame(() => { frame = undefined; instance.layout() }) }
-    const observer = new ResizeObserver(measure); observer.observe(host.current)
+    editor.current = instance
+    setReady(value => value + 1)
     return () => {
-      window.removeEventListener(TYPOGRAPHY_EVENT, syncFont); window.removeEventListener('edrv:theme-change', syncTheme)
-      persist(); observer.disconnect(); stopTheme?.(); if (frame !== undefined) cancelAnimationFrame(frame)
-      keeper.current?.dispose?.(); keeper.current = null; editor.current = null; bound.current = null
+      persist(); instance.dispose(); editor.current = null; bound.current = null
     }
-  }, [monaco, workspace, persist])
+  }, [engine, scope, workspace, persist])
   React.useEffect(() => {
-    if (typeof props.wordWrap === 'boolean') editor.current?.updateOptions({ wordWrap: props.wordWrap ? 'on' : 'off' })
+    editor.current?.setWrap(props.wordWrap === true)
   }, [props.wordWrap, ready])
   React.useEffect(() => {
     const instance = editor.current
-    if (!visible || !instance || !monaco || sizeTooLarge) return
+    if (!visible || !instance || !engine || sizeTooLarge) return
     let alive = true
-    if (bound.current) { const old = workspace.documents.get(bound.current); if (old) old.view = instance.saveViewState() }
-    keeper.current?.save?.(); setActiveEditorPath(active)
-    if (!active) { instance.setModel(null); bound.current = null; return }
+    instance.save(); setActiveEditorPath(active)
+    if (!active) { instance.clear(); bound.current = null; return }
     const reportLoad = onDocumentLoad.current
     const cached = workspace.documents.has(active)
     const reload = props.documentRevision !== undefined && lastLoad.current?.path === active
       && lastLoad.current.revision !== props.documentRevision
-    if (!cached) { instance.setModel(null); bound.current = null }
+    if (!cached) { instance.clear(); bound.current = null }
     setLoading(!cached); setError(''); setLargePath(null)
-    void workspace.load(active, monaco, reload).then(entry => {
+    void workspace.load(active, engine.createModel, reload).then(entry => {
       if (!alive) return
       lastLoad.current = { path: active, revision: props.documentRevision }
-      keeper.current.bind(scope, active, entry.model); bound.current = active
+      instance.bind(active, entry.model); bound.current = active
       setPresented(previous => previous?.path === active && previous.model === entry.model ? previous : { path: active, model: entry.model })
-      if (entry.view) instance.restoreViewState(entry.view)
       const jump = pendingLine.current
       if (jump?.path === active) {
-        instance.setPosition({ lineNumber: jump.line, column: jump.column }); instance.revealLineInCenter(jump.line); instance.focus(); pendingLine.current = null
+        instance.goTo(jump.line, jump.column); pendingLine.current = null
       }
-      setLoading(false); reportLoad?.(true); void workspace.refresh(active, monaco)
+      setLoading(false); reportLoad?.(true); void workspace.refresh(active)
     }).catch(cause => {
       if (!alive) return
       setLoading(false)
-      if (!cached || cause?.code === 'file-too-large') { instance.setModel(null); bound.current = null }
+      if (!cached || cause?.code === 'file-too-large') { instance.clear(); bound.current = null }
       if (cause?.code === 'file-too-large') { setLargePath(active); reportLoad?.(true) }
       else { setError(String(cause)); reportLoad?.(false) }
     })
     return () => { alive = false }
-  }, [active, monaco, ready, scope, workspace, props.documentRevision, visible, sizeTooLarge])
+  }, [active, engine, ready, scope, workspace, props.documentRevision, visible, sizeTooLarge])
   React.useEffect(() => {
     const focus = () => {
       const current = latest.current
-      if (document.visibilityState !== 'hidden' && current.visible && current.active && monaco) void workspace.refresh(current.active, monaco)
+      if (document.visibilityState !== 'hidden' && current.visible && current.active) void workspace.refresh(current.active)
     }
     window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus)
     return () => { window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus) }
-  }, [monaco, workspace])
+  }, [workspace])
   React.useEffect(() => {
-    if (!visible || large || gitDiff || !monaco || !presented || presented.path !== active) return
-    return afterPaint(() => {
-      if (editor.current?.getModel() !== presented.model) return
-      const language = langOf(presented.path)
-      if (presented.model.getLanguageId() !== language) monaco.editor.setModelLanguage(presented.model, language)
-      void setupLsp(monaco)
-      setSession(sessionId)
-    })
-  }, [active, gitDiff, large, monaco, presented, sessionId, visible])
+    if (!visible || preview || large || gitDiff || !presented || presented.path !== active) return
+    let deactivate: void | (() => void)
+    const cancel = afterPaint(() => { deactivate = editor.current?.activate(presented.path, presented.model, sessionId) })
+    return () => { cancel(); deactivate?.() }
+  }, [active, gitDiff, large, preview, presented, sessionId, visible, ready])
   React.useEffect(() => {
-    const action = (name: string) => { void editor.current?.getAction(name)?.run() }
     const cycle = (step: number) => {
       const current = latest.current
       if (!current.tabs.length) return
@@ -316,9 +291,9 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     const commands: Record<string, () => void> = {
       save: () => { const path = latest.current.active; if (path && workspace.documents.has(path)) void workspace.save(path) },
       closeTab: () => { if (latest.current.active) void close(latest.current.active) },
-      toggleSidebar: openFiles, goToLine: () => action('editor.action.gotoLine'),
-      toggleComment: () => action('editor.action.commentLine'), duplicateLine: () => action('editor.action.copyLinesDownAction'),
-      goToDefinition: () => action('editor.action.revealDefinition'), findReferences: () => action('editor.action.referenceSearch'),
+      toggleSidebar: openFiles, goToLine: () => editor.current?.run('goToLine'),
+      toggleComment: () => editor.current?.run('toggleComment'), duplicateLine: () => editor.current?.run('duplicateLine'),
+      goToDefinition: () => editor.current?.run('goToDefinition'), findReferences: () => editor.current?.run('findReferences'),
       openInExplorer: () => { if (latest.current.active) void revealInExplorer(sessionId, latest.current.active) },
       nextTab: () => cycle(1), prevTab: () => cycle(-1),
       toggleMarkdownPreview: () => {
@@ -359,11 +334,11 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     const actions = {
       openGitDiff: (path: string, staged: boolean, repositoryRoot?: string) => { setGitDiff({ cwd: repositoryRoot || cwd || '', path, staged }); setPreview(false) },
       closeGitDiff: () => setGitDiff(null), notify: setError,
-      refreshFile: () => { if (active && monaco && workspace.documents.has(active)) void workspace.load(active, monaco, true).catch(cause => setError(String(cause))) },
+      refreshFile: () => { if (active && workspace.documents.has(active)) void workspace.load(active, undefined, true).catch(cause => setError(String(cause))) },
     }
     props.editorActions.current = actions
     return () => { if (props.editorActions.current === actions) props.editorActions.current = null }
-  }, [props.editorActions, cwd, active, monaco, workspace])
+  }, [props.editorActions, cwd, active, workspace])
   const status = active ? workspace.saves.state(active) : null
   const markdown = !!active && !large && /\.(?:md|markdown)$/i.test(active) && workspace.documents.has(active)
   const button = (label: string, text: React.ReactNode, run: () => void, pressed?: boolean) => React.createElement('button', { type: 'button', title: label, 'aria-label': label, 'aria-pressed': pressed, onClick: run }, text)
@@ -390,7 +365,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     React.createElement('div', { className: 'cstudio-minimal-body' },
       sidebar && !embedded ? React.createElement('aside', { className: 'cstudio-minimal-git', 'aria-label': 'Git 修改' }, React.createElement(GitPanel, { ctx: context })) : null,
       React.createElement('div', { className: 'cstudio-minimal-document edrv-editor-row' },
-        React.createElement('div', { ref: host, className: 'cstudio-minimal-editor', style: { visibility: active && !preview && !gitDiff && !large ? 'visible' : 'hidden' } }),
+        React.createElement('div', { ref: host, className: 'cstudio-minimal-editor', 'data-cstudio-engine': editorName, style: { visibility: active && !preview && !gitDiff && !large ? 'visible' : 'hidden' } }),
         large && active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-preview' }, React.createElement(LargeTextView, {
           sessionId: sessionId || '', path: active,
           loadPage: async args => { const result = await rpc('cstudio.textPage', args); return result.ok ? result : { ok: false, error: result.error, reason: result.reason ?? 'read-failed' } },
@@ -400,8 +375,8 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
         !active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-empty' },
           embedded ? React.createElement('p', null, '从右侧文件树选择文件') : React.createElement(React.Fragment, null, React.createElement(IconFolderOpenOutline16, { size: 28 }),
             React.createElement('p', null, '从工作区打开文件'), button('工作区文件', '浏览文件', openFiles))) : null,
-        visible && !gitDiff && (loading || (needsMonaco && !monaco && !error))
-          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, monaco ? '正在读取文件…' : loadStage) : null)),
+        visible && !gitDiff && (loading || (needsEditor && !engine && !error))
+          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, engine ? '正在读取文件…' : loadStage) : null)),
     error || workspace.error ? React.createElement('div', { className: 'cstudio-minimal-error', role: 'alert' },
       React.createElement('span', null, error || workspace.error),
       active && workspace.documents.has(active) ? button('复制本地内容', '复制内容', () => { void copyText(workspace.documents.get(active)!.model.getValue(), '内容已复制', setError) }) : null,

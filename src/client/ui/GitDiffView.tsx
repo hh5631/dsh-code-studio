@@ -1,7 +1,6 @@
 import React from 'react'
 import { parseGitPatch, patchLineText, patchPartText, type PatchLine, type PatchPart } from '../../shared/gitPatch.js'
 import { emitFileChanged } from '../events.js'
-import { loadMonaco } from '../monaco/loader.js'
 import { rpc } from '../rpc.js'
 import { absolutePath } from '../state/gitPaths.js'
 import { minimalWorkspace } from '../state/minimalWorkspace.js'
@@ -150,9 +149,8 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
       const result = await rpc('git.editPart', { cwd, path, sessionId, revision: state.revision, ...selection, replacement })
       if (!result.ok) throw new Error(result.error)
       emitFileChanged(target, { scope, kind: 'text' })
-      if (affected.length) void loadMonaco(() => {}).then((monaco: unknown) => Promise.all(
-        affected.filter(key => workspace.documents.has(key)).map(key => workspace.load(key, monaco, true)),
-      )).catch(() => {})
+      void Promise.all(affected.filter(key => workspace.documents.has(key))
+        .map(key => workspace.load(key, undefined, true))).catch(() => {})
       if (live.current) {
         onApplied?.(target)
         setDraft(null)

@@ -7,6 +7,7 @@ import { checkArtifacts, inspectArtifacts, verifyNativeLoader } from '../scripts
 const directories: string[] = []
 const OWNER = 'dsh-code-studio'
 const EDITOR = 'client.editor.js'
+const TRIAL = 'client.codemirror.js'
 const root = `window.__ModuleLoader__.load({id:'${OWNER}',factory:(require)=>{
   const exports = { __lazyShared: {rpc(){},dbg(){},ContextMenu(){}}, __editorShared: { workspaceRuntime: {minimalWorkspace(){}} }, __setEditorImport(){} };
   exports.__setEditorImport(require.async?.bind(require)); return exports;
@@ -27,6 +28,7 @@ async function fixture(): Promise<string> {
     writeFile(join(directory, 'index.js'), "export const name='dsh-code-studio'; export const inject=[]; export function apply(){}"),
     writeFile(join(directory, 'client.js'), root),
     writeFile(join(directory, EDITOR), chunk()),
+    writeFile(join(directory, TRIAL), chunk(TRIAL)),
   ])
   return directory
 }
@@ -40,7 +42,7 @@ afterEach(cleanup)
 describe('client artifact registration contract', () => {
   it('accepts the root and on-demand editor chunk', async () => {
     const result = await checkArtifacts(await fixture())
-    expect(Object.keys(result.bytes)).toEqual(['index.js', 'client.js', EDITOR])
+    expect(Object.keys(result.bytes)).toEqual(['index.js', 'client.js', EDITOR, TRIAL])
     expect(result.native).toHaveProperty('skipped')
   })
   it('rejects missing and empty mandatory artifacts', async () => {
@@ -111,8 +113,8 @@ const artifactDir = process.env.EDRV_ARTIFACT_DIR
 describe('explicit actual Host loader validation', () => {
   it.skipIf(!loaderPath)('uses actual ClientModuleSystem for URL, cache, retry, and HMR fixtures (requires EDRV_MODULE_LOADER)', async () => {
     const evidence = await verifyNativeLoader(await inspectArtifacts(await fixture()), loaderPath!)
-    expect(evidence.arrivals).toHaveLength(4)
-    expect(evidence.arrivals.at(-1)).toContain(`${EDITOR}?rev=two`)
+    expect(evidence.arrivals).toHaveLength(5)
+    expect(evidence.arrivals.at(-2)).toContain(`${EDITOR}?rev=two`)
   })
   it.skipIf(!artifactDir)('validates explicitly requested real build artifacts (requires EDRV_ARTIFACT_DIR)', async () => {
     const evidence = await checkArtifacts(artifactDir!, loaderPath)

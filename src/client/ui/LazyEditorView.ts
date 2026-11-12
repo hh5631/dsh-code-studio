@@ -7,8 +7,14 @@ type Importer = (file: string) => Promise<unknown>
 let importer: Importer | undefined
 let pending: Promise<EditorModule> | undefined
 let ready: EditorModule | undefined
+let chunk = './client.editor.js'
 
-export function setEditorImport(next?: Importer): void { importer = next }
+export function setEditorImport(next?: Importer): void {
+  importer = next
+  if (typeof window === 'undefined' || !window.location) return
+  const trial = new URLSearchParams(window.location.search).get('cstudio-editor') === 'codemirror'
+  chunk = trial ? './client.codemirror.js' : './client.editor.js'
+}
 export function disposeEditorRuntime(): void { ready?.disposeLsp(); ready = undefined; pending = undefined }
 
 function load(): Promise<EditorModule> {
@@ -16,7 +22,7 @@ function load(): Promise<EditorModule> {
   if (pending) return pending
   const transport = importer
   if (!transport) return Promise.reject(new Error('当前 DSH 不支持按需加载编辑器模块'))
-  const task = Promise.resolve().then(() => transport('./client.editor.js')).then(value => {
+  const task = Promise.resolve().then(() => transport(chunk)).then(value => {
     const editor = value as EditorModule
     if (typeof editor?.EditorView !== 'function') throw new Error('编辑器模块不完整')
     if (pending === task) ready = editor
