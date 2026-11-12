@@ -5,14 +5,34 @@
   --cstudio-git-modified:#9a6700; --cstudio-git-added:#1a7f37; --cstudio-git-renamed:#2864bc; --cstudio-git-conflict:#cf222e; }
 body[data-ds-dark-theme] [data-cstudio-workspace-tree] { --cstudio-git-modified:#e2b35c; --cstudio-git-added:#73c991; --cstudio-git-renamed:#75beff; --cstudio-git-conflict:#f48771; }
 .cstudio-native-panel-tools, .cstudio-workspace-switches { display:flex; flex:none; align-items:center; gap:4px; }
+[data-cstudio-document-tools]:empty { display:none; }
 .cstudio-workspace-switches button {
-  display:inline-flex; flex:none; align-items:center; justify-content:center;
+  -webkit-app-region:no-drag; box-sizing:border-box; display:inline-flex; flex:none; align-items:center; justify-content:center;
   width:28px; height:28px; padding:6px; border:0; border-radius:var(--dsw-radius-sm, 4px);
-  color:var(--dsw-alias-label-secondary); background:transparent; cursor:pointer;
+  color:var(--dsw-alias-label-secondary); background:transparent; cursor:pointer; line-height:1;
 }
 .cstudio-workspace-switches button svg { width:15px; height:15px; }
 .cstudio-workspace-switches button:is(:hover,[aria-pressed=true]) { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 .cstudio-workspace-switches button:focus-visible { outline:2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset:-2px; }
+/* Keep the shared actions against the same edge when file-specific actions mount. */
+[data-cstudio-dock-side=left] :is(.cstudio-native-header,[data-textpreview-state]>div:has(>[data-textpreview-path])) {
+  padding-left:6px;
+  [data-files-navigator-toggle] { order:-2; }
+  .cstudio-native-panel-tools { order:-1; }
+  .cstudio-workspace-switches { flex-direction:row-reverse; }
+  > :is(.cstudio-native-path,[data-textpreview-path]) { margin-left:12px; }
+}
+@media (min-width:768px) {
+  :is([data-cstudio-tree-side=left],[data-cstudio-dock-side=left] [data-textpreview-state=loading]>[data-textpreview-content]) {
+    > [data-files-navigator-mode=push] { order:-1; }
+    > [data-files-navigator-mode=overlay] { left:8px; right:auto; }
+    > [data-files-navigator] > [data-files-navigator-resize] { left:auto; right:-4px; }
+  }
+}
+.cstudio-native-content>[data-files-navigator],
+:is([data-textpreview-state]:has(>div .cstudio-native-panel-tools),[data-cstudio-dock-side] [data-textpreview-state=loading])>[data-textpreview-content]>[data-files-navigator] {
+  background:var(--dsw-alias-bg-base);
+}
 /* 仅替换导航内容，保留原生容器、宽度、拖拽边与文件树节点。 */
 [data-cstudio-workspace-tree] [data-files-body]:has(>.cstudio-side-panel) { position:relative; overflow:hidden; padding:0; margin:0; scrollbar-gutter:auto; }
 [data-cstudio-workspace-tree] [data-files-body]:has(>.cstudio-side-panel)>:not(.cstudio-side-panel) { display:none; }

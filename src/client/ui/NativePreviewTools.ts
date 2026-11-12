@@ -9,11 +9,12 @@ import { tabPathOf } from '../tabActions.js'
 import { GitDiffView } from './GitDiffView.js'
 import { WorkspacePanel, type EditorPanelActions, type WorkspacePanelActions } from './WorkspacePanel.js'
 
-/** 官方文档动作扩展：即使从编辑器切换到原生预览，仍可使用 Git 和搜索。 */
+/** 原生预览工具栏保持显示，差异视图挂到可用的预览正文。 */
 export function NativePreviewTools({ absolutePath, sessionId, sessions, service }: {
   absolutePath: string; sessionId?: string; sessions?: any; service?: SidebarRightServiceLike
 }): React.ReactElement {
   const anchor = React.useRef<HTMLSpanElement>(null)
+  const [panelHost, setPanelHost] = React.useState<HTMLElement | null>(null)
   const [body, setBody] = React.useState<HTMLElement | null>(null)
   const [diff, setDiff] = React.useState<{ path: string; cwd: string; staged: boolean } | null>(null)
   const [message, setMessage] = React.useState('')
@@ -28,10 +29,13 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
 
   React.useLayoutEffect(() => {
     const preview = anchor.current?.closest('[data-textpreview-state]')
-    const content = preview?.querySelector('[data-textpreview-content]')
+    const content = preview?.querySelector<HTMLElement>('[data-textpreview-content]')
     if (!preview || !content) return
-    const sync = () => setBody(preview.getAttribute('data-document-preview') === DOCUMENT_EDITOR_ID
-      ? null : content.querySelector<HTMLElement>(':scope > [data-textpreview-body]'))
+    const sync = () => {
+      const editor = preview.getAttribute('data-document-preview') === DOCUMENT_EDITOR_ID
+      setPanelHost(editor ? null : content)
+      setBody(editor ? null : content.querySelector<HTMLElement>(':scope > [data-textpreview-body]'))
+    }
     const observer = new MutationObserver(sync)
     observer.observe(preview, { attributes: true, attributeFilter: ['data-document-preview'] })
     observer.observe(content, { childList: true })
@@ -40,7 +44,8 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
   }, [])
 
   React.useEffect(() => { setDiff(null); setMessage('') }, [absolutePath, body])
-  const toolbar = anchor.current?.parentElement ?? null
+  const toolbar = anchor.current?.closest('[data-textpreview-state]')
+    ?.querySelector<HTMLElement>('[data-textpreview-path]')?.parentElement ?? null
   const pane = anchor.current?.closest<HTMLElement>('[data-dockkit-pane], [data-dockkit-float]')
   const paneId = pane?.dataset.dockkitPane ?? pane?.dataset.dockkitFloat
   const prepare = async () => {
@@ -69,10 +74,10 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
     } catch { setMessage('无法打开此文件') }
   }
   return React.createElement(React.Fragment, null,
-    React.createElement('span', { ref: anchor, hidden: true }),
-    body ? React.createElement(WorkspacePanel, {
+    React.createElement('span', { ref: anchor, className: 'cstudio-native-panel-tools', 'data-cstudio-document-tools': true }),
+    panelHost ? React.createElement(WorkspacePanel, {
       paneKey: `${sessionId}:${paneId}`, sessionId, cwd, scope, path: tabPathOf(absolutePath, cwd), visible: true,
-      toolbarTarget: toolbar, nativeContent: body.parentElement,
+      toolbarTarget: toolbar, nativeContent: panelHost,
       onOpen: () => {}, onOpenPath: (path, line, column) => { void openPath(path, line, column) },
       editorActions, actions, beforeNavigate,
     }) : null,

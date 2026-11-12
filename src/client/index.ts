@@ -583,7 +583,8 @@ export async function apply(ctx: any): Promise<void> {
     const edit = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab: officialRenderTab })
     if (edit) claimDisposer = ctx.effect(() => () => { claimDisposer = null; edit() }, 'code-studio: explicit file editor')
     const workspace = registerWorkspaceFilesClaim({ tabs: official.tabs, slots: ctx.slots,
-      renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true }), icon: IconFolderOpenOutline16 })
+      renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true, previewResources: ctx.get('resources') }),
+      icon: IconFolderOpenOutline16 })
     if (workspace) ctx.effect(() => workspace, 'code-studio: workspace files')
   }
   const applySideForm = (): void => {

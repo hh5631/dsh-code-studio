@@ -1,13 +1,15 @@
 /** 原生文件资源正文：一个文件页签、一份编辑内容，文件树复用 DSH Factory。 */
 import React from 'react'
+import * as Primitives from '@deepseek-ai/dsh-client-ui-primitives'
 import { LazyEditorView as EditorView } from './LazyEditorView.js'
 import { WorkspacePanel, type EditorPanelActions, type WorkspacePanelActions, type WorkspaceView } from './WorkspacePanel.js'
 import { buildPreviewFileAddress, parseOfficialFileAddress, resolveNavColumn, resolveNavLine, resolveNavOpen } from '../officialSidebar.js'
-import { navigateFile } from '../nativeFileNavigation.js'
+import { navigateFile, type NativePreviewResources } from '../nativeFileNavigation.js'
 import { CACHE_KEY } from '../paths.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 
 const initializedPanes = new Set<string>()
+const PathLabel = (Primitives as { PathLabel?: React.ComponentType<{ path: string; className?: string }> }).PathLabel
 
 interface RendererContent {
   kind: 'renderer'
@@ -20,6 +22,7 @@ export interface NativeProps {
   sessionId?: string
   useTabInfo?: () => any
   renderFactorySlot?: (name: string, props: any) => React.ReactNode
+  previewResources?: NativePreviewResources
   [key: string]: any
 }
 
@@ -51,18 +54,19 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
     return !!panelActions.current
   }, [])
   const openFilesPanel = React.useCallback(() => showWorkspacePanel('files'), [showWorkspacePanel])
-  const [toolbarTarget, setToolbarTarget] = React.useState<HTMLDivElement | null>(null)
+  const [workspaceContent, setWorkspaceContent] = React.useState<HTMLDivElement | null>(null)
   const root = React.useRef<HTMLDivElement>(null)
   const [nativeContent, setNativeContent] = React.useState<HTMLElement | null>(null)
   const beforeNavigate = React.useRef<(() => Promise<boolean>) | null>(null)
-  const onOpen = React.useCallback((next: string) => {
-    void navigateFile(tab, next, beforeNavigate.current)
-  }, [tab?.actions, tab?.signal])
+  const previewResources = workspacePage ? props.previewResources : undefined
+  const onOpen = React.useCallback((next: string, params?: object) => {
+    void navigateFile(tab, next, beforeNavigate.current, params, previewResources)
+  }, [tab?.actions, tab?.signal, previewResources])
   const onOpenPath = React.useCallback((path: string, line?: number, column?: number) => {
-    if (sessionId) void navigateFile(tab, buildPreviewFileAddress(path, sessionId, cwd), beforeNavigate.current, { line, column })
-  }, [tab?.actions, tab?.signal, sessionId, cwd])
+    if (sessionId) onOpen(buildPreviewFileAddress(path, sessionId, cwd), { line, column })
+  }, [onOpen, sessionId, cwd])
   const factory = props.renderFactorySlot
-  const paneKey = `${props.sessionId}:${panel?.id}`
+  const paneKey = `${sessionId}:${panel?.id}`
   const previewAddress = file && sessionId ? buildPreviewFileAddress(file.path, sessionId, cwd) : null
   // 旧版自动开的编辑页签没有显式编辑标记；恢复时直接走原生查看，不挂载 编辑器。
   const migrating = !!previewAddress && !workspacePage && !nativeDocument
@@ -87,19 +91,24 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
   }, [content, sourceVersion, props.documentVersion])
 
   React.useEffect(() => {
-    if (migrating || (!workspacePage && initializedPanes.has(paneKey)) || (!factory && !nativeDocument)) return
+    if (tab?.visible === false || migrating) return
+    if (workspacePage) {
+      // 工作区入口已负责展开，进入编辑器时沿用原生开关状态。
+      initializedPanes.add(paneKey)
+      return
+    }
+    if (initializedPanes.has(paneKey) || (!factory && !nativeDocument)) return
     // 初次进入宽屏编辑时展开原生文件树。之后由原生控件保存本面板的开关选择。
     // 使用原生已声明的按钮接口，不改它的私有 store；窄屏遵循 DSH 的覆盖/收起规则。
     const frame = requestAnimationFrame(() => {
       const button = (nativeDocument ? panelToolbar : root.current)?.querySelector<HTMLButtonElement>('[data-files-navigator-toggle]')
       if (!button) return
-      if (workspacePage) { panelActions.current?.show('files'); return }
       if (((nativeDocument ? nativeContent : root.current)?.clientWidth ?? 0) < 560 || !window.matchMedia('(min-width: 768px)').matches) return
       initializedPanes.add(paneKey)
       if (button.getAttribute('aria-expanded') !== 'true') button.click()
     })
     return () => cancelAnimationFrame(frame)
-  }, [paneKey, factory, workspacePage, migrating, nativeDocument, nativeContent, panelToolbar])
+  }, [paneKey, factory, workspacePage, migrating, nativeDocument, nativeContent, panelToolbar, tab?.visible])
 
   if (!file && !workspacePage) return React.createElement('div', { role: 'alert' }, '文件地址不可用，请从工作区重新打开')
   if (migrating) return React.createElement('div', { role: 'status' }, '正在打开原生预览…')
@@ -107,7 +116,7 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
       workspacePage ? React.createElement('div', { className: 'cstudio-editor-start' }, '从文件树选择文件') : React.createElement(EditorView, {
         ...props, sessionId, ownerId: tab?.id, visible: tab?.visible !== false,
         filePath: file?.path ?? '', fileLine: line, fileColumn: column,
-        navigationRevision: tab?.navigation?.revision, toolbarTarget, onOpenPath, beforeNavigate, editorActions, showWorkspacePanel, openWorkspaceFiles: openFilesPanel,
+        navigationRevision: tab?.navigation?.revision, onOpenPath, beforeNavigate, editorActions, showWorkspacePanel, openWorkspaceFiles: openFilesPanel,
         nativeDocument, wordWrap: nativeDocument ? props.wrap : undefined,
         documentSize: nativeDocument ? props.documentSize : undefined,
         documentRevision: content?.revision, onDocumentLoad: nativeDocument ? onDocumentLoad : undefined,
@@ -115,15 +124,19 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
       React.createElement(WorkspacePanel, {
         paneKey, sessionId, cwd, scope: workspaceScopeOf(cwd, sessionId), path: file?.path ?? '', visible: tab?.visible !== false,
         factory, useTabInfo: props.useTabInfo, toolbarTarget: panelToolbar, nativeContent: nativeDocument ? nativeContent : undefined,
+        workspaceContent, openFilesOnEntry: workspacePage,
         onOpen, onOpenPath, editorActions, actions: panelActions, beforeNavigate,
       }))
   if (nativeDocument) return React.createElement('div', { ref: root, className: 'cstudio-document-editor', 'data-code-preview': true }, editorAndPanel)
-  return React.createElement('div', { ref: root, className: 'cstudio-minimal cstudio-native-file', 'data-edrv-view': '1' },
-    React.createElement('header', { className: 'cstudio-native-header' },
-      React.createElement('span', { className: 'cstudio-native-path', title: file?.path ?? cwd ?? '' }, file?.path ?? cwd ?? '工作区文件'),
-      React.createElement('div', { ref: setToolbarTarget, className: 'cstudio-native-actions' }),
-      React.createElement('div', { ref: setPanelToolbar, className: 'cstudio-native-panel-tools' })),
-    React.createElement('div', { className: 'cstudio-native-content', 'data-textpreview-content': true }, editorAndPanel))
+  const path = cwd ?? '工作区文件'
+  return React.createElement('div', { ref: root, className: 'cstudio-native-file', 'data-edrv-view': '1' },
+    React.createElement('header', { ref: setPanelToolbar, className: 'cstudio-native-header' },
+      PathLabel
+        ? React.createElement(PathLabel, { className: 'cstudio-native-path', path })
+        : React.createElement('span', { className: 'cstudio-native-path', title: path }, path),
+      React.createElement('span', { className: 'cstudio-native-panel-tools', 'data-cstudio-document-tools': true }),
+      factory?.('sidebar.files.navigator.toggle', { useTabInfo: props.useTabInfo })),
+    React.createElement('div', { ref: setWorkspaceContent, className: 'cstudio-native-content', 'data-textpreview-content': true }, editorAndPanel))
 }
 
 /** 旧版保存的“文件编辑”页签仅迁移一次；非当前页签不主动打开任何文件。 */

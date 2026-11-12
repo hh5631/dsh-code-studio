@@ -22,6 +22,8 @@ export const CACHE_KEY = {
   editorLegacy: 'edrv.editor.v2.',
   /** 侧边栏状态（EditorView；按布局 side/central 追加段）。 */
   sidebar: 'edrv.sidebar.',
+  /** 文件树显示在文件正文的哪一侧（本浏览器全局）。 */
+  fileTreeSide: 'edrv.file-tree-side.v1',
   /** 搜索面板条件（SearchPanel v1）。 */
   search: 'edrv.search.v1.',
   /** 侧边栏提示已关闭标记（全局，无作用域）。 */

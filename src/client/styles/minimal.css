@@ -10,12 +10,12 @@
   font-family: var(--cstudio-ui-font, inherit); font-size: var(--cstudio-ui-size, inherit);
   line-height: 1.5; box-shadow: none;
 }
-.cstudio-minimal:not(.cstudio-native-file) button, .cstudio-native-actions button {
+.cstudio-minimal button {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   font: inherit; line-height: 1.3; color: inherit; cursor: pointer;
   background: transparent; border: 0; border-radius: 6px; padding: 5px 8px;
 }
-.cstudio-minimal:not(.cstudio-native-file) button:hover, .cstudio-native-actions button:hover { background: var(--dsw-alias-interactive-bg-hover, #f2f3f5); }
+.cstudio-minimal button:hover { background: var(--dsw-alias-interactive-bg-hover, #f2f3f5); }
 .cstudio-minimal :is(button,[role=tab]):focus-visible,
 .cstudio-settings input:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset: -2px; box-shadow: none; }
 .cstudio-minimal-bar { min-height: 42px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: 1px solid var(--cstudio-border); background: var(--cstudio-raised); }
@@ -69,13 +69,12 @@
 @media(prefers-reduced-motion:reduce) { .cstudio-minimal * { scroll-behavior: auto !important; } }
 
 /* 原生文件资源布局：上方统一文件路径，编辑内容旁复用原生文件树。 */
-.cstudio-native-file { isolation: isolate; }
-.cstudio-native-header { box-sizing: border-box; display: flex; flex: none; align-items: center; gap: 4px; height: 38px; padding: 0 6px 0 16px; border-bottom: .5px solid var(--cstudio-border); }
-.cstudio-native-path { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--cstudio-muted); }
-.cstudio-native-actions { display: flex; flex: none; }
+.cstudio-native-file { isolation: isolate; display: flex; flex: auto; flex-direction: column; height: 100%; min-height: 0; min-width: 0; }
+.cstudio-native-header { box-sizing: border-box; display: flex; flex: none; align-items: center; gap: 4px; height: 38px; padding: 0 6px 0 16px; border-bottom: .5px solid var(--dsw-alias-border-l3); }
+.cstudio-native-path { margin-right: 12px; }
+.cstudio-native-path:not([data-path-label]) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .cstudio-document-editor { flex: 1; min-width: 0; min-height: 0; white-space: normal; }
 .cstudio-editor-start { display:flex; flex:1; min-height:96px; align-items:center; justify-content:center; gap:8px; color:var(--dsw-alias-label-secondary); }
-.cstudio-native-actions .cstudio-minimal-tools button { min-width: 30px; width: auto; padding: 5px 8px; }
 .cstudio-native-content { isolation: isolate; position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; }
 .cstudio-native-content > .cstudio-minimal { isolation: isolate; flex: 1; min-width: 0; height: auto; }
 [data-textpreview-body]:has(> .cstudio-preview-overlay) { position: relative; }

@@ -25,4 +25,41 @@ describe('原生文件树编辑导航', () => {
     expect(openResource).toHaveBeenCalledTimes(1)
     expect(openResource).toHaveBeenCalledWith('file:new', { replaceTab: true })
   })
+  it('工作区在原生预览接手后才释放已就绪的文件元数据', async () => {
+    let status: 'loading' | 'live' = 'loading'
+    let notify!: () => void
+    const unsubscribe = vi.fn()
+    const source = vi.fn(() => ({
+      getSnapshot: () => ({ status }),
+      subscribe(listener: () => void) { notify = listener; return unsubscribe },
+    }))
+    const openResource = vi.fn(() => expect(unsubscribe).not.toHaveBeenCalled())
+    const opened = navigateFile({ actions: { openResource } }, 'file:a', null, undefined, { source })
+    expect(openResource).not.toHaveBeenCalled()
+    expect(source).toHaveBeenCalledWith('file:a')
+    status = 'live'
+    notify()
+    expect(await opened).toBe(true)
+    expect(openResource).toHaveBeenCalledOnce()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+  it('元数据等待有上限，过期的选择不会打开', async () => {
+    vi.useFakeTimers()
+    try {
+      const openResource = vi.fn(), tab = { actions: { openResource } }
+      const unsubscribe = vi.fn()
+      const resources = {
+        source: () => ({ getSnapshot: () => ({ status: 'loading' as const }), subscribe: () => unsubscribe }),
+      }
+      const old = navigateFile(tab, 'file:old', null, undefined, resources)
+      const latest = navigateFile(tab, 'file:new', null, undefined, resources)
+      await vi.runAllTimersAsync()
+      expect(await old).toBe(false)
+      expect(await latest).toBe(true)
+      expect(openResource).toHaveBeenCalledExactlyOnceWith('file:new', { replaceTab: true })
+      expect(unsubscribe).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
