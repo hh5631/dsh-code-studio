@@ -1,6 +1,6 @@
 /**
  * dsh-code-studio shared — 语言服务器 RPC 契约（双面，禁 node/react）。
- * LSP 请求/响应的 JSON 载荷形状 + 纯函数辅助（Monaco↔LSP 坐标换算等）。
+ * LSP 请求/响应的 JSON 载荷形状 + 纯函数辅助。
  * 只描述"过 RPC 的载荷"，宿主与语言服务器之间的帧级交互在 host 侧 src/lsp/ 内。
  * 作者 ddj 2026-08-27
  */
@@ -49,7 +49,7 @@ export interface LspHover {
   range?: LspRange
 }
 
-/** LSP semantic token 标准类型（host 归一化后，client 与 Monaco 共用）。 */
+/** LSP semantic token 标准类型。 */
 export const LSP_SEMANTIC_TOKEN_TYPES = [
   'namespace', 'type', 'class', 'enum', 'interface', 'struct', 'typeParameter',
   'parameter', 'variable', 'property', 'enumMember', 'event', 'function', 'method',
@@ -57,7 +57,7 @@ export const LSP_SEMANTIC_TOKEN_TYPES = [
   'decorator',
 ] as const
 
-/** LSP semantic token 标准修饰符（host 归一化后，client 与 Monaco 共用）。 */
+/** LSP semantic token 标准修饰符。 */
 export const LSP_SEMANTIC_TOKEN_MODIFIERS = [
   'declaration', 'definition', 'readonly', 'static', 'deprecated', 'abstract',
   'async', 'modification', 'documentation', 'defaultLibrary', 'global', 'local', 'mutable',
@@ -125,29 +125,6 @@ export function decodeSemanticTokens(
   return out
 }
 
-/**
- * LSP CompletionItemKind（协议 1-based）→ Monaco CompletionItemKind 枚举名（0-based）。
- *
- * 为什么按**名称**而不是编号直传：两侧枚举编号并不一致 —— LSP 2=Method，而 Monaco
- * 0=Method。若把协议编号当 Monaco 编号塞回去，草稿纸上的「只差一位」会变成全表错位
- * （属性显示成方法图标等）。用名称映射让两侧各自的编号在各自类型系统里解析，杜绝硬编码。
- * 索引 i 对应 LSP kind i（索引 0 占位，协议从 1 起）。
- * @author ddj 2026年09月22号
- */
-export const LSP_COMPLETION_KIND_NAMES = [
-  '', 'Text', 'Method', 'Function', 'Constructor', 'Field', 'Variable', 'Class',
-  'Interface', 'Module', 'Property', 'Unit', 'Value', 'Enum', 'Keyword', 'Snippet',
-  'Color', 'File', 'Reference', 'Folder', 'EnumMember', 'Constant', 'Struct',
-  'Event', 'Operator', 'TypeParameter',
-] as const
-
-/** LSP InsertTextFormat：1=PlainText，2=Snippet。 */
-export const LSP_INSERT_TEXT_FORMAT_SNIPPET = 2
-
-/**
- * LSP 补全项文本编辑范围（单 range 或 insert/replace 双 range 形态）。
- * 两种形态由服务器任选，必须都能解析：只认一种会让另一家服务器的补全落点错位。
- */
 export interface LspCompletionTextEdit {
   range?: LspRange
   insert?: LspRange
@@ -155,10 +132,10 @@ export interface LspCompletionTextEdit {
   newText: string
 }
 
-/** 归一化后的补全项（host 归一化；client 映射为 Monaco suggestion）。 */
+/** 归一化后的补全项。 */
 export interface LspCompletionItem {
   label: string
-  kind?: number            // LSP CompletionItemKind 原始编号（client 经名称表转 Monaco）
+  kind?: number            // LSP CompletionItemKind 原始编号
   detail?: string
   documentation?: string
   insertText?: string
@@ -264,27 +241,6 @@ export interface LspServerStatus {
   providerName?: string // provider 名称（如 EmmyLua / LuaLS）
   missingEnv?: LspMissingEnv[] // 未满足的环境需求（无则省略）
   candidates?: LspCandidate[] // 同语言检测到的候选服务器（设置页展示用，无则省略）
-}
-
-/**
- * Monaco 位置（1-based lineNumber/column）→ LSP Position（0-based）。
- * @author ddj 2026年08月27号
- * @param lineNumber Monaco 行（≥1）
- * @param column Monaco 列（≥1）
- * @returns LSP 0-based position
- */
-export function monoToLsp(lineNumber: number, column: number): LspPosition {
-  return { line: Math.max(0, lineNumber - 1), character: Math.max(0, column - 1) }
-}
-
-/**
- * LSP Position（0-based）→ Monaco 位置（1-based）。
- * @author ddj 2026年08月27号
- * @param pos LSP position
- * @returns { lineNumber, column }（均 ≥1）
- */
-export function lspToMono(pos: LspPosition): { lineNumber: number; column: number } {
-  return { lineNumber: Math.max(1, pos.line + 1), column: Math.max(1, pos.character + 1) }
 }
 
 /** file:// URI → 路径（仅做规范化解码；Windows file:///C:/... 保留）。 */

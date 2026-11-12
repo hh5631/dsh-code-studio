@@ -48,7 +48,7 @@ export interface CandidateRanker {
   rank(candidates: SearchCandidate[], query: PreparedQuery): SearchCandidate[]
 }
 
-/** 内容搜索单条命中（列 = 1-based UTF-16，直接供 Monaco 跳转/高亮）。 */
+/** 内容搜索单条命中（列 = 1-based UTF-16，直接供 编辑器 跳转/高亮）。 */
 export interface ContentMatch {
   path: string
   line: number

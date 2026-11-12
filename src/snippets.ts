@@ -5,7 +5,7 @@
  *   表示全语言生效）。
  * - 格式：顶层对象 { "<片段名>": { prefix, body, description?, scope? } }；body 支持字符串或
  *   字符串数组（数组按行拼接）。解析容错：单文件 JSON 损坏只影响该文件（error 字段提示）。
- * - 生效：client 侧 Monaco completion provider 按 model 语言拉取 snippetsEntries 后过滤展开；
+ * - 生效：客户端可按语言读取 snippetsEntries；
  *   与 rules.ts 同一套 IO 通道（user 走 node fs；project 走 ctx fs + danger-full-access）。
  * --region 划分：常量与目录定位 / JSON 解析（纯）/ 条目展开（纯）/ 文件名与模板（纯）/ IO
  * 作者 ddj 2026年09月10号

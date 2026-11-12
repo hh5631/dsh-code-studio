@@ -3,7 +3,7 @@
  * 背景：RPC 层按固定上限硬截断补全条目，而本仓库的 xLua 绑定桩
  * （Assets/Scripts/EmmyLuaDefine，形如 CS_IslandSplash_Extensions_Common_ArrayExtension）
  * 有上万个全局，字母序会把项目自身全局（ECommon / EActivity 等）挤到上限之外；
- * 截断发生在 Monaco 前缀过滤之前，因此**之后无论输入什么都取不回**该条目。
+ * 截断发生在 编辑器 前缀过滤之前，因此**之后无论输入什么都取不回**该条目。
  * 改为按当前输入前缀分桶后截断：优先保留真实命中的条目；未超限时零行为变化。
  * 作者 ddj 2026年09月24号
  */
@@ -21,7 +21,7 @@ export interface CappedCompletions {
 /**
  * 判断 needle 是否为 haystack 的子序列（两侧均已小写）。
  *
- * 与 Monaco 候选列表的模糊匹配同口径，保证「分桶判为命中」的条目确实是
+ * 与 编辑器 候选列表的模糊匹配同口径，保证「分桶判为命中」的条目确实是
  * 用户输入能筛出来的那些，避免分桶顺序与前端过滤结果互相矛盾。
  * @author ddj 2026年09月24号
  * @param haystack 候选文本（已小写）
@@ -37,7 +37,7 @@ function isSubsequence(haystack: string, needle: string): boolean {
 }
 
 /**
- * 取补全项的匹配文本（Monaco 口径：filterText 优先，回落 label；统一小写）。
+ * 取补全项的匹配文本（编辑器 口径：filterText 优先，回落 label；统一小写）。
  * @author ddj 2026年09月24号
  * @param item 补全项
  * @returns 小写匹配文本；无可用文本时为空串
@@ -54,7 +54,7 @@ function textOfItem(item: LspCompletionItem): string {
  * （服务器已按相关性排序，不重新打分）。无前缀或未超限时与旧行为完全一致。
  * @author ddj 2026年09月24号
  * @param items 服务器归一化后的补全条目
- * @param prefix 当前输入前缀（Monaco getWordUntilPosition 的词）
+ * @param prefix 当前输入前缀（光标前的输入片段）
  * @param cap 条目上限（缺省 COMPLETION_ITEM_CAP；测试可注入小值）
  * @returns 有界条目与截断标记
  */

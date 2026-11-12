@@ -60,7 +60,6 @@
 [data-edrv-view] .edrv-lsp-status-dot.ready { background: var(--dsw-alias-state-success-primary, #0f9d58); }
 [data-edrv-view] .edrv-lsp-status-dot.busy { background: var(--dsw-alias-state-warn-primary, #d97706); animation: edrv-lsp-pulse 1.2s ease-in-out infinite; }
 @keyframes edrv-lsp-pulse { 50% { opacity: .45; } }
-/* Ctrl+hover 可导航标识符下划线提示（绑定 Monaco inlineClassName 装饰） */
 [data-edrv-view] .edrv-nav-underline { text-decoration: underline; text-decoration-color: var(--dsw-alias-interactive-primary, #4fc1ff); text-underline-offset: 1px; cursor: pointer; }
 /* 跳转目标区域高亮（LSP 定义/引用、搜索命中落点）：落点一眼可见，约 1.2s 后由 EditorView 自动清除。
    用官方令牌并带回落值，不在插件作用域重定义 --dsw-* （否则永久脱离官方主题）。 */
@@ -70,7 +69,6 @@
 [data-edrv-view] .edrv-chip-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
 [data-edrv-view] .edrv-chip-btn:disabled { opacity: .35; cursor: default; }
 [data-edrv-view] .edrv-chip-btn:disabled:hover { background: transparent; }
-/* 行内和原生 Monaco diff 共用主题色盘；不再借用普通 hover 的灰底。 */
 [data-edrv-view] .edrv-mn-add-line { background: var(--edrv-diff-add, #e6f4e8); }
 [data-edrv-view] .edrv-mn-gutter-add { background: var(--edrv-diff-add, #e6f4e8); color: var(--dsw-alias-state-success-primary, #0f9d58) !important; display: flex !important; align-items: center; justify-content: center; }
 [data-edrv-view] .edrv-mn-gutter-add::before { content: "+"; }
@@ -80,8 +78,6 @@
 [data-edrv-view] .edrv-del-margin-row { position: relative; height: var(--edrv-line-height, 20px); line-height: var(--edrv-line-height, 20px); }
 [data-edrv-view] .edrv-del-number { position: absolute; left: var(--edrv-number-left); width: var(--edrv-number-width); color: var(--edrv-diff-number, #6c6c6c); text-align: right; }
 [data-edrv-view] .edrv-del-marker { position: absolute; left: var(--edrv-marker-left); width: var(--edrv-marker-width); color: var(--dsw-alias-state-error-primary, #d9534f); text-align: center; }
-[data-edrv-view] .edrv-monaco-host { flex: 1 1 auto; min-width: 0; min-height: 0; position: relative; overflow: hidden; }
-[data-edrv-view] .edrv-monaco-host > div { position: absolute; inset: 0; min-width: 0; min-height: 0; }
 [data-edrv-view] .edrv-imgview { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 [data-edrv-view] .edrv-imgview-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; flex-shrink: 0; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, transparent); }
 [data-edrv-view] .edrv-imgview-meta { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; }
@@ -165,12 +161,6 @@
 [data-edrv-view] .edrv-launch-path { flex: 1; min-width: 0; font-size: 12px; color: var(--dsw-alias-label-primary, #eee); word-break: break-all; }
 [data-edrv-view] .edrv-launch-cnt { font-size: 11px; color: var(--dsw-alias-label-tertiary, #888); white-space: nowrap; }
 [data-edrv-view] .edrv-launch-arch { display: flex; flex-direction: column; gap: 6px; }
-[data-edrv-view] .monaco-editor { overflow: hidden !important; }
-[data-edrv-view] .monaco-editor .sticky-widget { z-index: 30 !important; background: var(--dsw-alias-bg-base, #f8f8f8) !important; }
-[data-edrv-view] .monaco-editor .sticky-widget .sticky-line-content,
-[data-edrv-view] .monaco-editor .sticky-widget .sticky-line-number { background: var(--dsw-alias-bg-base, #f8f8f8) !important; }
-[data-edrv-view] .monaco-editor, [data-edrv-view] .monaco-editor .margin, [data-edrv-view] .monaco-editor-background { background: transparent !important; }
-[data-edrv-view] .monaco-editor .scrollbar .slider { background: rgba(128,128,128,.3) !important; }
 [data-edrv-view] .edrv-loading { gap: 8px; padding: 20px; }
 [data-edrv-view] .edrv-loading-title { color: var(--dsw-alias-label-primary, #1f2933); font-size: 13px; }
 [data-edrv-view] .edrv-progress { width: min(360px, 72%); height: 6px; overflow: hidden; border-radius: 999px; background: var(--dsw-alias-border-l1, #e0e6e8); }
@@ -438,16 +428,6 @@
 [data-edrv-view] .edrv-svndiff-tag { padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-tertiary, #9aa5b1); }
 [data-edrv-view] .edrv-svndiff-host { flex: 1 1 auto; min-height: 0; }
 [data-edrv-view] .edrv-svndiff-empty { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; padding: 24px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 12px; text-align: center; }
-/* 差异整行色块与行首 +/- 指示符：vendored Monaco（diffEditorWidget2）静态 CSS 无
-   .line-insert/.line-delete 背景规则，整行色块靠主题键 + 此处固定色兜底保证可见。
-   注意不要用 --dsw-alias-interactive-bg-hover 类 token：实测为 92% 透明中性色，肉眼不可见。
-   固定色取自研差异 UI 同色相（绿 #0f9d58 / 红 #d9534f），alpha 提到肉眼可辨。 */
-[data-edrv-view] .monaco-editor .line-insert { background: rgba(15, 157, 88, 0.18); }
-[data-edrv-view] .monaco-editor .line-delete { background: rgba(217, 83, 79, 0.16); }
-[data-edrv-view] .monaco-editor .gutter-insert { background: rgba(15, 157, 88, 0.35); }
-[data-edrv-view] .monaco-editor .gutter-delete { background: rgba(217, 83, 79, 0.35); }
-[data-edrv-view] .monaco-editor .insert-sign { color: var(--dsw-alias-state-success-primary, #0f9d58); }
-[data-edrv-view] .monaco-editor .delete-sign { color: var(--dsw-alias-state-error-primary, #d9534f); }
 /* 差异条快速跳转簇（对齐自研审查条 ↑ i/N ↓ 的形态） */
 [data-edrv-view] .edrv-svndiff-nav { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 [data-edrv-view] .edrv-svndiff-nav-count { min-width: 36px; text-align: center; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); }
@@ -923,9 +903,6 @@
 [data-edrv-view] .edrv-dl-foot button:disabled { opacity: .55; cursor: default; }
 [data-edrv-view] .edrv-dl-go { border-color: var(--dsw-alias-brand-primary, #6d55ff); }
 
-/* 调试（DAP）：断点圆点 / 停帧行 / 浮动调试工具条。
-   圆点挂在 Monaco glyphMargin（glyphMarginClassName），行背景为 isWholeLine className；
-   工具条绝对定位于编辑区右上（editorArea relative 由 .edrv-editor-area 自身定位）。 */
 /* 断点圆点：装饰类占满整行，圆点经 ::before 在本行盒子内居中（行归属明确、不跨行界） */
 [data-edrv-view] .edrv-dap-bp { cursor: pointer; }
 [data-edrv-view] .edrv-dap-bp::before { content: ''; display: block; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; background: var(--dsw-alias-state-error-primary, #e51400); }
@@ -1020,9 +997,6 @@
 [data-edrv-view] .edrv-dapbp-edit .edrv-bpwidget-input { height: 20px; }
 /* 断点回执：未验证空心红圈（须排在 .off 之后，禁用态优先展示灰圈语义）。 */
 [data-edrv-view] .edrv-dapbp-dot.unverified { background: transparent; border: 1.5px solid var(--dsw-alias-state-error-primary, #e51400); opacity: .75; }
-/* 断点行内编辑浮层（Monaco content widget，锚定断点行上方；对齐 VS Code breakpointWidget 形态）。 */
-/* View Zone 浮层：宽度/左移由 BpWidget.syncWidth 按 layout 内联设置
-   （Monaco .view-zones 仅内容区宽，需补偿 contentLeft 与滚动条），此处只管视觉。 */
 [data-edrv-view] .edrv-bpwidget { position: relative; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-top: 1px solid var(--dsw-alias-border-l2, #cdd6da); border-bottom: 1px solid var(--dsw-alias-border-l2, #cdd6da); background: var(--dsw-alias-bg-layer-1, #f7f9fa); }
 /* 断点编辑中的目标行高亮（浮层打开期间） */
 [data-edrv-view] .edrv-dap-editing-line { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .12)); }
@@ -1035,11 +1009,7 @@
 [data-edrv-view] .edrv-dap-bp-hint::before { content: ''; display: block; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; background: var(--dsw-alias-state-error-primary, #e51400); opacity: .4; }
 /* 行号区也给出可点提示（与 VS Code 一致：glyph 区与行号区都可点/可 hover）；
    不拦截折叠箭头等自有控件的光标。 */
-[data-edrv-view] .edrv-editor-row .monaco-editor .margin-view-overlays .line-numbers:hover { cursor: pointer; }
 
-/* 暂停态 hover 调试块 + 变量树（成员全量直显 + table 成员折叠展开）。
-   ⚠️ 选择器一律用 data-*：本仓 vendored Monaco 的 markdown→DOM 管线会剥掉我们 HTML 里的
-   class（supportHtml/isTrusted 都不豁免），只有 data-* 存活；用 class 会静默失效。 */
 [data-edrv-view] [data-edrv-dap] { display: block; min-width: 0; }
 [data-edrv-view] [data-edrv-head] { display: flex; align-items: baseline; gap: 2px; }
 [data-edrv-view] [data-edrv-head] [data-edrv-expr] { font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); }
@@ -1056,9 +1026,6 @@
 [data-edrv-view] [data-edrv-line] [data-edrv-eq] { flex: 0 0 auto; color: var(--dsw-alias-label-tertiary, #8a949b); }
 [data-edrv-view] [data-edrv-line] [data-edrv-val] { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-secondary, #52606d); }
 [data-edrv-view] [data-edrv-note] { color: var(--dsw-alias-label-tertiary, #8a949b); font-style: italic; }
-/* Alt 提示层：由 hoverTree 注入到 .monaco-hover（滚动区之外）贴底常驻；容器预留同高内边距避免遮挡末行。
-   不再用 sticky / `:has()`：滚动链在 .monaco-hover-content 上，sticky 会被滚走。 */
-[data-edrv-view] .monaco-hover[data-edrv-hint-host="1"] { padding-bottom: 22px; }
 [data-edrv-view] [data-edrv-hint="1"] { position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; height: 22px; padding: 2px 8px; font-size: 11px; line-height: 18px; color: var(--dsw-alias-label-tertiary, #8a949b); background: var(--dsw-alias-bg-overlay, #ffffff); border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
 
 /* Workbench panes: existing theme, action-driven drop previews. ddj 2026年10月14号 */

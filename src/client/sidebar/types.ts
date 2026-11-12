@@ -23,7 +23,7 @@ export interface SidebarCtx {
   openGitDiff?: (path: string, staged: boolean, repositoryRoot?: string) => void
   /** 移动/删除前先保存打开的相关文件，失败则取消文件操作。 */
   prepareFileOperation?: (path: string) => Promise<boolean>
-  /** 取当前 Monaco 编辑器实例（可能为 null；大纲面板读 model/跳转用）。 */
+  /** 取当前 编辑器实例（可能为 null；大纲面板读 model/跳转用）。 */
   editor?: () => unknown | null
   /** 大纲源注册表（公开 provide 为 edrvOutlineSources；大纲面板解析符号用）。 */
   outlineSources?: OutlineSourceRegistry

@@ -2,7 +2,7 @@ import { pickedCompletion, snippet, type Completion, type CompletionSource } fro
 import { Transaction, type EditorState, type Text } from '@codemirror/state'
 import { EditorView, hoverTooltip, showPanel } from '@codemirror/view'
 import type { EditorContext, EditorModel } from '../editorTypes.js'
-import { targetOpenPath } from '../monaco/lsp/lspClient.js'
+import { targetOpenPath } from '../lspLocation.js'
 import { rpc } from '../rpc.js'
 import type { LspCompletionItem, LspLocation, LspPosition } from '../../shared/lsp.js'
 

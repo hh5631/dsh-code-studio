@@ -2,7 +2,7 @@
  * dsh-code-studio client — 工作区搜索的「选区种子」。
  *
  * 需求：Ctrl+Shift+F 时若编辑器有选中，把选中文本自动填入搜索框。
- * 链路：EditorView 从 Monaco 取选区文本 → seedQueryOf 归一 → setSearchSeed 存入一次性槽
+ * 链路：EditorView 从 编辑器 取选区文本 → seedQueryOf 归一 → setSearchSeed 存入一次性槽
  * → 派发 edrv:search-focus → SearchPanel 消费（挂载时或已挂载时），填入并立即搜索。
  *
  * 为什么用一次性槽而不是事件 detail：

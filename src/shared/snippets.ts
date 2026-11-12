@@ -120,8 +120,8 @@ export function snippetFileTemplate(language: string): string {
 }
 
 /**
- * 可绑定语言目录（新建片段时的语言下拉来源；与 client/monaco/loader 的 LANG_BY_EXT
- * 取值集合保持一致）。此处冗余一份纯数据，使本模块不依赖浏览器端 Monaco
+ * 可绑定语言目录（新建片段时的语言下拉来源；与 client/fileLanguages 的 LANG_BY_EXT
+ * 取值集合保持一致）。此处冗余一份纯数据，使本模块不依赖浏览器端 编辑器
  * （shared 禁 import client 侧模块）；一致性由 tests/snippetLanguage.test.ts 断言兜底。
  */
 export const SNIPPET_LANGUAGES: readonly string[] = [

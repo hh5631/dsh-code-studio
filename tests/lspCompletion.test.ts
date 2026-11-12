@@ -15,15 +15,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 import {
-  LSP_COMPLETION_KIND_NAMES,
   LSP_INSERT_TEXT_FORMAT_SNIPPET,
 } from '../src/shared/lsp.js'
 import { createLspClient, type LspClientTransport } from '../src/lsp/client.js'
 import { createLspRpc } from '../src/lsp/rpc.js'
 import { normCompletion, normCompItem, toSignatureHelp, toLspCompItem } from '../src/lsp/server.js'
-import { toLspContext } from '../src/client/monaco/lsp/providers.js'
 import { parseFrame } from '../src/lsp/jsonrpc.js'
 import type { LspServerStatus } from '../src/shared/lsp.js'
 
@@ -162,45 +159,6 @@ describe('签名帮助归一化', () => {
 // --endregion
 
 // --region LSP → Monaco 补全类型名称映射
-describe('LSP 补全类型名称映射', () => {
-  it('协议 1..25 全覆盖（索引即协议编号，0 占位）', () => {
-    expect(LSP_COMPLETION_KIND_NAMES.length).toBe(26)
-    expect(LSP_COMPLETION_KIND_NAMES[0]).toBe('')
-    for (let kind = 1; kind <= 25; kind++) {
-      expect(LSP_COMPLETION_KIND_NAMES[kind], 'kind ' + kind).toBeTruthy()
-    }
-  })
-
-  it('关键项按协议编号落位（协议与 Monaco 编号不同，故必须走名称）', () => {
-    // LSP 2=Method / 5=Field / 10=Property / 15=Snippet / 21=Constant
-    expect(LSP_COMPLETION_KIND_NAMES[2]).toBe('Method')
-    expect(LSP_COMPLETION_KIND_NAMES[5]).toBe('Field')
-    expect(LSP_COMPLETION_KIND_NAMES[10]).toBe('Property')
-    expect(LSP_COMPLETION_KIND_NAMES[15]).toBe('Snippet')
-    expect(LSP_COMPLETION_KIND_NAMES[21]).toBe('Constant')
-  })
-
-  it('名称均为 Monaco CompletionItemKind 的合法枚举名（防拼写漂移）', () => {
-    // Monaco（vendored 0.42）CompletionItemKind 枚举名全集
-    const MONACO_KINDS = new Set([
-      'Method', 'Function', 'Constructor', 'Field', 'Variable', 'Class', 'Struct',
-      'Interface', 'Module', 'Property', 'Event', 'Operator', 'Unit', 'Value',
-      'Constant', 'Enum', 'EnumMember', 'Keyword', 'Text', 'Color', 'File',
-      'Reference', 'Customcolor', 'Folder', 'TypeParameter', 'User', 'Issue', 'Snippet',
-    ])
-    for (const name of LSP_COMPLETION_KIND_NAMES) {
-      if (!name) continue
-      expect(MONACO_KINDS.has(name), name + ' 不是 Monaco CompletionItemKind 枚举名').toBe(true)
-    }
-  })
-
-  it('片段插入格式常量为协议值 2', () => {
-    expect(LSP_INSERT_TEXT_FORMAT_SNIPPET).toBe(2)
-  })
-})
-// --endregion
-
-// --region initialize 能力协商
 describe('initialize 补全/签名能力协商', () => {
   /** 假传输：捕获我方发出的 initialize 载荷，并可回灌服务器响应。 */
   function captureTransport() {
@@ -278,60 +236,6 @@ describe('initialize 补全/签名能力协商', () => {
 })
 // --endregion
 
-// --region 客户端 provider 源码契约（@ts-nocheck 文件，靠源码断言兜底）
-describe('client providers 源码契约', () => {
-  const SRC = readFileSync(join(process.cwd(), 'src', 'client', 'monaco', 'lsp', 'providers.ts'), 'utf8')
-
-  it('注册了补全与签名帮助 provider', () => {
-    expect(SRC.includes('registerCompletionItemProvider')).toBe(true)
-    expect(SRC.includes('registerSignatureHelpProvider')).toBe(true)
-  })
-
-  it('Lua 候选与本地关键字/注解类型合并，仍沿用原补全 provider', () => {
-    expect(SRC.includes("lang === 'lua'")).toBe(true)
-    expect(SRC.includes('mergeKeywords(serverItems, [')).toBe(true)
-    expect(SRC.includes('luaTypesAt(')).toBe(true)
-  })
-
-  it('注解触发设置在切换 model 和光标时同步', () => {
-    const editor = readFileSync(join(process.cwd(), 'src', 'client', 'ui', 'EditorView.ts'), 'utf8')
-    expect(editor.includes('syncTypeSuggest(ed, monaco)')).toBe(true)
-    expect(editor.includes('syncTypeSuggest(ed, m)')).toBe(true)
-    expect(editor.includes('options.comments === comments')).toBe(true)
-  })
-
-  it('resolve 阶段经 __edrvPath 取文档路径（Monaco 调 resolve 时不给 model）', () => {
-    // 实测 vendored 0.42：provider.resolveCompletionItem(this.completion, token) —— 无 model 参数
-    expect(SRC.includes('__edrvPath')).toBe(true)
-    expect(SRC.includes('__edrvRaw')).toBe(true)
-  })
-
-  it('复用既有跨重载守卫（不引入新的 window 标记，避免重复注册）', () => {
-    expect(SRC.includes("LSP_PROVIDERS_GLOBAL")).toBe(true)
-    // 不得新增 window 全局标记（新增会让重载清理链失配）
-    expect(SRC.includes('__edrvLspCompletionDisposer__')).toBe(false)
-  })
-
-  it('triggerKind 做 Monaco→LSP 编号换算（两侧恒差 1，直传会谎报触发原因）', () => {
-    // Monaco: 0=Invoke, 1=TriggerCharacter, 2=TriggerForIncomplete
-    // LSP  : 1=Invoked, 2=TriggerCharacter, 3=TriggerForIncomplete
-    expect(toLspContext({ triggerKind: 0 })).toEqual({ triggerKind: 1 })
-    expect(toLspContext({ triggerKind: 1, triggerCharacter: '.' })).toEqual({ triggerKind: 2, triggerCharacter: '.' })
-    expect(toLspContext({ triggerKind: 2 })).toEqual({ triggerKind: 3 })
-  })
-
-  it('triggerKind 夹在 LSP 合法区间 [1,3]；无触发信息时不占载荷', () => {
-    expect(toLspContext({ triggerKind: 99 })!.triggerKind).toBe(3)
-    expect(toLspContext({ triggerKind: -5 })!.triggerKind).toBe(1)
-    expect(toLspContext(undefined)).toBeUndefined()
-    expect(toLspContext({})).toBeUndefined()
-    // 只有触发字符也要能构造出合法 kind
-    expect(toLspContext({ triggerCharacter: ':' })).toEqual({ triggerKind: 1, triggerCharacter: ':' })
-  })
-})
-// --endregion
-
-// --region edrv.lsp.completion RPC handler
 describe('edrv.lsp.completion handler', () => {
   const CWD = 'D:/ws'
   const ROOT = 'proc:.'

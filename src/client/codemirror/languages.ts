@@ -1,8 +1,8 @@
 import { cpp } from '@codemirror/lang-cpp'
-import { javascript } from '@codemirror/lang-javascript'
+import { javascript, tsxLanguage } from '@codemirror/lang-javascript'
 import { json } from '@codemirror/lang-json'
 import { markdown } from '@codemirror/lang-markdown'
-import { LanguageDescription, StreamLanguage } from '@codemirror/language'
+import { LanguageDescription, LanguageSupport, StreamLanguage } from '@codemirror/language'
 import { csharp, java } from '@codemirror/legacy-modes/mode/clike'
 import { css, sCSS, less } from '@codemirror/legacy-modes/mode/css'
 import { go } from '@codemirror/legacy-modes/mode/go'
@@ -17,7 +17,7 @@ import type { Extension } from '@codemirror/state'
 import { langOf } from '../fileLanguages.js'
 
 const js = javascript({ jsx: true })
-const ts = javascript({ typescript: true, jsx: true })
+const ts = new LanguageSupport(tsxLanguage)
 const cppMode = cpp()
 const jsonMode = json()
 

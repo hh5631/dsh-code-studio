@@ -17,7 +17,6 @@ import {
   snippetsEntries, snippetsList,
   snippetsRead, snippetsRemove, snippetsSave, userSnippetsDir, validateSnippetFile,
 } from '../src/snippets.js'
-import { entriesForLanguage } from '../src/client/snippets/provider.js'
 import {
   normalizeSnippetFileName, snippetFileNameFor, snippetFileTemplate,
 } from '../src/shared/snippets.js'
@@ -331,41 +330,6 @@ describe('snippetsEntries（补全载荷）', () => {
     const result = await snippetsEntries(ctx)
     expect(result.entries.every((e) => e.file !== 'bad.code-snippets')).toBe(true)
     await snippetsRemove(ctx, { scope: 'user', file: 'bad.code-snippets' })
-  })
-})
-// --endregion
-
-// --region client 补全过滤（纯函数）
-describe('entriesForLanguage', () => {
-  const entry = (key: string, language: string, scope = 'user') => ({ key, prefix: key, body: 'B', description: '', scope, file: key + '.code-snippets', language })
-
-  it('全语言条目对所有语言生效；指定语言条目只对该语言生效', () => {
-    const list = [entry('any', ''), entry('luaOnly', 'lua'), entry('cssOnly', 'css')]
-    expect(entriesForLanguage(list, 'lua').map((e) => e.key)).toEqual(['any', 'luaOnly'])
-    expect(entriesForLanguage(list, 'css').map((e) => e.key)).toEqual(['any', 'cssOnly'])
-    expect(entriesForLanguage(list, 'python').map((e) => e.key)).toEqual(['any'])
-  })
-
-  it('项目条目覆盖同 key 的全局条目，且排在全局之后', () => {
-    const list = [entry('same', '', 'user'), entry('own', '', 'user'), entry('same', '', 'project')]
-    const merged = entriesForLanguage(list, 'lua')
-    expect(merged.map((e) => e.key)).toEqual(['own', 'same'])
-    expect(merged[merged.length - 1].scope).toBe('project')
-  })
-
-  it('语言 id 大小写不敏感', () => {
-    expect(entriesForLanguage([entry('x', 'Lua')], 'lua').map((e) => e.key)).toEqual(['x'])
-  })
-
-  it.each(['verilog', 'systemverilog', 'tcl'])('filters %s without mixing HDL scopes', (language) => {
-    const list = [entry('any', ''), entry('v', 'verilog'), entry('sv', 'systemverilog'), entry('constraint', 'tcl'), entry('same', language), entry('same', language, 'project')]
-    const selected = entriesForLanguage(list, language)
-    expect(selected.map((item) => item.key)).toEqual(['any', { verilog: 'v', systemverilog: 'sv', tcl: 'constraint' }[language], 'same'])
-    expect(selected.at(-1)?.scope).toBe('project')
-  })
-
-  it('空输入返回空数组', () => {
-    expect(entriesForLanguage([], 'lua')).toEqual([])
   })
 })
 // --endregion

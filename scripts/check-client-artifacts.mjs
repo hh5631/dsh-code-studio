@@ -109,7 +109,7 @@ export async function inspectArtifacts(libDir) {
     assert.equal(row.chunk, name, `${name}: wrong chunk registration`)
     assert.match(sources[name], /require\(["']dsh-code-studio["']\)/, `${name}: missing shared root dependency`)
     assert.match(sources[name], /__editorShared/, `${name}: missing shared bridge`)
-    assert.doesNotMatch(sources[name], /function\s+(rpc|minimalWorkspace|loadMonaco)\s*\(/, `${name}: duplicated singleton implementation`)
+    assert.doesNotMatch(sources[name], /function\s+(rpc|minimalWorkspace)\s*\(/, `${name}: duplicated singleton implementation`)
     verifySharedReads(row, root)
     return row
   })

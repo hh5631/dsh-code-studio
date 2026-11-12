@@ -216,7 +216,7 @@ export function installLegacyKeys(
         bindings = parseChords(chord)
         cache.set(chord, bindings)
       }
-      if (def.id === 'edrv.duplicateLine') continue // Monaco owns Ctrl+D; no global duplicate dispatch.
+      if (def.id === 'edrv.duplicateLine') continue // Line duplication uses an editor-local shortcut.
       if (!matchEvent(key, bindings) || !shortcutAllowed(def.id, key.target) || !runner.isAvailable(def.id)) continue
       key.preventDefault()
       key.stopPropagation()

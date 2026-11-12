@@ -20,7 +20,7 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
     'slot.sessionSize': '会话体积',
     'slot.settings': '代码工作台',
     'guide.title': '文件编辑',
-    'guide.description': 'Monaco 文件编辑器：对话与编辑同屏（差异审查/跳转/大纲）',
+    'guide.description': '代码编辑器：对话与编辑同屏（差异审查/跳转/大纲）',
   },
   en: {
     'slot.fileEditor': 'File editor',
@@ -28,7 +28,7 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
     'slot.sessionSize': 'Session size',
     'slot.settings': '代码工作台',
     'guide.title': 'File editor',
-    'guide.description': 'Monaco file editor: chat and editing side by side (diff review, jump, outline)',
+    'guide.description': 'Code editor: chat and editing side by side (diff review, jump, outline)',
   },
 }
 

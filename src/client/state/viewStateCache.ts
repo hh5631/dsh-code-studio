@@ -1,7 +1,7 @@
 /**
  * dsh-code-studio client — 编辑器视图状态持久化（纯函数，可单测）。
  * 对齐 VSCode workbench.editor.restoreViewState：恢复每个文件的光标/滚动/折叠位置。
- * 视图状态 = Monaco editor.saveViewState() 返回值（JSON 可序列化），按 path 存储。
+ * 视图状态 = 编辑器保存的光标与滚动信息（JSON 可序列化），按 path 存储。
  * 键前缀统一走 paths.ts PathConst（CACHE_KEY.viewstate）。
  * 作者 ddj 2026-08-28
  */
@@ -17,7 +17,7 @@ export const VIEWSTATE_CAP = 50
 export const VIEWSTATE_BYTES_CAP = 64 * 1024
 
 /**
- * 判断对象是否为合法的 Monaco view state（保守形状校验，非深校验）。
+ * 判断对象是否为合法的 编辑器 view state（保守形状校验，非深校验）。
  * @author ddj 2026年08月28号
  * @param value 待校验对象
  * @returns 是否可接受

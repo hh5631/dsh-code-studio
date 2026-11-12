@@ -19,8 +19,8 @@ describe('remote channel prefix', () => {
     vi.stubGlobal('document', { baseURI: 'https://box.example/prefix/' })
     expect(channelPrefix()).toBe(CHANNEL_PREFIX)
     expect(transportUrl('/cstudio/rpc')).toBe('https://box.example/prefix/remote/cstudio/rpc')
-    expect(transportUrl('/cstudio/vendor/monaco/vs/loader.js'))
-      .toBe('https://box.example/prefix/remote/cstudio/vendor/monaco/vs/loader.js')
+    expect(transportUrl('/cstudio/vendor/pdfjs/build/pdf.worker.mjs'))
+      .toBe('https://box.example/prefix/remote/cstudio/vendor/pdfjs/build/pdf.worker.mjs')
   })
 
   it('ignores a seat that is not the boot object', () => {

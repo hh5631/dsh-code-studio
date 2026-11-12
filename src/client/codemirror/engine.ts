@@ -9,7 +9,7 @@ import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } 
 import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import type { EditorEngine, EditorCommand } from '../editorTypes.js'
-import { detectColorScheme, editorFont, observeScheme } from '../monaco/theme.js'
+import { detectColorScheme, editorFont, observeScheme } from '../editorTheme.js'
 import { TYPOGRAPHY_EVENT } from '../typography.js'
 import { viewStatesLoad, viewStatesSave, upsertViewState } from '../state/viewStateCache.js'
 import { CodeMirrorModel, trackDocument } from './model.js'

@@ -1,6 +1,6 @@
 /**
  * dsh-code-studio shared — 原生打开范围判定（host/client 双面契约）。
- * 背景：DSH 文件预览双形态——本插件认领 `dsh-resource://file/**` 进 Monaco 编辑，
+ * 背景：DSH 文件预览双形态——本插件认领 `dsh-resource://file/**` 进 编辑器 编辑，
  * 官方渲染器（Office 预览/不可预览提示/表格预览）看认领让位。本模块承载「原生打开」
  * 范围的单一事实源：默认集 = 让位清单（插件本来就不认领的后缀），用户可经设置
  * `nativeOpenExts`（逗号分隔）增删；host 的 Config schema 默认值与 client 的
@@ -14,7 +14,7 @@
  * Office 文档后缀：官方 `dsh-client-ui-sidebar-documentpreview` 的 Office 渲染器
  * 声明 `doc/docx/xls/xlsx/ppt/pptx`（0.1.6 起侧栏 Office 预览；0.1.7 扩展表格 CSV/TSV
  * 只读预览——本清单刻意不含 csv/tsv，见文件头决策）。本插件让位官方（不认领），
- * 否则会把这些文件路由进 Monaco 而丢掉官方预览。
+ * 否则会把这些文件路由进 编辑器 而丢掉官方预览。
  */
 export const OFFICE_EXT: readonly string[] = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'pages', 'numbers']
 

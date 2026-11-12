@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { typographyOf, TYPOGRAPHY_DEFAULTS } from '../src/shared/typography.js'
 import { applyTypography, getTypography } from '../src/client/typography.js'
-import { editorFont } from '../src/client/monaco/theme.js'
+import { editorFont } from '../src/client/editorTheme.js'
 
 afterEach(() => { applyTypography(); vi.unstubAllGlobals() })
 

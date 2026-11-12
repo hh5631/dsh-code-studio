@@ -1,10 +1,10 @@
 /**
- * dsh-code-studio client — Monaco model 跨挂载缓存（按工作区作用域）。
+ * dsh-code-studio client — 编辑器 model 跨挂载缓存（按工作区作用域）。
  * 编辑区每会话重挂载会销毁实例，但文件 model（内容）与工作区绑定：
  * 按作用域把 model 缓存在模块级，重挂载后 loadContent 命中缓存同步种出内容，
  * 消除切换对话时的加载闪烁。切换作用域时释放上一作用域未附着编辑器的模型
  * （附着中的仅移出缓存，交由编辑器自身生命周期，防正在显示的模型被销毁）。
- * 纯对象容器逻辑，不依赖 monaco，可单测。
+ * 纯对象容器逻辑，不依赖 具体编辑器，可单测。
  * 作者 ddj 2026-09-09
  */
 
@@ -71,7 +71,7 @@ export function modelsForScope(scope: string): Map<string, unknown> {
  * @author ddj 2026年09月09号
  * @param map 作用域缓存 Map
  * @param path 工作区相对路径
- * @param model Monaco model（或测试桩）
+ * @param model 编辑器 model（或测试桩）
  */
 export function rememberModel(map: Map<string, unknown>, path: string, model: unknown): void {
   if (!path || !model) return

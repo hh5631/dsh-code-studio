@@ -14,7 +14,7 @@
 export const KEYBINDING_DEFAULTS: Record<string, string> = {
   'edrv.save': 'Ctrl+S',
   'edrv.toggleComment': 'Ctrl+Alt+/',
-  'edrv.duplicateLine': '', // Ctrl+D is Monaco-local, never a page-wide binding.
+  'edrv.duplicateLine': '', // Editor-local shortcut.
   'edrv.reloadWindow': '', // Desktop-only defaults are declared below.
   'edrv.quickOpen': 'Ctrl+P',
   'edrv.toggleSidebar': 'Ctrl+B',
@@ -27,7 +27,7 @@ export const KEYBINDING_DEFAULTS: Record<string, string> = {
   // 页签循环：主候选避开浏览器保留键（Ctrl+Tab / Ctrl+PgUp/PgDn 会被浏览器截获）
   'edrv.nextTab': 'Ctrl+Alt+ArrowRight|Ctrl+PageDown',
   'edrv.prevTab': 'Ctrl+Alt+ArrowLeft|Ctrl+PageUp',
-  // 转到行：插件只补键位与命令栏入口，widget 本体转发 Monaco 原生 editor.action.gotoLine（VS Code 同款 Ctrl+G）
+  // 转到行：插件只补键位与命令栏入口，widget 本体转发 编辑器的跳行面板
   'edrv.goToLine': 'Ctrl+G',
   // 命令栏（Ctrl+Shift+P 主候选；F1 为 VS Code 同款第二候选）与编辑行导航
   'edrv.showCommands': 'Ctrl+Shift+P|F1',

@@ -47,7 +47,7 @@ export const LEGACY_TREE_SIDECARS = ['.dsh-edit-review-tree.json', '.dsh-vscode-
 export { RPC_PATH }
 /** 路由前缀（兼容性检查用）。 */
 export const ROUTE_PREFIX = '/cstudio'
-/** Monaco 静态资源前缀。 */
+/** 第三方静态资源前缀。 */
 export const VENDOR_PREFIX = '/cstudio/vendor'
 // --endregion
 
@@ -219,7 +219,7 @@ export function assetsDirOf(moduleUrl: string): string {
   return join(dirname(fileURLToPath(moduleUrl)), '..', 'assets')
 }
 
-/** Monaco AMD 静态目录（随包发布）。 */
+/** 第三方静态资源目录（随包发布）。 */
 export function vendorDirOf(moduleUrl: string): string {
   return join(assetsDirOf(moduleUrl), 'vendor')
 }

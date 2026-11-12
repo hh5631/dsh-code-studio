@@ -78,7 +78,7 @@ function clientConfig(panel?: 'editor'): UserConfig {
   const shared = new Map<string, string[]>(Object.entries({
     rpc: ['rpcRuntime', 'rpc', 'dbg'],
     'state/minimalWorkspace': ['workspaceRuntime', 'minimalWorkspace', 'MAX_EDIT_TEXT_BYTES'],
-    'monaco/theme': ['themeRuntime', 'detectColorScheme', 'editorFont', 'observeScheme'],
+    'editorTheme': ['themeRuntime', 'detectColorScheme', 'editorFont', 'observeScheme'],
     pageReload: ['reloadRuntime', 'addReloadGuard'],
     panelCommands: ['panelCommandsRuntime', 'bindPanelCommand'],
     activePathStore: ['activePathRuntime', 'setActiveEditorPath'],

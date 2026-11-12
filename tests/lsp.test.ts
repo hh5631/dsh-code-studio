@@ -7,28 +7,17 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { monoToLsp, lspToMono, fileUriToPath as sharedFileUriToPath, decodeSemanticTokens, isNavigableTokenType } from '../src/shared/lsp.js'
+import { fileUriToPath as sharedFileUriToPath, decodeSemanticTokens, isNavigableTokenType } from '../src/shared/lsp.js'
 import { encodeMessage, parseFrame, createFrameParser } from '../src/lsp/jsonrpc.js'
 import { pathToFileUri, fileUriToPath, isInside } from '../src/lsp/uri.js'
 import { platformServerDir, exeSuffix, listMatchingDirs, candidateEmmyLua, resolveLuaProvider, resolveCSharpProvider, findInPath, clearProviderCache } from '../src/lsp/providers.js'
 import { createLspManager } from '../src/lsp/manager.js'
 import { createLspClient, type LspClientTransport } from '../src/lsp/client.js'
-import { parseFrame } from '../src/lsp/jsonrpc.js'
-import { toEdrvUri, targetOpenPath } from '../src/client/monaco/lsp/lspClient.js'
+import { targetOpenPath } from '../src/client/lspLocation.js'
 import { resolveProviderSpec, mergeConfig } from '../src/lsp/config.js'
-import { parseOutline, SK } from '../src/client/outline/parse.js'
 import { deriveDefinitionFromLocations } from '../src/lsp/derive.js'
 
 describe('shared/lsp 坐标换算', () => {
-  it('mono→lsp 0-based', () => {
-    expect(monoToLsp(1, 1)).toEqual({ line: 0, character: 0 })
-    expect(monoToLsp(3, 5)).toEqual({ line: 2, character: 4 })
-    expect(monoToLsp(0, 0)).toEqual({ line: 0, character: 0 })
-  })
-  it('lsp→mono 1-based', () => {
-    expect(lspToMono({ line: 0, character: 0 })).toEqual({ lineNumber: 1, column: 1 })
-    expect(lspToMono({ line: 9, character: 7 })).toEqual({ lineNumber: 10, column: 8 })
-  })
   it('fileUriToPath 兼容', () => {
     expect(sharedFileUriToPath('file:///D:/a/b.lua')).toBe('D:/a/b.lua')
     expect(sharedFileUriToPath('')).toBe('')
@@ -98,29 +87,14 @@ describe('lsp/uri 转换（Windows 风格）', () => {
   it('LSP 目标按 root 还原为工作区相对路径', () => {
     const root = 'D:/Work/PopIsland/IslandSplash_BugFix2'
     const uri = 'file:///D:/Work/PopIsland/IslandSplash_BugFix2/Assets/Scripts/TeamModel.lua'
-    expect(toEdrvUri(uri, root)).toBe('edrv:///Assets/Scripts/TeamModel.lua')
     expect(targetOpenPath({ uri, root })).toBe('Assets/Scripts/TeamModel.lua')
   })
-  it('root 不匹配时绝对路径不再拼出 4 斜杠 edrv URI（issue #5/#6）', () => {
-    // relativeLspPath 在 root 不匹配时返回完整绝对路径：裸 /Users/...（Unix 绝对路径输入
-    // 不经 file:/// 剥前缀，直接触发 4 斜杠）；修复后剥前导 / 保证 URI 合法
-    expect(toEdrvUri('/Users/xieyong/proj/AGENTS.md', 'D:/other')).toBe('edrv:///Users/xieyong/proj/AGENTS.md')
-    expect(toEdrvUri('/Users/xieyong/proj/AGENTS.md', '')).toBe('edrv:///Users/xieyong/proj/AGENTS.md')
-    // file:/// 前缀输入被 lspUriToAbs 剥成无前导 / 相对路径，行为不变
-    expect(toEdrvUri('file:///Users/xieyong/proj/AGENTS.md', 'D:/other')).toBe('edrv:///Users/xieyong/proj/AGENTS.md')
-    // 盘符绝对路径原本合法（path 以 /C 开头），剥前导 / 不影响其形态
-    expect(toEdrvUri('file:///D:/Work/a/b.lua', 'D:/other')).toBe('edrv:///D:/Work/a/b.lua')
+  it('retains absolute locations outside the workspace', () => {
+    expect(targetOpenPath({ uri: 'file:///Users/me/other/a%20b.lua', root: '/Users/me/project' })).toBe('/Users/me/other/a b.lua')
+    expect(targetOpenPath({ uri: 'file:///D:/Work/a.lua', root: 'D:/other' })).toBe('D:/Work/a.lua')
   })
-  it('LSP 目标保留原始 root，避免 edrv scheme 泄漏', () => {
-    const root = 'D:/Work/PopIsland/IslandSplash_BugFix2'
-    const location = {
-      uri: { scheme: 'edrv', path: '/Assets/Scripts/TeamModel.lua' },
-      range: { startLineNumber: 1, startColumn: 2 },
-      lspUri: 'file:///D:/Work/PopIsland/IslandSplash_BugFix2/Assets/Scripts/TeamModel.lua',
-      lspRoot: root,
-      lspRange: { start: { line: 0, character: 1 }, end: { line: 0, character: 8 } },
-    }
-    expect(targetOpenPath(location)).toBe('Assets/Scripts/TeamModel.lua')
+  it('compares Windows workspace paths without case sensitivity', () => {
+    expect(targetOpenPath({ uri: 'file:///D:/Work/main.lua', root: 'd:\\work\\' })).toBe('main.lua')
   })
   it('isInside 边界', () => {
     expect(isInside('D:/root', 'D:/root/a/b.ts')).toBe(true)
@@ -325,49 +299,6 @@ describe('lsp/config 运行时覆盖（settings section 降级为配置值）', 
     const plugin = { lua: { enabled: true, command: 'a' } }
     expect(mergeConfig(plugin, { lua: { command: 'b' } })).toEqual({ lua: { enabled: true, command: 'b' } })
     expect(mergeConfig(plugin, {})).toEqual(plugin)
-  })
-})
-
-describe('outline/parse parseLua 注解', () => {
-  it('---@class + ---@field 进大纲（字段收为类子节点）', () => {
-    const out = parseOutline('lua', [
-      '---@class FriendProfile',
-      'local FriendProfile = {}',
-      '---@field id number',
-      '---@field name string',
-      'function FriendProfile:GetName() end',
-    ].join('\n'))
-    const cls = out.find((s) => s.name === 'FriendProfile')
-    expect(cls).toBeDefined()
-    expect(cls!.kind).toBe(SK.Class)
-    expect(cls!.children!.map((c) => c.name)).toEqual(['id', 'name'])
-    expect(cls!.children!.every((c) => c.kind === SK.Field)).toBe(true)
-  })
-
-  it('---@alias / ---@enum 进大纲', () => {
-    const out = parseOutline('lua', [
-      '---@alias Mood "happy"|"sad"',
-      '---@enum Color',
-      'local Color = {}',
-      'local M = {}',
-      'function M.foo() end',
-    ].join('\n'))
-    expect(out.find((s) => s.name === 'Mood')!.kind).toBe(SK.TypeParameter)
-    expect(out.find((s) => s.name === 'Color')!.kind).toBe(SK.Enum)
-    expect(out.find((s) => s.name === 'M.foo')).toBeDefined()
-  })
-
-  it('普通注释（--）不影响函数解析', () => {
-    const out = parseOutline('lua', [
-      '-- 普通注释',
-      'function M.go() end',
-    ].join('\n'))
-    expect(out.map((s) => s.name)).toEqual(['M.go'])
-  })
-
-  it('---@field 无类时忽略', () => {
-    const out = parseOutline('lua', ['---@field orphan number', 'function M.a() end'].join('\n'))
-    expect(out.map((s) => s.name)).toEqual(['M.a'])
   })
 })
 

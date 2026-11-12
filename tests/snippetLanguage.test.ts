@@ -7,7 +7,7 @@
  * 作者 ddj 2026-09-10
  */
 import { describe, expect, it } from 'vitest'
-import { LANG_BY_EXT, langOf, snippetLanguageOf } from '../src/client/monaco/loader.js'
+import { LANG_BY_EXT, langOf, snippetLanguageOf } from '../src/client/fileLanguages.js'
 import { languageOptions, fileMeta } from '../src/client/ui/SnippetsPicker.js'
 import {
   SNIPPET_LANGUAGES, languageLabelOf, snippetFileNameFor, snippetFileTemplate,

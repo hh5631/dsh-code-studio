@@ -1,8 +1,8 @@
 /**
  * dsh-vscode-mode client — 编辑器指令目录（纯元数据）。
- * 「一条命令 = 一条注册数据」：命令栏、快捷键设置页与 Monaco 右键菜单
+ * 「一条命令 = 一条注册数据」：命令栏、快捷键设置页与 编辑器 右键菜单
  * 全部从本表读取；新增一条能力只需在 EDITOR_COMMANDS 追加一项（默认键位见 shared/keybindings SHORTCUT_PROFILES）。
- * run 只派发 `edrv.command.*` 窗口事件，不直接触碰 React/Monaco（`edrv.command.` 前缀
+ * run 只派发 `edrv.command.*` 窗口事件，不直接触碰 React/编辑器（`edrv.command.` 前缀
  * 与既有 `edrv:` 刷新/主题事件分属不同命名空间，互不干扰）。
  * 作者 ddj 2026年09月10号
  */
@@ -79,7 +79,7 @@ function prevEditorRowDef(): CommandDef {
 }
 
 /**
- * 转到行（转发 Monaco 原生 gotoLine widget；补命令栏与快捷键设置页入口）。
+ * 转到行（转发 编辑器的跳行面板；补命令栏与快捷键设置页入口）。
  * @author ddj 2026年09月22号
  * @returns 命令定义
  */
@@ -107,7 +107,7 @@ function addSelectionRefDef(): CommandDef {
 
 /**
  * 关闭当前页签（参考图 Ctrl+F4）。
- * 可用性按「是否已打开页签」判定而非编辑器模型：图片/PDF 页签无 Monaco 实例但可关闭；
+ * 可用性按「是否已打开页签」判定而非编辑器模型：图片/PDF 页签无 编辑器 实例但可关闭；
  * 无页签时判定不可用 → 指令桥放行按键，不吞掉浏览器/系统对 Ctrl+F4 的默认行为。
  * @author ddj 2026年09月11号
  * @returns 命令定义

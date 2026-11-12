@@ -17,7 +17,7 @@
 
 ## 性能与数据保护
 
-选择「编辑器」时按需加载 CodeMirror 6，先显示加载反馈，再挂载可编辑文本并启用语法高亮。支持 Markdown、JSON、C/C++、JavaScript/TypeScript、Lua、C# 等常见语言的高亮，以及查找替换、折叠、撤销和重做。Lua 和 C# 可以使用插件已有的语言服务器。TypeScript 提供语法高亮和基本补全，暂缺语义补全与诊断。
+选择「编辑器」时按需加载 CodeMirror 6，先显示加载反馈，再挂载可编辑文本并启用语法高亮。支持 Markdown、JSON、C/C++、JavaScript/TypeScript、Lua、C# 等常见语言的高亮，以及查找替换、折叠、撤销和重做。Lua 和 C# 可以使用插件已有的语言服务器。TypeScript 仅启用语法高亮与基本编辑。
 
 已知超过 2 MiB 的文件直接进入分页只读预览。已打开的文件复用编辑状态和撤销历史，自动保存按文件防抖。
 

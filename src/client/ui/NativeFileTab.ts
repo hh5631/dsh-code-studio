@@ -64,7 +64,7 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
   const factory = props.renderFactorySlot
   const paneKey = `${props.sessionId}:${panel?.id}`
   const previewAddress = file && sessionId ? buildPreviewFileAddress(file.path, sessionId, cwd) : null
-  // 旧版自动开的编辑页签没有显式编辑标记；恢复时直接走原生查看，不挂载 Monaco。
+  // 旧版自动开的编辑页签没有显式编辑标记；恢复时直接走原生查看，不挂载 编辑器。
   const migrating = !!previewAddress && !workspacePage && !nativeDocument
   const params = tab?.navigation?.params
   const line = resolveNavLine(params), column = resolveNavColumn(params)

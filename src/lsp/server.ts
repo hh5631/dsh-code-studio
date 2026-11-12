@@ -593,7 +593,7 @@ export function createLspServer(spec: LspProviderSpec, root: string, languageId:
      * 查询签名帮助（textDocument/signatureHelp）。
      *
      * activeSignature/activeParameter 做边界裁剪：服务器可能给越界值（多签名时按实参推进出错），
-     * Monaco 拿到越界索引会取不到签名而不渲染 —— 裁剪后至少显示首个签名。
+     * 编辑器 拿到越界索引会取不到签名而不渲染 —— 裁剪后至少显示首个签名。
      * @author ddj 2026年09月22号
      * @param path 工作区相对路径
      * @param line 0-based 行
@@ -876,7 +876,7 @@ function toSignature(raw: unknown): LspSignatureInformation | null {
 /**
  * 归一化签名帮助，并裁剪越界的 activeSignature / activeParameter。
  *
- * 为什么必须裁：Monaco 用这两个索引直接取签名与参数，越界时取不到签名就整个浮窗不渲染；
+ * 为什么必须裁：编辑器 用这两个索引直接取签名与参数，越界时取不到签名就整个浮窗不渲染；
  * 服务器在「实参刚敲下逗号」等边界时刻常给超前一位的索引。裁剪后至少显示首个签名/末个参数，
  * 观感是「高亮没跟上」，而不是「参数提示整个不见」。
  * @author ddj 2026年09月22号

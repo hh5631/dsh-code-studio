@@ -13,7 +13,7 @@ const Button = (Primitives as unknown as { Button: React.ComponentType<{
 }> }).Button
 
 /**
- * Read-only paged text surface: never creates a Monaco model or exposes a save action.
+ * Read-only paged text surface: never creates a 编辑器 model or exposes a save action.
  * @public @author ddj 2026年10月22号
  * @param props Exact session/file identity and authorized page loader.
  * @returns Bounded selectable text with explicit continuation and status.

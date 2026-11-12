@@ -32,15 +32,6 @@ describe('transport coverage', () => {
   })
 
   it('routes every /cstudio entry through the channel-aware resolver', () => {
-    const entries = [
-      'client/monaco/loader.ts',
-      'client/pdf/pdfLoader.ts',
-      // client/ui/DiffBadge.ts 已改用内联 SVG 图标，不再加载 /cstudio 网络资源，
-      // 故不在「必须经 transportUrl 解析」的清单内（2026-11-10）。
-    ]
-    for (const entry of entries) {
-      expect(readFileSync(join(SRC, entry), 'utf8')).toContain("transportUrl('/cstudio")
-    }
     expect(readFileSync(join(SRC, 'shared/rpc.ts'), 'utf8')).toContain('transportUrl(RPC_PATH)')
   })
 })

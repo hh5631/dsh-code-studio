@@ -343,6 +343,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     markdown ? button(preview ? '编辑 Markdown' : '预览 Markdown', preview ? '编辑' : '预览', () => {
       setPreviewText(active ? workspace.documents.get(active)?.model.getValue() ?? '' : ''); setPreview(value => !value)
     }) : null)
+  const editorActive = visible && !!active && presented?.path === active && !preview && !gitDiff && !large
   return React.createElement('div', { ref: root, className: 'edrv-view-side cstudio-minimal', 'data-edrv-view': '1', 'data-edrv-layout': 'side' },
     embedded ? (props.toolbarTarget ? createPortal(embeddedTools, props.toolbarTarget) : null) : React.createElement('div', { className: 'cstudio-minimal-bar' },
       React.createElement('div', { className: 'edrv-tabs', role: 'tablist', 'aria-label': '打开的文件' }, tabs.map(tab => React.createElement('div', {
@@ -362,7 +363,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     React.createElement('div', { className: 'cstudio-minimal-body' },
       sidebar && !embedded ? React.createElement('aside', { className: 'cstudio-minimal-git', 'aria-label': 'Git 修改' }, React.createElement(GitPanel, { ctx: context })) : null,
       React.createElement('div', { className: 'cstudio-minimal-document edrv-editor-row' },
-        React.createElement('div', { ref: host, className: 'cstudio-minimal-editor', 'data-cstudio-engine': editorName, style: { visibility: active && !preview && !gitDiff && !large ? 'visible' : 'hidden' } }),
+        React.createElement('div', { ref: host, className: 'cstudio-minimal-editor', 'data-cstudio-engine': editorName, 'data-cstudio-editor-active': editorActive ? 'true' : undefined, style: { visibility: active && !preview && !gitDiff && !large ? 'visible' : 'hidden' } }),
         large && active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-preview' }, React.createElement(LargeTextView, {
           sessionId: sessionId || '', path: active,
           loadPage: async args => { const result = await rpc('cstudio.textPage', args); return result.ok ? result : { ok: false, error: result.error, reason: result.reason ?? 'read-failed' } },

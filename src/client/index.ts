@@ -26,7 +26,7 @@ import { PluginDetailSection } from './ui/PluginDetailSection.js'
 import { rpc, dbg } from './rpc.js'
 import { ContextMenu } from './ui/ContextMenu.js'
 
-import { observeScheme, schemeOfSnapshot } from './monaco/theme.js'
+import { observeScheme, schemeOfSnapshot } from './editorTheme.js'
 import { createFileOpenerRegistry, scanSidebar, officialSidebarOpener, type FileOpenContext } from './fileOpeners.js'
 import type { FileOpenerRegistry } from './fileOpeners.js'
 import { installOpenPathRouter, vscodeOpener, autoValue } from './openPathRouter.js'
@@ -64,8 +64,6 @@ import { editorLimitApply } from './editorLimit.js'
 import { appearanceApply, initAppearance } from './appearance.js'
 import { log } from './log.js'
 import { installLocale } from './localeClient.js'
-import { disposeSnippets } from './snippets/provider.js'
-import { disposeAiInline } from './ai/inlineProvider.js'
 import { readSessionScope, subscribeScope } from './sessionScope.js'
 import { installPlanBridge } from './planBridge.js'
 import { installPageReload } from './pageReload.js'
@@ -82,7 +80,7 @@ export { setPanelImport as __setPanelImport }
 export { setEditorImport as __setEditorImport }
 // Shared with client.editor.js; keeping these live objects in the root protects saves and commands across mode changes.
 import * as workspaceRuntime from './state/minimalWorkspace.js'
-import * as themeRuntime from './monaco/theme.js'
+import * as themeRuntime from './editorTheme.js'
 import * as reloadRuntime from './pageReload.js'
 import * as panelCommandsRuntime from './panelCommands.js'
 import * as activePathRuntime from './activePathStore.js'
@@ -504,7 +502,7 @@ export async function apply(ctx: any): Promise<void> {
   retryRemoteOpen()
 
   // 官方主题跟随（DSH 0.1.5+）：ctx.theme 快照事件优先，其次明暗标记观察（observeScheme），
-  // 都不可用时 theme.ts 的 detectColorScheme 兜底；统一广播 edrv:theme-change 触发 Monaco 主题重刷。
+  // 都不可用时 theme.ts 的 detectColorScheme 兜底；统一广播 edrv:theme-change 触发 编辑器主题重刷。
   const themeService = ctx.get('theme') as { getTheme?: () => unknown } | undefined
   const emitTheme = (): void => {
     const snapshot = typeof themeService?.getTheme === 'function' ? themeService.getTheme() : undefined
@@ -519,7 +517,7 @@ export async function apply(ctx: any): Promise<void> {
   emitTheme()
 
   // 中央「文件编辑」页签（旧形态回退）：类 VSCode 编辑器；侧边栏形态（官方/better-sidebar）可用时
-  // 编辑器住侧边栏 Tab，本页签不注册（避免双实例：Monaco×2 + diff dock 每会话单源抢占）。
+  // 编辑器住侧边栏 Tab，本页签不注册（避免双实例：双编辑器 + diff dock 每会话单源抢占）。
   const registerLegacyTab = (): (() => void) | null => {
     return registerSlotSafely(ctx, {
       name: 'conversation.view',
@@ -531,7 +529,7 @@ export async function apply(ctx: any): Promise<void> {
   }
 
   // 侧边栏三形态互斥切换：官方（DSH 0.1.5+）> better-sidebar（归档，仅旧版回退）> 中央页签。
-  // officialDisposer / sideDisposer / legacyDisposer 任一时刻只保留其一（避免双实例 Monaco 抢占）。
+  // officialDisposer / sideDisposer / legacyDisposer 任一时刻只保留其一（避免双编辑器抢占）。
   // ⚠️ 两个可选服务都可能晚于本插件就绪（better-sidebar bundle 1MB+ 后加载；官方服务旧 DSH
   // 不存在），一次性探测会误报——故启动后按 2s 间隔重试（窗口 ~30s）：每 tick 先探官方再探
   // better-sidebar；better-sidebar 先命中而官方后到时自动切换（官方优先），窗口结束仍未命中
@@ -663,8 +661,6 @@ export async function apply(ctx: any): Promise<void> {
   ctx.effect(() => () => {
     setPanelImport()
     applyTypography()
-    try { disposeSnippets() } catch { /* 卸载异常不得阻断其余清理 */ }
-    try { disposeAiInline() } catch { /* 同上 */ }
     try { disposeEditorRuntime() } catch { /* 同上 */ }
     // 原生打开范围复位回默认集（handler 解绑已由其自身 ctx.effect disposer 承担）
     try { resetNativeOpen() } catch { /* 同上 */ }
