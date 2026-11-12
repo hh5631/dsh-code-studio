@@ -1,57 +1,78 @@
 import { log } from './log.js'
 import { LANG_BY_EXT } from './monaco/loader.js'
-import { deferToOfficial, type SlotsLike } from './officialSidebar.js'
-import { inNativePath, NATIVE_OPEN_EVENT } from './nativeOpenStore.js'
+import { canEditFile, type SlotsLike } from './officialSidebar.js'
+import { NATIVE_OPEN_EVENT } from './nativeOpenStore.js'
 
-const DOCUMENT_SLOT = 'sidebar.right.tab.document'
-export const DOCUMENT_EDITOR_ID = 'dsh-code-studio/document'
-const supported = [...Object.keys(LANG_BY_EXT), 'csv', 'tsv', 'conf', 'cmake', 'diff', 'patch']
+const SLOT = 'sidebar.right.tab.document'
+const CODE = '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/code'
+const EDITOR = 'dsh-code-studio/document'
+const CODE_FALLBACK = 'dsh-code-studio/native-code'
+const extensions = [...new Set([...Object.keys(LANG_BY_EXT), 'csv', 'tsv', 'conf', 'cmake', 'diff', 'patch'])]
+export const DOCUMENT_EDITOR_ID = EDITOR
 
+interface Definition {
+  id: string; extensions: readonly string[]; title: () => string
+  priority?: 'builtin' | 'extension'; loading: 'text-pages' | 'bytes-complete' | 'renderer'
+  wrap?: boolean; sourceLines?: boolean
+}
 export interface DocumentPreviewsLike {
-  register(definition: {
-    id: string; extensions: string[]; title: () => string
-    priority: 'extension'; loading: 'renderer'; wrap: boolean
-  }): () => void
+  getSnapshot(): readonly Definition[]
+  subscribe(listener: () => void): () => void
+  register(definition: Definition): () => void
+}
+interface DocumentSlots extends SlotsLike {
+  entries(name: string): readonly { options: { key?: string }; component: unknown; locale?: string }[]
+  subscribe(name: string, listener: () => void): () => void
 }
 
-/** 在 DSH 原生文档工具栏之下提供编辑正文，原生预览仍可从工具栏选择。 */
-export function installDocumentRenderer(previews: DocumentPreviewsLike, slots: SlotsLike, render: unknown) {
-  if (typeof previews?.register !== 'function') return null
-  let body: unknown
-  let removeRenderer: (() => void) | undefined
-  let extensions = new Set<string>()
-  const sync = () => {
-    const next = supported.filter(ext => !deferToOfficial(`file.${ext}`) && !inNativePath(`file.${ext}`))
-    if (next.length === extensions.size && next.every(ext => extensions.has(ext))) return
-    removeRenderer?.()
-    removeRenderer = undefined
-    extensions.clear()
-    removeRenderer = previews.register({ id: DOCUMENT_EDITOR_ID, extensions: next, title: () => '编辑器', priority: 'extension', loading: 'renderer', wrap: true })
-    extensions = new Set(next)
+/** 编辑器是原生菜单的一项。对于宿主只提供纯文本的后缀，先复用原生代码正文作为默认。 */
+export function installDocumentRenderer(previews: DocumentPreviewsLike, slots: DocumentSlots, render: unknown): (() => void) | null {
+  if (!previews?.getSnapshot || !previews?.subscribe || !previews?.register || !slots.entries || !slots.subscribe) return null
+  const body = slots.inject(SLOT, () => slots.register({ name: SLOT, key: EDITOR }, render))
+  if (typeof body !== 'function') return null
+  let dispose: (() => void) | undefined
+  let signature = ''
+  let closed = false, scheduled = false
+  function sync() {
+    if (closed) return
+    const native = previews.getSnapshot().filter(def => def.id !== EDITOR && def.id !== CODE_FALLBACK)
+    const code = native.find(def => def.id === CODE)
+    const codeBody = slots.entries(SLOT).find(entry => entry.options.key === CODE)
+    const enabled = code && codeBody ? extensions.filter(ext => canEditFile(`file.${ext}`)) : []
+    const covered = new Set(native.flatMap(def => def.extensions.map(ext => ext.toLowerCase().replace(/^\./, ''))))
+    const missing = enabled.filter(ext => !covered.has(ext))
+    const next = JSON.stringify([enabled, missing, native.map(def => def.id)])
+    if (next === signature) return
+    signature = next
+    dispose?.(); dispose = undefined
+    if (!enabled.length || !code || !codeBody) return
+    const undo: Array<() => void> = []
+    try {
+      if (missing.length) {
+        const slot = slots.register({ name: SLOT, key: CODE_FALLBACK, locale: codeBody.locale }, codeBody.component)
+        if (typeof slot !== 'function') return
+        undo.push(() => { slot() })
+        undo.push(previews.register({ ...code, id: CODE_FALLBACK, extensions: missing }))
+      }
+      // 相同后缀和优先级下，DSH 取先注册的原生查看器；编辑器只在菜单明确选中时挂载。
+      undo.push(previews.register({ id: EDITOR, extensions: enabled, title: () => '编辑器', priority: 'builtin', loading: 'renderer', wrap: true }))
+      dispose = () => { for (const release of undo.reverse()) release() }
+    } catch (error) {
+      for (const release of undo.reverse()) release()
+      log.warn('原生视图菜单编辑器注册失败：' + String(error))
+    }
   }
-  try {
-    body = slots.inject(DOCUMENT_SLOT, () => slots.register({ name: DOCUMENT_SLOT, key: DOCUMENT_EDITOR_ID }, render))
-    if (typeof body !== 'function') return null
-    sync()
-  } catch (error) {
-    if (typeof body === 'function') body()
-    log.warn('原生文档编辑器注册失败（' + String(error) + '）')
-    return null
+  function schedule() {
+    if (closed || scheduled) return
+    scheduled = true
+    queueMicrotask(() => { scheduled = false; sync() })
   }
-  const syncNative = () => {
-    try { sync() } catch (error) { log.warn('同步原生预览范围失败（' + String(error) + '）') }
-  }
-  window.addEventListener(NATIVE_OPEN_EVENT, syncNative)
-  return {
-    matches(path: string) {
-      const base = path.split(/[\\/]/).pop() ?? ''
-      const dot = base.lastIndexOf('.')
-      return dot >= 0 && extensions.has(base.slice(dot + 1).toLowerCase())
-    },
-    dispose() {
-      window.removeEventListener(NATIVE_OPEN_EVENT, syncNative)
-      removeRenderer?.()
-      if (typeof body === 'function') body()
-    },
+  const offPreviews = previews.subscribe(schedule), offSlots = slots.subscribe(SLOT, schedule)
+  window.addEventListener(NATIVE_OPEN_EVENT, schedule)
+  schedule()
+  return () => {
+    closed = true; offPreviews(); offSlots()
+    window.removeEventListener(NATIVE_OPEN_EVENT, schedule)
+    dispose?.(); body()
   }
 }

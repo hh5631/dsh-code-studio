@@ -1,7 +1,7 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { DOCUMENT_EDITOR_ID } from '../documentRenderer.js'
-import { buildFileAddress, type SidebarRightServiceLike } from '../officialSidebar.js'
+import { buildPreviewFileAddress, type SidebarRightServiceLike } from '../officialSidebar.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 import { minimalWorkspace } from '../state/minimalWorkspace.js'
 import { normalizedPath } from '../state/gitPaths.js'
@@ -30,10 +30,8 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
     const preview = anchor.current?.closest('[data-textpreview-state]')
     const content = preview?.querySelector('[data-textpreview-content]')
     if (!preview || !content) return
-    const sync = () => {
-      const editing = preview.getAttribute('data-document-preview') === DOCUMENT_EDITOR_ID
-      setBody(editing ? null : content.querySelector<HTMLElement>(':scope > [data-textpreview-body]'))
-    }
+    const sync = () => setBody(preview.getAttribute('data-document-preview') === DOCUMENT_EDITOR_ID
+      ? null : content.querySelector<HTMLElement>(':scope > [data-textpreview-body]'))
     const observer = new MutationObserver(sync)
     observer.observe(preview, { attributes: true, attributeFilter: ['data-document-preview'] })
     observer.observe(content, { childList: true })
@@ -62,9 +60,9 @@ export function NativePreviewTools({ absolutePath, sessionId, sessions, service 
   }
   const openPath = async (path: string, line?: number, column?: number) => {
     const marker = anchor.current
-    if (!marker || !await prepare() || !marker.isConnected) return
+    if (!marker || !sessionId || !service?.openResource || !await prepare() || !marker.isConnected) return
     try {
-      service?.openResource?.(buildFileAddress(path, sessionId), {
+      service.openResource(buildPreviewFileAddress(path, sessionId, cwd), {
         paneId, replaceTab: marker.closest<HTMLElement>('[data-sidebar-right-tab]')?.dataset.sidebarRightTab,
         params: line === undefined ? undefined : { line, column },
       })

@@ -9,7 +9,7 @@
  */
 import React from 'react'
 import { pickSessionScope } from '../sessionScope.js'
-import { EditorView } from './EditorView.js'
+import { LazyEditorView as EditorView } from './LazyEditorView.js'
 import { setSideEditorMounted } from '../sidebarBridge.js'
 import { editorMountEpoch, markEditorActive, markEditorMounted, parseOfficialFileAddress, resolveNavLine, resolveNavColumn, resolveNavOpen } from '../officialSidebar.js'
 

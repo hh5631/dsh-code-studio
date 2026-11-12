@@ -73,10 +73,11 @@
 .cstudio-native-header { box-sizing: border-box; display: flex; flex: none; align-items: center; gap: 4px; height: 38px; padding: 0 6px 0 16px; border-bottom: .5px solid var(--cstudio-border); }
 .cstudio-native-path { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--cstudio-muted); }
 .cstudio-native-actions { display: flex; flex: none; }
+.cstudio-document-editor { flex: 1; min-width: 0; min-height: 0; white-space: normal; }
+.cstudio-editor-start { display:flex; flex:1; min-height:96px; align-items:center; justify-content:center; gap:8px; color:var(--dsw-alias-label-secondary); }
 .cstudio-native-actions .cstudio-minimal-tools button { min-width: 30px; width: auto; padding: 5px 8px; }
 .cstudio-native-content { isolation: isolate; position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; }
 .cstudio-native-content > .cstudio-minimal { isolation: isolate; flex: 1; min-width: 0; height: auto; }
-.cstudio-document-editor { flex: 1; min-width: 0; min-height: 0; white-space: normal; }
 [data-textpreview-body]:has(> .cstudio-preview-overlay) { position: relative; }
 [data-textpreview-body]:has(> .cstudio-preview-overlay > .cstudio-git-diff) { overflow: hidden; }
 .cstudio-preview-overlay {

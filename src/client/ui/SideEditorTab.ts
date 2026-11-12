@@ -6,7 +6,7 @@
  * 作者 ddj 2026年08月25号
  */
 import React from 'react'
-import { EditorView } from './EditorView.js'
+import { LazyEditorView as EditorView } from './LazyEditorView.js'
 import { resolveInitialOpen, setSideEditorMounted, takePendingSideOpen } from '../sidebarBridge.js'
 
 /**

@@ -16,7 +16,8 @@
 import React from 'react'
 import './styles/git.css'
 import './styles/editor.css'
-import { EditorView } from './ui/EditorView.js'
+import './styles/minimal.css'
+import { LazyEditorView as EditorView, disposeEditorRuntime, setEditorImport } from './ui/LazyEditorView.js'
 import { installWorkspaceGuards } from './state/minimalWorkspace.js'
 import { forgeBridge } from './forgeBridge.js'
 import { lazyMenus } from './contextMenusOfficial.js'
@@ -26,7 +27,7 @@ import { rpc, dbg } from './rpc.js'
 import { ContextMenu } from './ui/ContextMenu.js'
 
 import { observeScheme, schemeOfSnapshot } from './monaco/theme.js'
-import { createFileOpenerRegistry, scanSidebar, officialSidebarOpener, shouldClaimFiles, type FileOpenContext } from './fileOpeners.js'
+import { createFileOpenerRegistry, scanSidebar, officialSidebarOpener, type FileOpenContext } from './fileOpeners.js'
 import type { FileOpenerRegistry } from './fileOpeners.js'
 import { installOpenPathRouter, vscodeOpener, autoValue } from './openPathRouter.js'
 import { openOriginal, patchRemoteOpen, probeRemoteOpen } from './remoteOpenRouter.js'
@@ -37,7 +38,7 @@ import { setupExtOpen } from './externalOpen.js'
 import { SIDEBAR_PLUGIN, registerSlotSafely, settingsBridge } from './compat.js'
 import { clientSummary } from './compatSummary.js'
 import { detectSidebarService, hasSideRoute, installSideEditor, routeSideEditor, setEnsureSideEditor, SIDEBAR_INSTALL_CMD } from './sidebarBridge.js'
-import { detectOfficial, installOfficial, registerOfficialFileClaim, registerWorkspaceFilesClaim, buildFileAddress, parseOfficialFileAddress, setEditorTabScope } from './officialSidebar.js'
+import { detectOfficial, installOfficial, registerOfficialFileClaim, registerWorkspaceFilesClaim, buildPreviewFileAddress, setEditorTabScope } from './officialSidebar.js'
 import { installDocumentRenderer, type DocumentPreviewsLike } from './documentRenderer.js'
 import { setNativeCsv, setNativeOpenHandler, resetNativeOpen } from './nativeOpenStore.js'
 import { SideEditorTab } from './ui/SideEditorTab.js'
@@ -47,7 +48,7 @@ import { createAddToConversation } from './addToConversation.js'
 import type { SkillCatalog } from '../shared/skillCatalog.js'
 
 import { createSidebarPanelRegistry } from './sidebar/registry.js'
-import { createGitPanel } from './sidebar/panels/GitPanel.js'
+import { createGitPanel, GitPanel } from './sidebar/panels/GitPanel.js'
 import { EditorSettings } from './ui/EditorSettings.js'
 import { applyTypography } from './typography.js'
 import { createTreeMenuRegistry } from './sidebar/contextMenu.js'
@@ -63,7 +64,6 @@ import { editorLimitApply } from './editorLimit.js'
 import { appearanceApply, initAppearance } from './appearance.js'
 import { log } from './log.js'
 import { installLocale } from './localeClient.js'
-import { disposeLsp } from './monaco/lsp/index.js'
 import { disposeSnippets } from './snippets/provider.js'
 import { disposeAiInline } from './ai/inlineProvider.js'
 import { readSessionScope, subscribeScope } from './sessionScope.js'
@@ -79,6 +79,24 @@ import { setPanelImport } from './lazyPanel.js'
 /** Root-owned live objects shared with independent panel chunks; no copied stores or transport state. */
 export const __lazyShared = { rpc, dbg, ContextMenu }
 export { setPanelImport as __setPanelImport }
+export { setEditorImport as __setEditorImport }
+// Shared with client.editor.js; keeping these live objects in the root protects saves and commands across mode changes.
+import * as workspaceRuntime from './state/minimalWorkspace.js'
+import * as loaderRuntime from './monaco/loader.js'
+import * as themeRuntime from './monaco/theme.js'
+import * as reloadRuntime from './pageReload.js'
+import * as panelCommandsRuntime from './panelCommands.js'
+import * as activePathRuntime from './activePathStore.js'
+import * as limitRuntime from './editorLimit.js'
+import * as nativeRuntime from './nativeOpenStore.js'
+import * as sidebarRuntime from './officialSidebar.js'
+import * as diffRuntime from './ui/GitDiffView.js'
+import * as persistRuntime from './state/uiStatePersist.js'
+import * as paletteRuntime from './commandPaletteStore.js'
+import * as keysRuntime from './keybindings.js'
+export const __editorShared = { workspaceRuntime, loaderRuntime, themeRuntime, reloadRuntime, panelCommandsRuntime,
+  activePathRuntime, limitRuntime, nativeRuntime, sidebarRuntime, diffRuntime, persistRuntime, paletteRuntime, keysRuntime,
+  rpcRuntime: { rpc, dbg }, gitRuntime: { GitPanel } }
 
 // ⚠️ inject 只列必需服务：webUiSettings 是 @linxin666/dsh-client-ui-web-ui-settings 提供的
 // 可选兼容桥（非官方服务），列入 inject 会让未装该桥的部署启动时 entry 永久 pending，
@@ -235,7 +253,7 @@ export async function apply(ctx: any): Promise<void> {
   let sideService = detectSidebarService(ctx)
   /** 可选探测官方右侧 Sidebar（DSH 0.1.5-alpha.1+；探测命中 ≡ 版本判定，不进 inject 同上）。 */
   let officialService = detectOfficial(ctx)
-  /** 官方 file 地址认领的当前注销器（null=未认领；由 syncFileClaim 依设置值切换）。 */
+  /** 显式编辑页类型的注销器（null=不可用）。 */
   let claimDisposer: (() => void) | null = null
   /** 「添加到对话」动作集：编辑区/Tab 右键菜单注入文件引用与代码块（conversation 服务缺失时各动作安全降级）。 */
   const addToConversation = createAddToConversation(ctx)
@@ -287,7 +305,7 @@ export async function apply(ctx: any): Promise<void> {
     openPathReady: Boolean(workspaces?.openPath), remoteReady: remoteOpenInstalled,
     sidebarOpener: registry.get(SIDEBAR_PLUGIN) !== undefined,
     legacySidebar: sideService !== undefined, officialSidebar: officialService !== undefined,
-    fileClaim: claimDisposer !== null, claimWanted: shouldClaimFiles(selected), selected,
+    fileClaim: claimDisposer !== null, claimWanted: officialService !== undefined, selected,
     officialMenus: Boolean(ctx.get('contextMenus')), forge: forge.available(),
   }, version)
 
@@ -327,12 +345,6 @@ export async function apply(ctx: any): Promise<void> {
       return true
     } catch { return false }
   }
-  let documentPreviews = ctx.get('documentPreviews') as DocumentPreviewsLike | undefined
-  let documentRenderer: ReturnType<typeof installDocumentRenderer> = null
-  const useDocumentRenderer = (address: string): boolean => {
-    const file = parseOfficialFileAddress(address)
-    return !!file?.sessionId && documentRenderer?.matches(file.path) === true
-  }
   const editorProps = { schedule, openWorkspaceFiles, addToConversation, sidebarPanels, fileMenuItems,
     officialMenus: menuBridge, forge, fileOpeners: registry, sessions, readSessionScope: () => readSessionScope(ctx) }
   registerSlotSafely(ctx, { name: 'sidebar.right.tab.document.actions', id: 'dsh-code-studio/tools', order: 90 },
@@ -340,37 +352,11 @@ export async function apply(ctx: any): Promise<void> {
       ...props as Pick<React.ComponentProps<typeof NativePreviewTools>, 'absolutePath' | 'sessionId'>,
       sessions, service: officialService?.service,
     }))
-  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(NativeFileTab, { ...props, ...editorProps, useDocumentRenderer })
-  const disposeDocumentRenderer = () => { documentRenderer?.dispose(); documentRenderer = null }
-  ctx.effect(() => disposeDocumentRenderer, 'code-studio: native document renderer lifetime')
-  /** 官方 file 地址认领同步：自动/代码工作台 档认领（原生文件资源中编辑），其余交官方查看器。 */
-  const syncFileClaim = (): void => {
-    const official = officialService
-    const want = official !== undefined && shouldClaimFiles(selected)
-    if (want && !documentRenderer && documentPreviews) {
-      documentRenderer = installDocumentRenderer(documentPreviews, ctx.slots, (props: React.ComponentProps<typeof NativeDocumentEditor>) =>
-        React.createElement(NativeDocumentEditor, { ...props, ...editorProps }))
-    } else if (!want) disposeDocumentRenderer()
-    if (want && claimDisposer === null && official) {
-      // 文本资源在原生文件页签内直接编辑，原生文件树与编辑区同屏。
-      const renderTab = officialRenderTab
-      const disposer = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab, useDocumentRenderer })
-      const workspaceDisposer = registerWorkspaceFilesClaim({ tabs: official.tabs, slots: ctx.slots,
-        renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true }), icon: IconFolderOpenOutline16 })
-      if (disposer !== null || workspaceDisposer !== null) claimDisposer = ctx.effect(() => () => {
-        disposer?.(); workspaceDisposer?.()
-      }, 'code-studio: official file claim')
-      return
-    }
-    if (!want && claimDisposer !== null) {
-      claimDisposer()
-      claimDisposer = null
-    }
-  }
+  const officialRenderTab = (props: Record<string, unknown>) => React.createElement(NativeFileTab, { ...props, ...editorProps })
   if (typeof ctx.inject === 'function') ctx.inject(['documentPreviews'], (scope: any) => {
-    documentPreviews = scope.get('documentPreviews') as DocumentPreviewsLike
-    syncFileClaim()
-    scope.effect(() => () => { documentPreviews = undefined; disposeDocumentRenderer() })
+    scope.effect(() => installDocumentRenderer(scope.get('documentPreviews') as DocumentPreviewsLike, scope.slots,
+      (props: React.ComponentProps<typeof NativeDocumentEditor>) => React.createElement(NativeDocumentEditor, { ...props, ...editorProps })) ?? undefined,
+    'code-studio: document viewer menu')
   })
   const legacyDefaults = defaultKeybindings()
   let officialReady = false
@@ -397,7 +383,6 @@ export async function apply(ctx: any): Promise<void> {
         const snapshot = scope.getSnapshot()
         if (snapshot.status === 'loading') return
         selected = autoValue(snapshot.value?.fileOpenTool)
-        syncFileClaim()
         window.dispatchEvent(new CustomEvent('edrv:file-open-tool-change', { detail: { value: selected } }))
       }
       sync()
@@ -566,6 +551,7 @@ export async function apply(ctx: any): Promise<void> {
       slots: ctx.slots,
       renderTab: (props: Record<string, unknown>) => React.createElement(LegacyEditorRedirect, { ...props, sessions, service: official.service }),
       sessionId: () => readSessionScope(ctx).sessionId ?? undefined,
+      cwd: () => readSessionScope(ctx).cwd,
       title: () => t('slot.fileEditor'),
       guide: {
         title: () => t('guide.title'),
@@ -584,22 +570,24 @@ export async function apply(ctx: any): Promise<void> {
       const scope = readSessionScope(ctx)
       return workspaceScopeOf(scope.cwd, scope.sessionId)
     })
-    // 官方打开器（下拉「官方侧边栏」选项，动态出现；openResource 能力缺失时跳过）+ 按当前设置同步 file 地址认领
+    // 默认使用原生文件查看；编辑类型只接受由用户显式指定 kind 的打开请求。
     if (typeof official.service.openResource === 'function') {
       ctx.effect(() => registry.register(officialSidebarOpener(official.service)), 'code-studio: official sidebar opener')
-      // 原生打开 handler：文件树 openFile 命中 nativeOpenExts 时经 openResource 落官方渲染器
-      //（claim 的 canOpen 同步让位该范围，否则地址又被认领转发回本插件）；形态撤下时解绑
       ctx.effect(() => {
         setNativeOpenHandler((path) => {
           const scope = readSessionScope(ctx)
           if (!scope.sessionId) return false
-          official.service.openResource?.(buildFileAddress(path, scope.sessionId))
+          official.service.openResource?.(buildPreviewFileAddress(path, scope.sessionId, scope.cwd))
           return typeof official.service.openResource === 'function'
         })
         return () => setNativeOpenHandler(null)
       }, 'code-studio: native open handler')
     }
-    syncFileClaim()
+    const edit = registerOfficialFileClaim({ tabs: official.tabs, slots: ctx.slots, renderTab: officialRenderTab })
+    if (edit) claimDisposer = ctx.effect(() => () => { claimDisposer = null; edit() }, 'code-studio: explicit file editor')
+    const workspace = registerWorkspaceFilesClaim({ tabs: official.tabs, slots: ctx.slots,
+      renderTab: (props: Record<string, unknown>) => officialRenderTab({ ...props, workspacePage: true }), icon: IconFolderOpenOutline16 })
+    if (workspace) ctx.effect(() => workspace, 'code-studio: workspace files')
   }
   const applySideForm = (): void => {
     if (officialService) {
@@ -680,7 +668,7 @@ export async function apply(ctx: any): Promise<void> {
     applyTypography()
     try { disposeSnippets() } catch { /* 卸载异常不得阻断其余清理 */ }
     try { disposeAiInline() } catch { /* 同上 */ }
-    try { disposeLsp() } catch { /* 同上 */ }
+    try { disposeEditorRuntime() } catch { /* 同上 */ }
     // 原生打开范围复位回默认集（handler 解绑已由其自身 ctx.effect disposer 承担）
     try { resetNativeOpen() } catch { /* 同上 */ }
   }, 'code-studio: monaco providers teardown')

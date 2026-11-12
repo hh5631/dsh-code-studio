@@ -280,7 +280,7 @@ describe('buildFileAddress', () => {
 })
 
 describe('registerOfficialFileClaim', () => {
-  it('注册 file 资源类型 + keyed 正文，canOpen 否决畸形地址', () => {
+  it('只注册显式编辑类型，普通文件路由没有匹配规则', () => {
     const definitions: unknown[] = []
     const slotKeys: unknown[] = []
     const tabs = { register: (d: unknown) => { definitions.push(d); return () => {} } }
@@ -293,7 +293,7 @@ describe('registerOfficialFileClaim', () => {
     const definition = definitions[0] as Record<string, unknown>
     expect(definition['id']).toBe(OFFICIAL_FILE_TAB_ID)
     expect(definition['kind']).toBe('edrvEditorFile')
-    expect(definition['patterns']).toEqual(['dsh-resource://file/**'])
+    expect(definition['patterns']).toBeUndefined()
     expect(definition['priority']).toBe('extension')
     expect(slotKeys).toEqual([OFFICIAL_FILE_TAB_ID])
     const canOpen = definition['canOpen'] as (a: string) => boolean

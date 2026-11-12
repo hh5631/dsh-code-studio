@@ -2,11 +2,11 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
-import { loadMonaco } from '../monaco/loader.js'
-import { applyOfficial, editorFont, registerThemes, observeScheme } from '../monaco/theme.js'
+import { langOf, loadMonaco } from '../monaco/loader.js'
+import { applyOfficial, editorFont, observeScheme } from '../monaco/theme.js'
 import { setupLsp, setSession } from '../monaco/lsp/index.js'
 import { createViewKeeper } from '../state/editorViewState.js'
-import { minimalWorkspace } from '../state/minimalWorkspace.js'
+import { MAX_EDIT_TEXT_BYTES, minimalWorkspace } from '../state/minimalWorkspace.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 import { normalizeTabs, tabPathOf, remapPathOf } from '../tabActions.js'
 import { getMaxOpenEditors } from '../editorLimit.js'
@@ -28,7 +28,9 @@ import { onUiStateReady } from '../state/uiStatePersist.js'
 import { copyText } from '../copyText.js'
 import { rpc } from '../rpc.js'
 import { LargeTextView } from './LargeTextView.js'
-import '../styles/minimal.css'
+import { afterPaint } from '../afterPaint.js'
+
+export { disposeLsp } from '../monaco/lsp/index.js'
 
 export interface Props {
   sessionId?: string; sessions?: any; visible?: boolean; ownerId?: string
@@ -68,13 +70,20 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   const [monaco, setMonaco] = React.useState<any>(null)
   const [ready, setReady] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
-  const [large, setLarge] = React.useState(false)
+  const [largePath, setLargePath] = React.useState<string | null>(null)
+  const [presented, setPresented] = React.useState<{ path: string; model: any } | null>(null)
+  const [loadStage, setLoadStage] = React.useState('正在打开…')
   const [error, setError] = React.useState('')
   const [sidebar, setSidebar] = React.useState(false)
   const [preview, setPreview] = React.useState(false)
   const [previewText, setPreviewText] = React.useState('')
   const [quick, setQuick] = React.useState(false)
   const [gitDiff, setGitDiff] = React.useState<{ cwd: string; path: string; staged: boolean } | null>(null)
+  const visible = props.visible !== false
+  // 原生右栏会预挂载文件页签。空工作台、后台页签和纯 Git 对比都不需要 Monaco。
+  const sizeTooLarge = typeof props.documentSize === 'number' && props.documentSize > MAX_EDIT_TEXT_BYTES
+  const large = !!active && (sizeTooLarge || largePath === active)
+  const needsMonaco = visible && !!active && !gitDiff && !large
   const host = React.useRef<HTMLDivElement>(null), root = React.useRef<HTMLDivElement>(null)
   const editor = React.useRef<any>(null), keeper = React.useRef<any>(null)
   const bound = React.useRef<string | null>(null)
@@ -204,15 +213,22 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     return () => { window.removeEventListener('edrv:path-renamed', renamed); window.removeEventListener('edrv:path-deleted', deleted) }
   }, [cwd, workspace, scope])
   React.useEffect(() => {
+    if (!needsMonaco || monaco) return
     let alive = true
-    void loadMonaco(() => {}).then((value: any) => { if (alive) setMonaco(value) }).catch((cause: unknown) => {
-      if (alive) { setError(String(cause)); onDocumentLoad.current?.(false) }
+    const cancel = afterPaint(() => {
+      void loadMonaco((stage: { message: string }) => { if (alive) setLoadStage(stage.message) }).then((value: any) => {
+        if (alive) setMonaco(value)
+      }).catch((cause: unknown) => {
+        if (alive) { setError(String(cause)); onDocumentLoad.current?.(false) }
+      })
     })
-    return () => { alive = false }
-  }, [])
+    return () => { alive = false; cancel() }
+  }, [needsMonaco, monaco, active])
+  React.useEffect(() => { if (sizeTooLarge && visible && active) onDocumentLoad.current?.(true) },
+    [sizeTooLarge, visible, active, props.documentRevision])
   React.useLayoutEffect(() => {
     if (!monaco || !host.current) return
-    registerThemes(monaco); const theme = applyOfficial(monaco)
+    const theme = applyOfficial(monaco)
     const instance = monaco.editor.create(host.current, {
       model: null, theme, ...editorFont(), automaticLayout: false,
       minimap: { enabled: false }, glyphMargin: false, overviewRulerLanes: 0,
@@ -229,7 +245,6 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     let frame: number | undefined
     const measure = () => { if (frame === undefined) frame = requestAnimationFrame(() => { frame = undefined; instance.layout() }) }
     const observer = new ResizeObserver(measure); observer.observe(host.current)
-    setSession(sessionId); void setupLsp(monaco)
     return () => {
       window.removeEventListener(TYPOGRAPHY_EVENT, syncFont); window.removeEventListener('edrv:theme-change', syncTheme)
       persist(); observer.disconnect(); stopTheme?.(); if (frame !== undefined) cancelAnimationFrame(frame)
@@ -241,7 +256,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   }, [props.wordWrap, ready])
   React.useEffect(() => {
     const instance = editor.current
-    if (!instance || !monaco) return
+    if (!visible || !instance || !monaco || sizeTooLarge) return
     let alive = true
     if (bound.current) { const old = workspace.documents.get(bound.current); if (old) old.view = instance.saveViewState() }
     keeper.current?.save?.(); setActiveEditorPath(active)
@@ -250,12 +265,13 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     const cached = workspace.documents.has(active)
     const reload = props.documentRevision !== undefined && lastLoad.current?.path === active
       && lastLoad.current.revision !== props.documentRevision
-    lastLoad.current = { path: active, revision: props.documentRevision }
     if (!cached) { instance.setModel(null); bound.current = null }
-    setLoading(!cached); setError(''); setLarge(false)
+    setLoading(!cached); setError(''); setLargePath(null)
     void workspace.load(active, monaco, reload).then(entry => {
       if (!alive) return
+      lastLoad.current = { path: active, revision: props.documentRevision }
       keeper.current.bind(scope, active, entry.model); bound.current = active
+      setPresented(previous => previous?.path === active && previous.model === entry.model ? previous : { path: active, model: entry.model })
       if (entry.view) instance.restoreViewState(entry.view)
       const jump = pendingLine.current
       if (jump?.path === active) {
@@ -266,11 +282,11 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
       if (!alive) return
       setLoading(false)
       if (!cached || cause?.code === 'file-too-large') { instance.setModel(null); bound.current = null }
-      if (cause?.code === 'file-too-large') { setLarge(true); reportLoad?.(true) }
+      if (cause?.code === 'file-too-large') { setLargePath(active); reportLoad?.(true) }
       else { setError(String(cause)); reportLoad?.(false) }
     })
     return () => { alive = false }
-  }, [active, monaco, ready, scope, workspace, props.documentRevision])
+  }, [active, monaco, ready, scope, workspace, props.documentRevision, visible, sizeTooLarge])
   React.useEffect(() => {
     const focus = () => {
       const current = latest.current
@@ -279,7 +295,16 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus)
     return () => { window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus) }
   }, [monaco, workspace])
-  React.useEffect(() => { if (props.visible !== false) setSession(sessionId) }, [sessionId, props.visible])
+  React.useEffect(() => {
+    if (!visible || large || gitDiff || !monaco || !presented || presented.path !== active) return
+    return afterPaint(() => {
+      if (editor.current?.getModel() !== presented.model) return
+      const language = langOf(presented.path)
+      if (presented.model.getLanguageId() !== language) monaco.editor.setModelLanguage(presented.model, language)
+      void setupLsp(monaco)
+      setSession(sessionId)
+    })
+  }, [active, gitDiff, large, monaco, presented, sessionId, visible])
   React.useEffect(() => {
     const action = (name: string) => { void editor.current?.getAction(name)?.run() }
     const cycle = (step: number) => {
@@ -299,7 +324,9 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
       toggleMarkdownPreview: () => {
         const path = latest.current.active
         if (!path || !/\.(?:md|markdown)$/i.test(path)) return
-        setPreviewText(workspace.documents.get(path)?.model.getValue() ?? ''); setPreview(value => !value)
+        const model = workspace.documents.get(path)?.model
+        if (!model) return
+        setPreviewText(model.getValue()); setPreview(value => !value)
       },
     }
     const handlers = Object.entries(commands).map(([name, run]) => {
@@ -338,7 +365,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     return () => { if (props.editorActions.current === actions) props.editorActions.current = null }
   }, [props.editorActions, cwd, active, monaco, workspace])
   const status = active ? workspace.saves.state(active) : null
-  const markdown = !!active && !large && /\.(?:md|markdown)$/i.test(active)
+  const markdown = !!active && !large && /\.(?:md|markdown)$/i.test(active) && workspace.documents.has(active)
   const button = (label: string, text: React.ReactNode, run: () => void, pressed?: boolean) => React.createElement('button', { type: 'button', title: label, 'aria-label': label, 'aria-pressed': pressed, onClick: run }, text)
   const embeddedTools = React.createElement('div', { className: 'cstudio-minimal-tools' },
     markdown ? button(preview ? '编辑 Markdown' : '预览 Markdown', preview ? '编辑' : '预览', () => {
@@ -373,7 +400,8 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
         !active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-empty' },
           embedded ? React.createElement('p', null, '从右侧文件树选择文件') : React.createElement(React.Fragment, null, React.createElement(IconFolderOpenOutline16, { size: 28 }),
             React.createElement('p', null, '从工作区打开文件'), button('工作区文件', '浏览文件', openFiles))) : null,
-        loading ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, '正在打开…') : null)),
+        visible && !gitDiff && (loading || (needsMonaco && !monaco && !error))
+          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, monaco ? '正在读取文件…' : loadStage) : null)),
     error || workspace.error ? React.createElement('div', { className: 'cstudio-minimal-error', role: 'alert' },
       React.createElement('span', null, error || workspace.error),
       active && workspace.documents.has(active) ? button('复制本地内容', '复制内容', () => { void copyText(workspace.documents.get(active)!.model.getValue(), '内容已复制', setError) }) : null,

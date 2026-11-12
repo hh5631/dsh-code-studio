@@ -3,7 +3,7 @@
  * @author ddj 2026年08月24号 / 2026年09月09号
  */
 import { SIDEBAR_PLUGIN } from './compat.js'
-import { buildFileAddress } from './officialSidebar.js'
+import { buildPreviewFileAddress } from './officialSidebar.js'
 
 export const AUTO_OPEN_TOOL = 'auto'
 export const SYSTEM_OPEN_TOOL = 'system'
@@ -181,17 +181,6 @@ export interface OfficialOpenResourceService {
 }
 
 /**
- * 文件链接是否由本插件认领官方 file 地址：自动/代码工作台 档接管（链接进本插件编辑器），
- * 官方侧边栏/system/better-sidebar 档不认领（官方查看器或旧版路由生效）。
- * @author ddj 2026年09月09号
- * @param selected 「文件链接使用工具」当前值
- * @returns 是否认领
- */
-export function shouldClaimFiles(selected: unknown): boolean {
-  return selected === AUTO_OPEN_TOOL || selected === VSCODE_OPEN_TOOL
-}
-
-/**
  * 创建「官方侧边栏」文件打开器（DSH 0.1.5+，经 ctx.sidebarRight.openResource 打开官方查看器）。
  * 仅官方服务探测命中时注册；下拉选项随注册动态出现（McpSettings 动态渲染）。
  * @author ddj 2026年09月09号
@@ -203,11 +192,11 @@ export function officialSidebarOpener(service: OfficialOpenResourceService): Fil
     id: OFFICIAL_OPEN_TOOL,
     label: '官方侧边栏',
     description: '在 DSH 官方右侧侧边栏查看器中打开（0.1.5+）',
-    priority: 90,
+    priority: 110,
     isAvailable: () => typeof service.openResource === 'function',
     open: (path, context) => {
       if (typeof service.openResource !== 'function') throw new Error('官方侧边栏 openResource 能力不可用')
-      service.openResource(buildFileAddress(path, context.sessionId))
+      service.openResource(buildPreviewFileAddress(path, context.sessionId, context.cwd))
     },
   }
 }

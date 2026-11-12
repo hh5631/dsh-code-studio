@@ -33,8 +33,6 @@ export const OFFICIAL_TAB_KIND = 'edrvEditor'
 export const OFFICIAL_TAB_TITLE = '文件编辑'
 /** 官方 file 资源地址前缀（0.1.5+ 聊天文件链接/文件树打开的统一地址语法）。 */
 export const OFFICIAL_FILE_PREFIX = 'dsh-resource://file/'
-/** file 地址认领的 patterns（extension 档接管官方 textpreview 的 fallback 认领，注销自动回落）。 */
-export const OFFICIAL_FILE_PATTERN = 'dsh-resource://file/**'
 /** file 资源类型的定义 id（正文 slot 的 key）。 */
 export const OFFICIAL_FILE_TAB_ID = 'dsh-code-studio/file'
 /** file 资源类型的 kind（与页类型 edrvEditor 区分：同 kind 只允许一份 extension）。 */
@@ -47,10 +45,8 @@ const DEFER_EXT_SET: Set<string> = new Set([...OFFICE_EXT, ...BLIND_EXT])
 const NATIVE_PREVIEW_EXT = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif', 'tif', 'tiff'])
 
 /**
- * 该路径是否应让位官方查看器（Office 文档 + 官方不可预览的二进制容器）。
- * 命中即不认领 `dsh-resource://file/**`，回落官方预览/提示。
- * 注：用户经设置 nativeOpenExts 追加的范围不走本函数，由 claim 的 canOpen 与
- * 文件树 openFile 叠加 nativeOpenStore 判定（见 registerOfficialFileClaim）。
+ * 图片、PDF、Office 与已知二进制容器只用原生查看器，不提供代码编辑。
+ * 用户追加的 nativeOpenExts 由 canEditFile 另行检查。
  * @author ddj 2026年09月18号
  * @param path 文件路径（工作区相对或绝对）
  * @returns 是否让位官方
@@ -230,6 +226,20 @@ export function buildFileAddress(path: string, sessionId?: string): string {
   return OFFICIAL_FILE_PREFIX + 'session/' + encodeSegment(sessionId) + '/' + relative.split('/').map(encodeSegment).join('/')
 }
 
+/** DSH 原生文件查看只接收 session 地址，但其路径可以是工作区相对路径或绝对路径。 */
+export function buildPreviewFileAddress(path: string, sessionId?: string, cwd?: string | null): string {
+  if (!sessionId) throw new Error('打开原生文件预览需要活动会话')
+  const normalized = path.replace(/\\/g, '/').replace(/^(?:\.\/)+/, '')
+  if (!normalized.trim()) throw new Error('文件路径为空')
+  const root = cwd?.replace(/\\/g, '/').replace(/\/+$/, '')
+  const relative = root && normalized.startsWith(root + '/') ? normalized.slice(root.length + 1) : normalized
+  return OFFICIAL_FILE_PREFIX + 'session/' + encodeSegment(sessionId) + '/' + relative.split('/').map(encodeSegment).join('/')
+}
+
+export function canEditFile(path: string): boolean {
+  return !!path && !deferToOfficial(path) && !inNativePath(path)
+}
+
 // --region file 认领转发（文件分页收归编辑器自带页签栏）
 
 /**
@@ -325,12 +335,13 @@ export function installOfficial(options: {
   /** Tab 标题 thunk（缺省用内置中文常量；传入后由调用方按当前语言解析）。 */
   title?: () => string
   sessionId?: () => string | undefined
+  cwd?: () => string | null | undefined
 }): (() => void) | null {
   const { tabs, service, slots, renderTab } = options
   const open = (path: string | null, focusDiff: boolean): boolean => {
     try {
       // 文件走原生资源地址；空请求打开原生文件区。旧 editor kind 只保留迁移入口。
-      if (path && typeof service.openResource === 'function') service.openResource(buildFileAddress(path, options.sessionId?.()))
+      if (path && typeof service.openResource === 'function') service.openResource(buildPreviewFileAddress(path, options.sessionId?.(), options.cwd?.()))
       else service.openTab('files')
     } catch (error) {
       log.warn('原生文件区打开失败（' + String(error) + '）')
@@ -363,12 +374,7 @@ export function installOfficial(options: {
 }
 
 /**
- * 注册官方 file 资源地址认领（extension 档接管 `dsh-resource://file/**`，
- * 聊天文件链接/文件树打开改落本插件编辑器；注销后官方 textpreview 自动恢复）。
- * 认领与否由「文件链接使用工具」设置驱动（见 fileOpeners.shouldClaimFiles）。
- *
- * 让位规则（DSH 0.1.6-alpha.2 起）：Office 文档与官方「不可预览」二进制容器不认领，
- * 回落官方查看器（Office 侧栏预览 / 「无法预览」提示），见 {@link deferToOfficial}。
+ * 保留已存旧页签的迁移入口。不声明匹配规则，新文件链接交给原生查看器。
  * @author ddj 2026年09月09号 / 2026年09月18号
  * @param options 装配参数（探测命中的注册表 + slots + 正文组件）
  * @returns 卸载器（反注册类型与正文）；类型注册抛错返回 null（回落官方查看器）
@@ -377,7 +383,6 @@ export function registerOfficialFileClaim(options: {
   tabs: SidebarRightTabsLike
   slots: SlotsLike
   renderTab: unknown
-  useDocumentRenderer?: (address: string) => boolean
 }): (() => void) | null {
   const { tabs, slots, renderTab } = options
   let typeDisposer: (() => void) | null = null
@@ -385,14 +390,10 @@ export function registerOfficialFileClaim(options: {
     typeDisposer = tabs.register({
       id: OFFICIAL_FILE_TAB_ID,
       kind: OFFICIAL_FILE_KIND,
-      patterns: [OFFICIAL_FILE_PATTERN],
       priority: 'extension',
-      // 畸形/解码失败地址否决 + Office/不可预览后缀让位官方 + 用户配置的原生打开范围
-      //（nativeOpenExts）同步让位——否则认领会把 openResource 又转发回本插件（原生打开失效）
       canOpen: (address: string) => {
         const parsed = parseOfficialFileAddress(address)
-        if (parsed === null) return false
-        return !deferToOfficial(parsed.path) && !inNativePath(parsed.path) && !options.useDocumentRenderer?.(address)
+        return parsed !== null && canEditFile(parsed.path)
       },
       title: (address: string) => officialFileTitle(address),
     })
@@ -401,9 +402,10 @@ export function registerOfficialFileClaim(options: {
     return null
   }
   const bodyDisposer = registerBodySlot(slots, OFFICIAL_FILE_TAB_ID, renderTab)
+  if (!bodyDisposer) { typeDisposer?.(); return null }
   return () => {
     if (typeof typeDisposer === 'function') typeDisposer()
-    if (typeof bodyDisposer === 'function') bodyDisposer()
+    bodyDisposer()
   }
 }
 

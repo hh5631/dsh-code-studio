@@ -6,7 +6,7 @@ import { createContext, runInContext } from 'node:vm'
 import ts from 'typescript'
 
 const OWNER = 'dsh-code-studio'
-const CHUNKS = []
+const CHUNKS = ['client.editor.js']
 const SHARED = ['rpc', 'dbg', 'ContextMenu']
 
 /** @private @author ddj 2026年10月22号 @param source Bundle source. @param filename Diagnostic filename. @returns Registration without materializing its factory. */
@@ -72,20 +72,18 @@ function verifyHost(source) {
 }
 
 /** @private @author ddj 2026年10月22号 @param row Captured chunk factory. @param name Chunk filename. @returns Verify factory reads shared root objects rather than a private copy. */
-function verifySharedReads(row, name) {
-  const reads = new Set()
-  const shared = new Proxy(Object.fromEntries(SHARED.map((key) => [key, Object.freeze({ key })])), {
-    get(target, key) { reads.add(key); assert.ok(key in target, `Unknown shared key: ${String(key)}`); return target[key] },
-  })
+function verifySharedReads(row, root) {
   const seeds = platformSeeds()
-  const exported = row.factory((specifier) => {
-    if (specifier === OWNER) return { __lazyShared: shared }
-    assert.equal(specifier, 'react', `${name}: chunk external drift`)
-    return seeds.react
+  const rootExports = root.factory(specifier => {
+    assert.ok(Object.hasOwn(seeds, specifier), `Unknown root dependency ${specifier}`)
+    return seeds[specifier]
   })
-  const expected = name === 'client.debug.js' ? ['dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu', 'rpc'] : ['rpc']
-  for (const key of expected) assert.ok(reads.has(key), `${name}: did not consume root shared ${key}`)
-  assert.equal(typeof exported?.[name === 'client.rules.js' ? 'RulesPanel' : 'DebugPanel'], 'function', `${name}: missing panel export`)
+  const exported = row.factory((specifier) => {
+    if (specifier === OWNER) return rootExports
+    assert.ok(Object.hasOwn(seeds, specifier), `Unknown editor dependency ${specifier}`)
+    return seeds[specifier]
+  })
+  for (const key of ['EditorView', 'disposeLsp']) assert.equal(typeof exported?.[key], 'function', `missing editor export: ${key}`)
 }
 
 /** @public @author ddj 2026年10月22号 @param libDir Read-only artifact directory. @returns Validated registrations and artifact byte counts. @throws Invalid or missing artifact. */
@@ -100,18 +98,19 @@ export async function inspectArtifacts(libDir) {
   }
   verifyHost(sources['index.js'])
   for (const name of ['client.js', ...CHUNKS]) {
-    const allowed = new Set(name === 'client.js' ? Object.keys(platformSeeds()) : ['react', OWNER])
+    const allowed = new Set([...Object.keys(platformSeeds()), ...(name === 'client.js' ? [] : [OWNER])])
     verifySyntax(sources[name], name, allowed)
   }
   const root = registration(sources['client.js'], 'client.js')
   assert.equal(root.chunk, undefined, 'root must not register as a chunk')
+  assert.doesNotMatch(sources['client.js'], /function\s+WorkspaceEditor\s*\(/, 'editor implementation leaked into the root')
   const chunks = CHUNKS.map((name) => {
     const row = registration(sources[name], name)
     assert.equal(row.chunk, name, `${name}: wrong chunk registration`)
     assert.match(sources[name], /require\(["']dsh-code-studio["']\)/, `${name}: missing shared root dependency`)
-    assert.match(sources[name], /__lazyShared/, `${name}: missing shared bridge`)
-    assert.doesNotMatch(sources[name], /function\s+(rpc|createDapStore)\s*\(/, `${name}: duplicated singleton implementation`)
-    verifySharedReads(row, name)
+    assert.match(sources[name], /__editorShared/, `${name}: missing shared bridge`)
+    assert.doesNotMatch(sources[name], /function\s+(rpc|minimalWorkspace|loadMonaco)\s*\(/, `${name}: duplicated singleton implementation`)
+    verifySharedReads(row, root)
     return row
   })
   assert.match(sources['client.js'], /require\.async\??\.bind\(require\)/, 'root must inject native asynchronous require')
@@ -150,28 +149,26 @@ export async function verifyNativeLoader(artifacts, loaderPath) {
     staticModules: platformSeeds(), bootstrapModule: { id: 'fixture-bootstrap', exports: {} },
     registrationTarget: target, loadBundle })
   const root = await system.import(OWNER)
-  assert.equal(typeof root.__setPanelImport, 'function', 'missing panel import setter')
+  assert.equal(typeof root.__setEditorImport, 'function', 'missing editor import setter')
   for (const key of SHARED) assert.ok(root.__lazyShared?.[key] !== undefined, `missing shared export: ${key}`)
-  if (CHUNKS.length === 0) return { arrivals, sharedKeys: SHARED, loader: 'root-only' }
+  assert.equal(arrivals.length, 0, 'materializing root must not fetch the editor')
   const nativeRequire = system.makeRequire(OWNER, new Set())
-  const [first, concurrent] = await Promise.all([nativeRequire.async('./client.rules.js'), nativeRequire.async('./client.rules.js')])
-  assert.equal(first, concurrent, 'concurrent loads must reuse materialized exports')
-  assert.equal(typeof first.RulesPanel, 'function', 'missing RulesPanel')
-  assert.equal(arrivals.length, 1, 'concurrent chunk requests must share transport')
-  assert.equal(arrivals[0], `/base/${OWNER}/client.rules.js?rev=one`)
+  const [file] = CHUNKS
   failNext = true
-  await assert.rejects(nativeRequire.async('./client.debug.js'), /fixture transport failure/)
-  const debug = await nativeRequire.async('./client.debug.js')
-  assert.equal(typeof debug.DebugPanel, 'function', 'missing DebugPanel after retry')
-  assert.equal(await nativeRequire.async('./client.debug.js'), debug)
-  assert.equal(arrivals.length, 3, 'failed transport must be retryable and success cached')
+  await assert.rejects(nativeRequire.async(`./${file}`), /fixture transport failure/)
+  const [first, concurrent] = await Promise.all([nativeRequire.async(`./${file}`), nativeRequire.async(`./${file}`)])
+  assert.equal(first, concurrent, 'concurrent loads must reuse materialized exports')
+  assert.equal(typeof first.EditorView, 'function', 'missing EditorView')
+  assert.equal(await nativeRequire.async(`./${file}`), first)
+  assert.equal(arrivals.length, 2, 'one failed request, one shared retry')
+  assert.equal(arrivals[0], `/base/${OWNER}/${file}?rev=one`)
   system.invalidate(OWNER, 'two')
-  assert.equal(system.loadCache.has(`${OWNER}/client.rules.js`), false, 'HMR must drop chunk cache')
+  assert.equal(system.loadCache.has(`${OWNER}/${file}`), false, 'HMR must drop chunk cache')
   const replacement = await system.import(OWNER)
   assert.notEqual(replacement, root, 'HMR must replace root exports')
-  const refreshed = await system.makeRequire(OWNER, new Set()).async('./client.rules.js')
+  const refreshed = await system.makeRequire(OWNER, new Set()).async(`./${file}`)
   assert.notEqual(refreshed, first, 'HMR must replace chunk exports')
-  assert.equal(arrivals.at(-1), `/base/${OWNER}/client.rules.js?rev=two`)
+  assert.equal(arrivals.at(-1), `/base/${OWNER}/${file}?rev=two`)
   return { arrivals, sharedKeys: SHARED, loader: 'actual ClientModuleSystem' }
 }
 

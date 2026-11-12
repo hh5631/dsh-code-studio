@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createFileOpenerRegistry, selectOpener, officialSidebarOpener, shouldClaimFiles, OFFICIAL_OPEN_TOOL } from '../src/client/fileOpeners.js'
-import { installOpenPathRouter } from '../src/client/openPathRouter.js'
+import { createFileOpenerRegistry, selectOpener, officialSidebarOpener, OFFICIAL_OPEN_TOOL } from '../src/client/fileOpeners.js'
+import { installOpenPathRouter, vscodeOpener } from '../src/client/openPathRouter.js'
 
 describe('file opener registry', () => {
   it('sorts available openers and falls back from unavailable selection', () => {
@@ -47,11 +47,13 @@ describe('official sidebar opener', () => {
     opener.open!('src/a b.ts', { sessionId: 's1' })
     expect(openResource).toHaveBeenCalledWith('dsh-resource://file/session/s1/src/a%20b.ts')
   })
-  it('opens via openResource with an absolute address for absolute paths', () => {
+  it('keeps absolute paths under the session address required by native preview', () => {
     const openResource = vi.fn()
     const opener = officialSidebarOpener({ openResource })
     opener.open!('C:\\repo\\x.ts', { sessionId: 's1' })
-    expect(openResource).toHaveBeenCalledWith('dsh-resource://file/absolute/C:/repo/x.ts')
+    expect(openResource).toHaveBeenCalledWith('dsh-resource://file/session/s1/C:/repo/x.ts')
+    opener.open!('/repo/src/a b.ts', { sessionId: 's1', cwd: '/repo' })
+    expect(openResource).toHaveBeenLastCalledWith('dsh-resource://file/session/s1/src/a%20b.ts')
   })
   it('throws for relative path without session (routing falls back)', () => {
     const opener = officialSidebarOpener({ openResource: vi.fn() })
@@ -59,12 +61,11 @@ describe('official sidebar opener', () => {
   })
 })
 
-describe('shouldClaimFiles', () => {
-  it('claims only for auto and vscode-mode selections', () => {
-    expect(shouldClaimFiles('auto')).toBe(true)
-    expect(shouldClaimFiles('dsh-code-studio')).toBe(true)
-    expect(shouldClaimFiles(OFFICIAL_OPEN_TOOL)).toBe(false)
-    expect(shouldClaimFiles('system')).toBe(false)
-    expect(shouldClaimFiles(undefined)).toBe(false)
+describe('automatic file opening', () => {
+  it('prefers native preview over Code Studio when DSH provides it', () => {
+    const registry = createFileOpenerRegistry()
+    registry.register(vscodeOpener())
+    registry.register(officialSidebarOpener({ openResource: vi.fn() }))
+    expect(selectOpener(registry, 'auto')?.id).toBe(OFFICIAL_OPEN_TOOL)
   })
 })

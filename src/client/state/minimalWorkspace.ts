@@ -3,7 +3,8 @@ import { createDocStore, type SaveResult } from './documentStore.js'
 import { modelsForScope, rememberModel, retainModels } from './modelCache.js'
 import { rpc } from '../rpc.js'
 import { addReloadGuard } from '../pageReload.js'
-import { langOf } from '../monaco/loader.js'
+
+export const MAX_EDIT_TEXT_BYTES = 2 * 1024 * 1024
 
 export interface OpenDocument { model: any; view: any; silent: boolean; subscription: { dispose(): void } }
 const workspaces = new Map<string, MinimalWorkspace>()
@@ -76,9 +77,9 @@ export class MinimalWorkspace {
     if (pending) return pending
     const sessionId = this.sessionId, version = old?.model.getVersionId()
     const task = (async () => {
-      const result = await rpc('cstudio.read', { sessionId, path, maxTextBytes: 2 * 1024 * 1024 })
+      const result = await rpc('cstudio.read', { sessionId, path, maxTextBytes: MAX_EDIT_TEXT_BYTES })
       if (!result.ok) throw Object.assign(new Error(result.error || '文件读取失败'), { code: result.code })
-      if (result.size > 2 * 1024 * 1024 || result.content.length > 2 * 1024 * 1024) {
+      if (result.size > MAX_EDIT_TEXT_BYTES || result.content.length > MAX_EDIT_TEXT_BYTES) {
         throw Object.assign(new Error('文件较大，使用分页只读预览'), { code: 'file-too-large' })
       }
       if (old && (this.saves.state(path).dirty || old.model.getVersionId() !== version)) return old
@@ -90,7 +91,8 @@ export class MinimalWorkspace {
         return old
       }
       const uri = monaco.Uri.from({ scheme: 'cstudio', path: `/${encodeURIComponent(this.scope)}/${path.replace(/^\/+/, '')}` })
-      const model = monaco.editor.getModel(uri) ?? monaco.editor.createModel(result.content, langOf(path), uri)
+      // 先挂可编辑文本；首帧之后再由当前可见的编辑器激活对应语言。
+      const model = monaco.editor.getModel(uri) ?? monaco.editor.createModel(result.content, 'plaintext', uri)
       const entry: OpenDocument = { model, view: null, silent: false, subscription: { dispose() {} } }
       this.saves.bind(path, model, result.version)
       entry.subscription = model.onDidChangeContent(() => { if (!entry.silent) this.saves.edit(path, 900) })

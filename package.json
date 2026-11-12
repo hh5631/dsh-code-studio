@@ -1,6 +1,6 @@
 {
   "name": "dsh-code-studio",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "极简代码工作台：代码与 Markdown 编辑、文件搜索、Git 修改差异；图片/PDF/Office 交给原生预览。",
   "icon": "assets/icon.svg",
   "keywords": [

@@ -72,18 +72,29 @@ function hostConfig(): UserConfig {
   }
 }
 
-/** @private @author ddj 2026年10月22号 @param panel Optional independent built-in panel entry. @returns Browser CJS config using the documented ModuleLoader chunk handoff. */
-function clientConfig(panel?: 'rules' | 'debug'): UserConfig {
+/** Browser CJS root and the editor loaded through DSH's package-local chunk handoff. */
+function clientConfig(panel?: 'editor'): UserConfig {
   const chunk = panel ? `client.${panel}.js` : undefined
-  const shared = new Map([
-    [resolvePath('src/client/rpc.ts'), ['rpc', 'dbg']],
-    [resolvePath('src/client/dap/store.ts'), ['dapStore']],
-    [resolvePath('src/client/dap/BpWidget.ts'), ['BP_MODE', 'MODES', 'fieldOfMode']],
-    [resolvePath('src/client/ui/ContextMenu.ts'), ['ContextMenu']],
-  ])
+  const shared = new Map<string, string[]>(Object.entries({
+    rpc: ['rpcRuntime', 'rpc', 'dbg'],
+    'state/minimalWorkspace': ['workspaceRuntime', 'minimalWorkspace', 'MAX_EDIT_TEXT_BYTES'],
+    'monaco/loader': ['loaderRuntime', 'loadMonaco', 'langOf'],
+    'monaco/theme': ['themeRuntime', 'applyOfficial', 'editorFont', 'observeScheme'],
+    pageReload: ['reloadRuntime', 'addReloadGuard'],
+    panelCommands: ['panelCommandsRuntime', 'bindPanelCommand'],
+    activePathStore: ['activePathRuntime', 'setActiveEditorPath'],
+    editorLimit: ['limitRuntime', 'getMaxOpenEditors'],
+    nativeOpenStore: ['nativeRuntime', 'tryNativeOpen', 'inNativePath'],
+    officialSidebar: ['sidebarRuntime', 'deferToOfficial'],
+    'ui/GitDiffView': ['diffRuntime', 'GitDiffView'],
+    'sidebar/panels/GitPanel': ['gitRuntime', 'GitPanel'],
+    'state/uiStatePersist': ['persistRuntime', 'onUiStateReady'],
+    commandPaletteStore: ['paletteRuntime', 'claimPaletteHost', 'closeCommandPalette', 'isPaletteOpen', 'paletteHostRev', 'paletteOpenSeq', 'registryRef', 'releasePaletteHost', 'runPaletteCommand', 'subscribePalette'],
+    keybindings: ['keysRuntime', 'ariaOf', 'chordOf', 'useKeybindingsVersion'],
+  }).map(([path, names]) => [resolvePath('src/client', path), names]))
   return {
     name: `${ID}/${panel ?? 'client'}`,
-    entry: panel ? { [panel]: `src/client/sidebar/panels/${panel === 'rules' ? 'RulesPanel' : 'DebugPanel'}.ts` } : { client: 'src/client/index.ts' },
+    entry: panel ? { editor: 'src/client/ui/EditorView.ts' } : { client: 'src/client/index.ts' },
     outDir: 'lib',
     format: 'cjs',
     platform: 'browser',
@@ -109,14 +120,14 @@ function clientConfig(panel?: 'rules' | 'debug'): UserConfig {
         /** @author ddj 2026年10月22号 @param source Import request. @param importer Requesting module. @returns Virtual bridge only for shared live root objects. */
         resolveId(source: string, importer: string | undefined) {
           if (!panel || !importer || !source.startsWith('.')) return null
-          const target = resolvePath(dirname(importer), source).replace(/\.js$/, '.ts')
+          const target = resolvePath(dirname(importer), source).replace(/\.js$/, '')
           return shared.has(target) ? '\0panel-shared:' + target : null
         },
         /** @author ddj 2026年10月22号 @param id Resolved bridge. @returns Named exports from the already materialized root plugin; never duplicate stores. */
         load(id: string) {
           if (!id.startsWith('\0panel-shared:')) return null
-          const names = shared.get(id.slice('\0panel-shared:'.length))!
-          return `import { __lazyShared } from '${ID}';\n` + names.map((name) => `export const ${name} = __lazyShared.${name};`).join('\n')
+          const [module, ...names] = shared.get(id.slice('\0panel-shared:'.length))!
+          return `import { __editorShared } from '${ID}';\n` + names.map((name) => `export const ${name} = __editorShared.${module}.${name};`).join('\n')
         },
       },
       {
@@ -152,12 +163,11 @@ function clientConfig(panel?: 'rules' | 'debug'): UserConfig {
     outputOptions: {
       entryFileNames: chunk ?? 'client.js',
       banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(ID)}, ${chunk ? `chunk: ${JSON.stringify(chunk)}, ` : ''}factory: (require) => {`,
-      footer: panel ? 'return module.exports; } });' : 'module.exports.__setPanelImport(require.async?.bind(require)); return module.exports; } });',
+      footer: panel ? 'return module.exports; } });' : 'module.exports.__setPanelImport(require.async?.bind(require)); module.exports.__setEditorImport(require.async?.bind(require)); return module.exports; } });',
       intro: 'var module = { exports: {} }; var exports = module.exports;',
       codeSplitting: false,
     },
   }
 }
 
-// 规则面板与调试面板已移除（2026-11-10），不再产出独立的 rules/debug chunk。
-export default [hostConfig(), clientConfig()] satisfies UserConfig[]
+export default [hostConfig(), clientConfig(), clientConfig('editor')] satisfies UserConfig[]

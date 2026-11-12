@@ -1,8 +1,8 @@
 /** 原生文件资源正文：一个文件页签、一份编辑内容，文件树复用 DSH Factory。 */
 import React from 'react'
-import { EditorView } from './EditorView.js'
+import { LazyEditorView as EditorView } from './LazyEditorView.js'
 import { WorkspacePanel, type EditorPanelActions, type WorkspacePanelActions, type WorkspaceView } from './WorkspacePanel.js'
-import { buildFileAddress, parseOfficialFileAddress, resolveNavColumn, resolveNavLine, resolveNavOpen } from '../officialSidebar.js'
+import { buildPreviewFileAddress, parseOfficialFileAddress, resolveNavColumn, resolveNavLine, resolveNavOpen } from '../officialSidebar.js'
 import { navigateFile } from '../nativeFileNavigation.js'
 import { CACHE_KEY } from '../paths.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
@@ -24,21 +24,19 @@ export interface NativeProps {
 }
 
 export function NativeDocumentEditor(props: NativeProps & {
-  resourceAddress: string
-  content: RendererContent
-  wrap: boolean
-  useResource?: (address: string) => { value?: { version?: string } }
+  resourceAddress: string; content: RendererContent; wrap: boolean
+  useResource?: (address: string) => { value?: { version?: string; bytes?: number } }
 }): React.ReactElement {
-  const version = props.useResource?.(props.resourceAddress)?.value?.version
-  return React.createElement(NativeFileTab, { ...props, documentVersion: version })
+  const meta = props.useResource?.(props.resourceAddress)?.value
+  return React.createElement(NativeFileTab, { ...props, documentVersion: meta?.version, documentSize: meta?.bytes })
 }
 
 export function NativeFileTab(props: NativeProps): React.ReactElement {
   const info = props.useTabInfo?.(), tab = info?.tab, panel = info?.panel
   const address = props.resourceAddress ?? tab?.navigation?.address ?? tab?.contentId
   const file = parseOfficialFileAddress(address)
-  const documentContent: RendererContent | undefined = props.content?.kind === 'renderer' ? props.content : undefined
-  const nativeDocument = !!documentContent
+  const content: RendererContent | undefined = props.content?.kind === 'renderer' ? props.content : undefined
+  const nativeDocument = !!content
   const workspacePage = props.workspacePage === true
   const sessionId = file?.sessionId ?? props.sessionId
   const list = props.sessions?.list
@@ -61,29 +59,32 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
     void navigateFile(tab, next, beforeNavigate.current)
   }, [tab?.actions, tab?.signal])
   const onOpenPath = React.useCallback((path: string, line?: number, column?: number) => {
-    void navigateFile(tab, buildFileAddress(path, sessionId), beforeNavigate.current, { line, column })
-  }, [tab?.actions, tab?.signal, sessionId])
+    if (sessionId) void navigateFile(tab, buildPreviewFileAddress(path, sessionId, cwd), beforeNavigate.current, { line, column })
+  }, [tab?.actions, tab?.signal, sessionId, cwd])
   const factory = props.renderFactorySlot
   const paneKey = `${props.sessionId}:${panel?.id}`
-  const migrating = !workspacePage && !nativeDocument && props.useDocumentRenderer?.(address) === true
+  const previewAddress = file && sessionId ? buildPreviewFileAddress(file.path, sessionId, cwd) : null
+  // 旧版自动开的编辑页签没有显式编辑标记；恢复时直接走原生查看，不挂载 Monaco。
+  const migrating = !!previewAddress && !workspacePage && !nativeDocument
+  const params = tab?.navigation?.params
+  const line = resolveNavLine(params), column = resolveNavColumn(params)
   React.useEffect(() => {
-    if (migrating && tab?.visible !== false) void navigateFile(tab, address, beforeNavigate.current, tab?.navigation?.params)
-  }, [migrating, address, tab?.actions, tab?.signal, tab?.visible])
+    if (migrating && previewAddress && tab?.visible !== false) void navigateFile(tab, previewAddress, null, { line, column })
+  }, [migrating, previewAddress, tab?.actions, tab?.signal, tab?.visible, line, column])
 
   React.useLayoutEffect(() => {
     if (!nativeDocument || !root.current) return
     const preview = root.current.closest('[data-textpreview-state]')
-    const header = preview?.querySelector<HTMLElement>('[data-textpreview-path]')?.parentElement
-    setPanelToolbar(header ?? null)
+    setPanelToolbar(preview?.querySelector<HTMLElement>('[data-textpreview-path]')?.parentElement ?? null)
     setNativeContent(root.current.closest<HTMLElement>('[data-textpreview-content]'))
   }, [nativeDocument])
 
-  const sourceVersion = React.useMemo(() => props.documentVersion, [address, documentContent?.revision])
+  const sourceVersion = React.useMemo(() => props.documentVersion, [address, content?.revision])
   const onDocumentLoad = React.useCallback((ok: boolean) => {
-    if (!documentContent) return
-    if (ok) documentContent.loaded(sourceVersion ?? props.documentVersion ?? '')
-    else documentContent.failed()
-  }, [documentContent, sourceVersion, props.documentVersion])
+    if (!content) return
+    if (ok) content.loaded(sourceVersion ?? props.documentVersion ?? '')
+    else content.failed()
+  }, [content, sourceVersion, props.documentVersion])
 
   React.useEffect(() => {
     if (migrating || (!workspacePage && initializedPanes.has(paneKey)) || (!factory && !nativeDocument)) return
@@ -98,16 +99,18 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
       if (button.getAttribute('aria-expanded') !== 'true') button.click()
     })
     return () => cancelAnimationFrame(frame)
-  }, [paneKey, factory, workspacePage, nativeDocument, nativeContent, panelToolbar, migrating])
+  }, [paneKey, factory, workspacePage, migrating, nativeDocument, nativeContent, panelToolbar])
 
   if (!file && !workspacePage) return React.createElement('div', { role: 'alert' }, '文件地址不可用，请从工作区重新打开')
+  if (migrating) return React.createElement('div', { role: 'status' }, '正在打开原生预览…')
   const editorAndPanel = React.createElement(React.Fragment, null,
-      React.createElement(EditorView, {
+      workspacePage ? React.createElement('div', { className: 'cstudio-editor-start' }, '从文件树选择文件') : React.createElement(EditorView, {
         ...props, sessionId, ownerId: tab?.id, visible: tab?.visible !== false,
-        filePath: file?.path ?? '', fileLine: resolveNavLine(tab?.navigation?.params), fileColumn: resolveNavColumn(tab?.navigation?.params),
+        filePath: file?.path ?? '', fileLine: line, fileColumn: column,
         navigationRevision: tab?.navigation?.revision, toolbarTarget, onOpenPath, beforeNavigate, editorActions, showWorkspacePanel, openWorkspaceFiles: openFilesPanel,
         nativeDocument, wordWrap: nativeDocument ? props.wrap : undefined,
-        documentRevision: documentContent?.revision, onDocumentLoad: nativeDocument ? onDocumentLoad : undefined,
+        documentSize: nativeDocument ? props.documentSize : undefined,
+        documentRevision: content?.revision, onDocumentLoad: nativeDocument ? onDocumentLoad : undefined,
       }),
       React.createElement(WorkspacePanel, {
         paneKey, sessionId, cwd, scope: workspaceScopeOf(cwd, sessionId), path: file?.path ?? '', visible: tab?.visible !== false,
@@ -137,7 +140,7 @@ export function LegacyEditorRedirect(props: NativeProps): null {
         const cwd = props.sessions?.list?.getSnapshot?.()?.byId?.[props.sessionId ?? '']?.cwd
         try { path = JSON.parse(localStorage.getItem(CACHE_KEY.editor + workspaceScopeOf(cwd, props.sessionId)) ?? 'null')?.active ?? null } catch {}
       }
-      if (path) props.service?.openResource?.(buildFileAddress(path, props.sessionId), { params: { line: resolveNavLine(tab.navigation?.params) } })
+      if (path && props.sessionId) props.service?.openResource?.(buildPreviewFileAddress(path, props.sessionId), { params: { line: resolveNavLine(tab.navigation?.params) } })
       else props.service?.openTab?.('files')
     }
     tab.actions?.close?.()
