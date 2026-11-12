@@ -82,7 +82,6 @@ export { setPanelImport as __setPanelImport }
 export { setEditorImport as __setEditorImport }
 // Shared with client.editor.js; keeping these live objects in the root protects saves and commands across mode changes.
 import * as workspaceRuntime from './state/minimalWorkspace.js'
-import * as loaderRuntime from './monaco/loader.js'
 import * as themeRuntime from './monaco/theme.js'
 import * as reloadRuntime from './pageReload.js'
 import * as panelCommandsRuntime from './panelCommands.js'
@@ -94,7 +93,7 @@ import * as diffRuntime from './ui/GitDiffView.js'
 import * as persistRuntime from './state/uiStatePersist.js'
 import * as paletteRuntime from './commandPaletteStore.js'
 import * as keysRuntime from './keybindings.js'
-export const __editorShared = { workspaceRuntime, loaderRuntime, themeRuntime, reloadRuntime, panelCommandsRuntime,
+export const __editorShared = { workspaceRuntime, themeRuntime, reloadRuntime, panelCommandsRuntime,
   activePathRuntime, limitRuntime, nativeRuntime, sidebarRuntime, diffRuntime, persistRuntime, paletteRuntime, keysRuntime,
   rpcRuntime: { rpc, dbg }, gitRuntime: { GitPanel } }
 
@@ -661,8 +660,6 @@ export async function apply(ctx: any): Promise<void> {
   }, (props: unknown) => React.createElement(PluginDetailSection, Object.assign({}, props)))
 
   // 卸载收尾（G4，DSH 0.1.6-alpha.2 起支持运行时卸载/重载）：
-  // 注销挂在存活的 window.monaco 上的全部 Monaco provider 并复位模块状态。
-  // 不做会导致重载后重复注册（补全/跳转/hover 各翻倍）与陈旧开关残留。
   ctx.effect(() => () => {
     setPanelImport()
     applyTypography()
@@ -671,7 +668,7 @@ export async function apply(ctx: any): Promise<void> {
     try { disposeEditorRuntime() } catch { /* 同上 */ }
     // 原生打开范围复位回默认集（handler 解绑已由其自身 ctx.effect disposer 承担）
     try { resetNativeOpen() } catch { /* 同上 */ }
-  }, 'code-studio: monaco providers teardown')
+  }, 'code-studio: editor teardown')
 
   // 会话晚到补试：冷启动早期 `sessions` 未就绪时 host 答「会话不存在」，首次水合会失败重试；
   // 作用域变化（sid→ws）后同样补一次，保证界面状态尽早回填。

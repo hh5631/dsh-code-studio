@@ -2,7 +2,7 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
-import { editorName, loadEditorEngine } from '../editorEngine.js'
+import { editorName, loadEditorEngine } from '../codemirror/engine.js'
 import type { DocumentEditor, EditorEngine, EditorModel } from '../editorTypes.js'
 import { MAX_EDIT_TEXT_BYTES, minimalWorkspace } from '../state/minimalWorkspace.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
@@ -26,8 +26,6 @@ import { copyText } from '../copyText.js'
 import { rpc } from '../rpc.js'
 import { LargeTextView } from './LargeTextView.js'
 import { afterPaint } from '../afterPaint.js'
-
-export { disposeLsp } from '../editorEngine.js'
 
 export interface Props {
   sessionId?: string; sessions?: any; visible?: boolean; ownerId?: string
@@ -69,7 +67,6 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
   const [loading, setLoading] = React.useState(false)
   const [largePath, setLargePath] = React.useState<string | null>(null)
   const [presented, setPresented] = React.useState<{ path: string; model: EditorModel } | null>(null)
-  const [loadStage, setLoadStage] = React.useState('正在打开…')
   const [error, setError] = React.useState('')
   const [sidebar, setSidebar] = React.useState(false)
   const [preview, setPreview] = React.useState(false)
@@ -211,7 +208,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     if (!needsEditor || engine) return
     let alive = true
     const cancel = afterPaint(() => {
-      void loadEditorEngine(message => { if (alive) setLoadStage(message) }).then(value => {
+      void loadEditorEngine().then(value => {
         if (alive) setEngine(value)
       }).catch((cause: unknown) => {
         if (alive) { setError(String(cause)); onDocumentLoad.current?.(false) }
@@ -376,7 +373,7 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
           embedded ? React.createElement('p', null, '从右侧文件树选择文件') : React.createElement(React.Fragment, null, React.createElement(IconFolderOpenOutline16, { size: 28 }),
             React.createElement('p', null, '从工作区打开文件'), button('工作区文件', '浏览文件', openFiles))) : null,
         visible && !gitDiff && (loading || (needsEditor && !engine && !error))
-          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, engine ? '正在读取文件…' : loadStage) : null)),
+          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, engine ? '正在读取文件…' : '正在打开…') : null)),
     error || workspace.error ? React.createElement('div', { className: 'cstudio-minimal-error', role: 'alert' },
       React.createElement('span', null, error || workspace.error),
       active && workspace.documents.has(active) ? button('复制本地内容', '复制内容', () => { void copyText(workspace.documents.get(active)!.model.getValue(), '内容已复制', setError) }) : null,

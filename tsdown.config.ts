@@ -73,13 +73,12 @@ function hostConfig(): UserConfig {
 }
 
 /** Browser CJS root and the editor loaded through DSH's package-local chunk handoff. */
-function clientConfig(panel?: 'editor' | 'codemirror'): UserConfig {
+function clientConfig(panel?: 'editor'): UserConfig {
   const chunk = panel ? `client.${panel}.js` : undefined
   const shared = new Map<string, string[]>(Object.entries({
     rpc: ['rpcRuntime', 'rpc', 'dbg'],
     'state/minimalWorkspace': ['workspaceRuntime', 'minimalWorkspace', 'MAX_EDIT_TEXT_BYTES'],
-    'monaco/loader': ['loaderRuntime', 'loadMonaco', 'langOf'],
-    'monaco/theme': ['themeRuntime', 'applyOfficial', 'detectColorScheme', 'editorFont', 'observeScheme'],
+    'monaco/theme': ['themeRuntime', 'detectColorScheme', 'editorFont', 'observeScheme'],
     pageReload: ['reloadRuntime', 'addReloadGuard'],
     panelCommands: ['panelCommandsRuntime', 'bindPanelCommand'],
     activePathStore: ['activePathRuntime', 'setActiveEditorPath'],
@@ -98,7 +97,7 @@ function clientConfig(panel?: 'editor' | 'codemirror'): UserConfig {
     outDir: 'lib',
     format: 'cjs',
     platform: 'browser',
-    minify: panel === 'codemirror' ? { mangle: { reserved: ['require'] } } : false,
+    minify: panel === 'editor' ? { mangle: { reserved: ['require'] } } : false,
     dts: false,
     clean: false,
     sourcemap: true,
@@ -113,15 +112,6 @@ function clientConfig(panel?: 'editor' | 'codemirror'): UserConfig {
         /** @private @author ddj 2026年10月28号 @param code Browser chunk. @returns No transform. @throws If a Node-only loader or worker entry leaks into the client artifact. */
         renderChunk(code: string) {
           if (/\brequire(?:\$\d+)?\(["'](?:node:)?(?:module|worker_threads)["']\)/.test(code)) throw new Error('Browser bundle contains a Node-only module/worker_threads import')
-          return null
-        },
-      },
-      {
-        name: 'dsh-codemirror-trial-entry',
-        resolveId(source, importer) {
-          if (panel === 'codemirror' && source === '../editorEngine.js' && importer?.endsWith('/ui/EditorView.ts')) {
-            return resolvePath('src/client/codemirror/engine.ts')
-          }
           return null
         },
       },
@@ -180,4 +170,4 @@ function clientConfig(panel?: 'editor' | 'codemirror'): UserConfig {
   }
 }
 
-export default [hostConfig(), clientConfig(), clientConfig('editor'), clientConfig('codemirror')] satisfies UserConfig[]
+export default [hostConfig(), clientConfig(), clientConfig('editor')] satisfies UserConfig[]

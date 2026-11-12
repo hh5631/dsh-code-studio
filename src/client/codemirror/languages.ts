@@ -14,7 +14,7 @@ import { standardSQL } from '@codemirror/legacy-modes/mode/sql'
 import { html, xml } from '@codemirror/legacy-modes/mode/xml'
 import { yaml } from '@codemirror/legacy-modes/mode/yaml'
 import type { Extension } from '@codemirror/state'
-import { langOf } from '../monaco/loader.js'
+import { langOf } from '../fileLanguages.js'
 
 const js = javascript({ jsx: true })
 const ts = javascript({ typescript: true, jsx: true })

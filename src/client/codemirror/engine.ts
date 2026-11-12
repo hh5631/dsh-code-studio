@@ -18,9 +18,6 @@ import { connectLsp, offsetAt } from './lsp.js'
 
 export const editorName = 'CodeMirror 6'
 
-// The view owns its RPC subscriptions and tears them down when the file or tab closes.
-export function disposeLsp(): void {}
-
 const language = new Compartment()
 const appearance = new Compartment()
 const wrapping = new Compartment()

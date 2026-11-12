@@ -2,27 +2,20 @@ import React from 'react'
 import { afterPaint } from '../afterPaint.js'
 import type { Props } from './EditorView.js'
 
-interface EditorModule { EditorView: React.ComponentType<Props>; disposeLsp(): void }
+interface EditorModule { EditorView: React.ComponentType<Props> }
 type Importer = (file: string) => Promise<unknown>
 let importer: Importer | undefined
 let pending: Promise<EditorModule> | undefined
 let ready: EditorModule | undefined
-let chunk = './client.editor.js'
-
-export function setEditorImport(next?: Importer): void {
-  importer = next
-  if (typeof window === 'undefined' || !window.location) return
-  const trial = new URLSearchParams(window.location.search).get('cstudio-editor') === 'codemirror'
-  chunk = trial ? './client.codemirror.js' : './client.editor.js'
-}
-export function disposeEditorRuntime(): void { ready?.disposeLsp(); ready = undefined; pending = undefined }
+export function setEditorImport(next?: Importer): void { importer = next }
+export function disposeEditorRuntime(): void { ready = undefined; pending = undefined }
 
 function load(): Promise<EditorModule> {
   if (ready) return Promise.resolve(ready)
   if (pending) return pending
   const transport = importer
   if (!transport) return Promise.reject(new Error('当前 DSH 不支持按需加载编辑器模块'))
-  const task = Promise.resolve().then(() => transport(chunk)).then(value => {
+  const task = Promise.resolve().then(() => transport('./client.editor.js')).then(value => {
     const editor = value as EditorModule
     if (typeof editor?.EditorView !== 'function') throw new Error('编辑器模块不完整')
     if (pending === task) ready = editor

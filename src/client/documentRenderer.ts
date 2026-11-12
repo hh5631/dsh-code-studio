@@ -1,5 +1,5 @@
 import { log } from './log.js'
-import { LANG_BY_EXT } from './monaco/loader.js'
+import { LANG_BY_EXT } from './fileLanguages.js'
 import { canEditFile, type SlotsLike } from './officialSidebar.js'
 import { NATIVE_OPEN_EVENT } from './nativeOpenStore.js'
 
