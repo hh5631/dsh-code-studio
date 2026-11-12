@@ -1,18 +1,28 @@
+/* Git 差异视图：单栏 / 双栏。双栏用「卡片 + 中央沟槽」明确切分左右，
+   对齐 VSCode diff：左侧原始、右侧工作区，沟槽内放逐段还原箭头。 */
 .cstudio-git-diff {
   --diff-muted: var(--dsw-alias-label-secondary, #61666b);
+  --diff-faint: var(--dsw-alias-label-tertiary, #9298a0);
   --diff-line: var(--dsw-alias-border-l3, #e8eaed);
+  --diff-line-strong: var(--dsw-alias-border-l2, #d6dae0);
   --diff-soft: var(--dsw-alias-bg-layer-1, #f7f8fa);
+  --diff-panel: var(--dsw-alias-bg-layer-2, #f0f2f5);
   --diff-hover: var(--dsw-alias-interactive-bg-hover, #f2f3f5);
   --diff-code: var(--cstudio-code-font, var(--dsw-font-family-code, ui-monospace, monospace));
   --diff-add: var(--dsw-alias-state-success-primary, #1a7f37);
   --diff-remove: var(--dsw-alias-state-error-primary, #b23838);
+  --diff-accent: var(--cstudio-accent, #4d6bfe);
+  --diff-gutter: clamp(20px, 2.6vw, 34px);
   display: flex;
   flex-direction: column;
   min-width: 0;
   font-size: var(--cstudio-ui-size, var(--dsh-content-font-size-secondary, 13px));
   color: var(--dsw-alias-label-primary, #0f1115);
+  background: var(--dsw-alias-bg-base, #fff);
 }
-.cstudio-diff-toolbar, .cstudio-diff-part-tools {
+
+/* ── 工具条 ───────────────────────────────────────────────── */
+.cstudio-diff-toolbar, .cstudio-diff-part-tools, .cstudio-diff-part-bar {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -20,24 +30,30 @@
   min-width: 0;
   padding: 4px 8px;
 }
-.cstudio-diff-toolbar { min-height: 38px; border-bottom: .5px solid var(--diff-line); }
-.cstudio-diff-title, .cstudio-diff-part-tools > span {
+.cstudio-diff-toolbar { min-height: 40px; gap: 6px; border-bottom: 1px solid var(--diff-line); background: var(--diff-soft); }
+.cstudio-diff-title {
   flex: 1;
   min-width: 0;
-  color: var(--diff-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
-.cstudio-diff-modes { display: inline-flex; gap: 2px; }
-.cstudio-git-diff :is(.cstudio-diff-toolbar, .cstudio-diff-part-tools) button {
+.cstudio-diff-modes {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--diff-line);
+  border-radius: 7px;
+  background: var(--dsw-alias-bg-base, #fff);
+}
+.cstudio-diff-summary { flex: none; color: var(--diff-muted); font-size: .88em; font-variant-numeric: tabular-nums; }
+.cstudio-git-diff button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 2px 6px;
   border: 0;
   border-radius: var(--dsw-radius-sm, 4px);
   background: transparent;
@@ -45,52 +61,176 @@
   font: inherit;
   cursor: pointer;
 }
-.cstudio-git-diff :is(.cstudio-diff-toolbar, .cstudio-diff-part-tools) button:is(:hover:not(:disabled),[aria-pressed=true],.cstudio-diff-apply) {
-  color: inherit;
+.cstudio-git-diff .cstudio-diff-icon-btn { width: 26px; height: 26px; padding: 0; }
+.cstudio-git-diff .cstudio-diff-modes .cstudio-diff-icon-btn { width: 24px; height: 24px; }
+/* :where() 压低 hover 规则的权重，让后面的「选中态 / 还原箭头」规则能稳定接管。 */
+.cstudio-git-diff button:where(:hover:not(:disabled)):not(.cstudio-diff-apply):not(.cstudio-diff-revert) {
+  color: var(--dsw-alias-label-primary, #0f1115);
   background: var(--diff-hover);
 }
-.cstudio-git-diff button:disabled { opacity: .5; cursor: default; }
-.cstudio-git-diff :is(button, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--cstudio-accent, #4d6bfe);
-  outline-offset: -2px;
-}
+.cstudio-git-diff .cstudio-diff-modes button[aria-pressed=true] { color: var(--diff-accent); background: color-mix(in srgb, var(--diff-accent) 12%, transparent); }
+.cstudio-git-diff button:disabled { opacity: .45; cursor: default; }
+.cstudio-git-diff :is(button, textarea, [tabindex]):focus-visible { outline: 2px solid var(--diff-accent); outline-offset: -2px; }
+
+/* ── 两栏标头：左右各自一张卡，中间是转移箭头 ─────────────── */
 .cstudio-diff-labels {
+  display: grid;
   flex: none;
-  padding: 5px 10px;
-  color: var(--diff-muted);
-  border-bottom: .5px solid var(--diff-line);
+  grid-template-columns: 1fr;
+  background: var(--diff-panel);
+  border-bottom: 1px solid var(--diff-line-strong);
 }
-.cstudio-diff-labels.cstudio-diff-split { padding-inline: 0; }
-.cstudio-diff-labels.cstudio-diff-split > span { padding-inline: 10px; }
+.cstudio-diff-labels[data-mode=split] { grid-template-columns: minmax(0,1fr) var(--diff-gutter) minmax(0,1fr); }
+.cstudio-diff-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cstudio-diff-label[data-side=after] { border-left: 1px solid var(--diff-line-strong); }
+.cstudio-diff-labels[data-mode=split] .cstudio-diff-label[data-side=after] { border-left: 0; }
+.cstudio-diff-label-title { font-weight: 600; letter-spacing: .01em; }
+.cstudio-diff-label-hint { color: var(--diff-muted); font-size: .85em; overflow: hidden; text-overflow: ellipsis; }
+.cstudio-diff-label-caption { display: none; color: var(--diff-faint); align-self: center; text-align: center; }
+.cstudio-diff-labels[data-mode=split] .cstudio-diff-label-caption { display: block; }
+/* 单栏时左右标签内联成一行，用 → 连接 */
+.cstudio-diff-labels[data-mode=unified] { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+.cstudio-diff-labels[data-mode=unified] .cstudio-diff-label { padding: 0; }
+.cstudio-diff-labels[data-mode=unified] .cstudio-diff-label[data-side=after] { border-left: 0; }
+.cstudio-diff-labels[data-mode=unified] .cstudio-diff-label-caption { display: none; }
+
+/* ── 滚动区：双栏用一层浅底 + 左右卡片阴影强化「两栏」观感 ── */
 .cstudio-diff-scroll, .cstudio-diff-raw { flex: 1; min-height: 0; overflow: auto; margin: 0; }
+.cstudio-git-diff[data-mode=split] .cstudio-diff-scroll { background: var(--diff-panel); }
 .cstudio-diff-raw { padding: 12px; font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code); }
+.cstudio-diff-hunk { padding-bottom: 10px; }
 .cstudio-diff-range {
-  padding: 4px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 5px 12px;
   color: var(--diff-muted);
   background: var(--diff-soft);
-  font: .9em/1.5 var(--diff-code);
+  border-top: 1px solid var(--diff-line);
+  border-bottom: 1px solid var(--diff-line);
+  font: .88em/1.5 var(--diff-code);
   overflow-wrap: anywhere;
 }
-.cstudio-diff-row { font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code); tab-size: 4; }
+.cstudio-diff-row { font: var(--cstudio-code-size, 13px)/1.65 var(--diff-code); tab-size: 4; }
+
+/* 单栏：行号 / 行号 / 符号 / 代码 */
 .cstudio-diff-unified { display: grid; grid-template-columns: 4.5ch 4.5ch 2ch minmax(0, 1fr); }
-.cstudio-diff-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.cstudio-diff-split > :nth-child(2) { border-left: .5px solid var(--diff-line); }
-.cstudio-diff-cell { display: grid; grid-template-columns: 4.5ch 2ch minmax(0, 1fr); }
-.cstudio-diff-row [data-gap] { background: var(--diff-soft); }
-.cstudio-diff-row[data-tone=add], .cstudio-diff-cell[data-tone=add] { background: color-mix(in srgb, var(--diff-add) 11%, transparent); }
-.cstudio-diff-row[data-tone=remove], .cstudio-diff-cell[data-tone=remove] { background: color-mix(in srgb, var(--diff-remove) 11%, transparent); }
+.cstudio-diff-unified[data-tone=add] { background: color-mix(in srgb, var(--diff-add) 11%, transparent); }
+.cstudio-diff-unified[data-tone=remove] { background: color-mix(in srgb, var(--diff-remove) 11%, transparent); }
+.cstudio-diff-unified[data-tone=add] .cstudio-diff-sign { color: var(--diff-add); }
+.cstudio-diff-unified[data-tone=remove] .cstudio-diff-sign { color: var(--diff-remove); }
+
+/* 双栏：左卡片 | 沟槽 | 右卡片；三列恒定，长行只在自己那栏横向滚动 */
+.cstudio-git-diff[data-mode=split] .cstudio-diff-part { background: var(--dsw-alias-bg-base, #fff); }
+.cstudio-diff-row.cstudio-diff-split {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) var(--diff-gutter) minmax(0,1fr);
+  align-items: stretch;
+}
+.cstudio-diff-cell {
+  display: grid;
+  grid-template-columns: 4.5ch 2ch minmax(0, 1fr);
+  min-width: 0;
+  background: var(--dsw-alias-bg-base, #fff);
+}
+.cstudio-diff-cell[data-side=before] { box-shadow: inset -1px 0 0 var(--diff-line); }
+.cstudio-diff-cell[data-side=after] { box-shadow: inset 1px 0 0 var(--diff-line); }
+.cstudio-diff-cell[data-tone=add] { background: color-mix(in srgb, var(--diff-add) 11%, transparent); }
+.cstudio-diff-cell[data-tone=remove] { background: color-mix(in srgb, var(--diff-remove) 11%, transparent); }
+.cstudio-diff-cell[data-tone=add] .cstudio-diff-sign { color: var(--diff-add); }
+.cstudio-diff-cell[data-tone=remove] .cstudio-diff-sign { color: var(--diff-remove); }
+.cstudio-diff-cell[data-gap] {
+  background: repeating-linear-gradient(-45deg,
+    color-mix(in srgb, var(--diff-muted) 7%, transparent) 0 6px,
+    transparent 6px 12px), var(--diff-soft);
+}
+.cstudio-diff-cell[data-gap] code { visibility: hidden; }
+.cstudio-diff-gutter {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--diff-panel);
+  border-left: 1px solid var(--diff-line-strong);
+  border-right: 1px solid var(--diff-line-strong);
+}
+/* 相邻修改块之间的连接竖线：让「连在一起的修改代码块」读成一整片 */
+.cstudio-diff-part[data-clustered=true][data-kind=change] .cstudio-diff-gutter::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--diff-accent) 45%, transparent);
+}
+.cstudio-diff-part[data-clustered=true][data-kind=context] .cstudio-diff-gutter::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--diff-accent) 22%, transparent);
+}
+.cstudio-diff-gutter .cstudio-diff-icon-btn { position: relative; z-index: 1; }
+/* 还原箭头：圆形浮起，hover 才完全显形，避免每行都抢注意力 */
+.cstudio-diff-gutter .cstudio-diff-revert {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--diff-line-strong);
+  background: var(--dsw-alias-bg-overlay, #fff);
+  color: var(--diff-muted);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  opacity: .55;
+  transition: opacity .12s ease, transform .12s ease, color .12s ease, border-color .12s ease;
+}
+.cstudio-diff-gutter .cstudio-diff-revert svg { width: 13px; height: 13px; }
+.cstudio-diff-part[data-kind=change]:hover .cstudio-diff-gutter .cstudio-diff-revert,
+.cstudio-diff-gutter .cstudio-diff-revert:focus-visible { opacity: 1; }
+.cstudio-diff-gutter .cstudio-diff-revert:hover:not(:disabled) {
+  color: var(--diff-remove);
+  border-color: var(--diff-remove);
+  transform: translateX(-2px);
+}
 .cstudio-diff-row code {
   min-width: 0;
-  padding-right: 8px;
+  padding-right: 10px;
   font: inherit;
   background: transparent;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.cstudio-diff-number, .cstudio-diff-sign { text-align: right; padding-right: .5ch; color: var(--diff-muted); user-select: none; }
+.cstudio-diff-number, .cstudio-diff-sign { text-align: right; padding-right: .6ch; color: var(--diff-faint); user-select: none; }
 .cstudio-diff-eof { margin-left: .5ch; color: var(--diff-muted); user-select: none; }
-.cstudio-diff-part-tools { border-top: .5px solid var(--diff-line); font-size: .9em; }
-.cstudio-diff-replacement { padding: 4px 8px 0; }
+
+/* ── 修改段条：与代码块同宽，图标操作靠右 ─────────────────── */
+.cstudio-diff-part-bar {
+  justify-content: space-between;
+  min-height: 30px;
+  padding-inline: 10px;
+  color: var(--diff-muted);
+  font-size: .88em;
+  background: var(--diff-soft);
+  border-top: 1px solid var(--diff-line);
+  border-bottom: 1px solid var(--diff-line);
+}
+.cstudio-diff-part-info { display: inline-flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.cstudio-diff-part-stat { display: inline-flex; gap: 6px; font-variant-numeric: tabular-nums; }
+.cstudio-diff-part-stat b { font-weight: 600; }
+.cstudio-diff-part-stat b:first-child { color: var(--diff-remove); }
+.cstudio-diff-part-stat b:last-child { color: var(--diff-add); }
+.cstudio-diff-part-actions { display: inline-flex; flex: none; gap: 2px; }
+.cstudio-diff-part-actions .cstudio-diff-icon-btn { width: 24px; height: 24px; }
+.cstudio-diff-part-actions .cstudio-diff-revert { color: var(--diff-remove); }
+
+/* ── 替换编辑框 ───────────────────────────────────────────── */
+.cstudio-diff-replacement { padding: 6px 10px 4px; background: var(--diff-soft); border-bottom: 1px solid var(--diff-line); }
 .cstudio-diff-replacement textarea {
   display: block;
   box-sizing: border-box;
@@ -98,12 +238,26 @@
   min-height: 76px;
   resize: vertical;
   padding: 6px;
-  border: .5px solid var(--diff-line);
+  border: 1px solid var(--diff-line-strong);
   border-radius: var(--dsw-radius-sm, 4px);
-  background: var(--diff-soft);
+  background: var(--dsw-alias-bg-base, #fff);
   color: inherit;
   font: var(--cstudio-code-size, 13px)/1.6 var(--diff-code);
 }
-.cstudio-diff-replacement .cstudio-diff-part-tools { justify-content: end; padding-inline: 0; border: 0; }
-.cstudio-diff-feedback { margin: 0; padding: 6px 10px; color: var(--diff-muted); overflow-wrap: anywhere; }
+.cstudio-diff-replacement .cstudio-diff-part-tools { justify-content: end; gap: 6px; padding-inline: 0; border: 0; }
+.cstudio-diff-replacement .cstudio-diff-part-tools button {
+  min-width: 28px; min-height: 26px; padding: 2px 10px; border: 1px solid var(--diff-line-strong);
+}
+.cstudio-diff-replacement .cstudio-diff-apply { color: var(--dsw-alias-bg-base, #fff); background: var(--diff-accent); border-color: var(--diff-accent) !important; }
+.cstudio-diff-replacement .cstudio-diff-apply:hover:not(:disabled) { color: var(--dsw-alias-bg-base, #fff); background: var(--diff-accent); filter: brightness(1.08); }
+.cstudio-diff-feedback { margin: 0; padding: 6px 12px; color: var(--diff-muted); overflow-wrap: anywhere; }
 .cstudio-diff-feedback[role=alert] { color: var(--diff-remove); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cstudio-diff-gutter .cstudio-diff-revert { transition: none; }
+}
+/* 窄容器：压缩沟槽，两栏仍保持 1:1 */
+@media (max-width: 560px) {
+  .cstudio-git-diff { --diff-gutter: 22px; }
+  .cstudio-diff-label-hint { display: none; }
+}

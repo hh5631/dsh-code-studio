@@ -7,6 +7,10 @@ import { absolutePath } from '../state/gitPaths.js'
 import { minimalWorkspace } from '../state/minimalWorkspace.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
 import { StudioIcon } from './StudioIcon.js'
+import {
+  anchorRowOf, changeInfoOf, groupedPartsOf, splitRowsOf, unifiedRowsOf,
+  type DiffMode, type DiffTone, type SplitRow,
+} from './diffLayout.js'
 import '../styles/git-diff.css'
 
 interface Props {
@@ -18,17 +22,27 @@ interface Props {
   onClose(): void
   onApplied?(path: string): void
 }
-type Mode = 'unified' | 'split'
 type Selection = { hunk: number; part: number }
 type ChangePart = Extract<PatchPart, { kind: 'change' }>
-let preferredMode: Mode = 'unified'
+let preferredMode: DiffMode = 'unified'
 
 function LineText({ line }: { line?: PatchLine }) {
   return <code>{line && patchLineText(line)}{line && !line.newline && <span className="cstudio-diff-eof" title="文件末尾无换行">↵</span>}</code>
 }
 
-function UnifiedRow({ line }: { line: PatchLine }) {
-  const tone = line.before === undefined ? 'add' : line.after === undefined ? 'remove' : undefined
+/** 图标工具按钮：统一 title/aria-label/disabled 语义，避免纯图标按钮丢失可访问名。 */
+function IconButton({ label, icon, onClick, disabled, pressed, variant }: {
+  label: string; icon: React.ComponentProps<typeof StudioIcon>['name']
+  onClick(): void; disabled?: boolean; pressed?: boolean; variant?: 'revert'
+}) {
+  return <button type="button" className={'cstudio-diff-icon-btn' + (variant ? ` cstudio-diff-${variant}` : '')}
+    title={label} aria-label={label} aria-pressed={pressed} disabled={disabled} onClick={onClick}>
+    <StudioIcon name={icon} />
+  </button>
+}
+
+/** 单栏行：行号 → 增删符 → 代码，左侧留一条细色带标记该行归属。 */
+function UnifiedRow({ line, tone }: { line: PatchLine; tone: DiffTone }) {
   return <div className="cstudio-diff-row cstudio-diff-unified" data-tone={tone}>
     <span className="cstudio-diff-number">{line.before}</span>
     <span className="cstudio-diff-number">{line.after}</span>
@@ -37,27 +51,47 @@ function UnifiedRow({ line }: { line: PatchLine }) {
   </div>
 }
 
-function SplitRow({ before, after, changed = false }: { before?: PatchLine; after?: PatchLine; changed?: boolean }) {
-  return <div className="cstudio-diff-row cstudio-diff-split">
-    <div className="cstudio-diff-cell" data-tone={changed && before ? 'remove' : undefined} data-gap={!before || undefined}>
-      <span className="cstudio-diff-number">{before?.before}</span>
-      <span className="cstudio-diff-sign" aria-hidden="true">{changed && before ? '−' : ''}</span>
-      <LineText line={before} />
-    </div>
-    <div className="cstudio-diff-cell" data-tone={changed && after ? 'add' : undefined} data-gap={!after || undefined}>
-      <span className="cstudio-diff-number">{after?.after}</span>
-      <span className="cstudio-diff-sign" aria-hidden="true">{changed && after ? '+' : ''}</span>
-      <LineText line={after} />
-    </div>
+/** 双栏单元格：行号 → 增删符 → 代码；空隙格用斜纹底表明「此侧无对应行」。 */
+function SplitCell({ line, tone, gap, side }: { line?: PatchLine; tone: DiffTone; gap?: 'before' | 'after'; side: 'before' | 'after' }) {
+  return <div className="cstudio-diff-cell" data-tone={tone} data-gap={gap || undefined} data-side={side}>
+    <span className="cstudio-diff-number">{side === 'before' ? line?.before : line?.after}</span>
+    <span className="cstudio-diff-sign" aria-hidden="true">{tone === 'add' ? '+' : tone === 'remove' ? '−' : ''}</span>
+    <LineText line={line} />
   </div>
 }
 
-function PartRows({ part, mode }: { part: PatchPart; mode: Mode }) {
-  if (part.kind === 'context') return <>{part.lines.map((line, i) => mode === 'unified'
-    ? <UnifiedRow key={i} line={line} /> : <SplitRow key={i} before={line} after={line} />)}</>
-  if (mode === 'unified') return <>{[...part.before, ...part.after].map((line, i) => <UnifiedRow key={i} line={line} />)}</>
-  return <>{Array.from({ length: Math.max(part.before.length, part.after.length) }, (_, i) =>
-    <SplitRow key={i} before={part.before[i]} after={part.after[i]} changed />)}</>
+/** 双栏行：左右单元格 + 中央沟槽（沟槽内可放 VSCode 式还原箭头）。 */
+function SplitRowView({ row, gutter }: { row: SplitRow; gutter?: React.ReactNode }) {
+  return <div className="cstudio-diff-row cstudio-diff-split" data-changed={row.changed || undefined}>
+    <SplitCell line={row.before} tone={row.beforeTone} gap={row.gap === 'before' ? 'before' : undefined} side="before" />
+    <div className="cstudio-diff-gutter">{gutter}</div>
+    <SplitCell line={row.after} tone={row.afterTone} gap={row.gap === 'after' ? 'after' : undefined} side="after" />
+  </div>
+}
+
+function PartRows({ part, mode, selection, clustered, onRevert, canEdit, busy }: {
+  part: PatchPart; mode: DiffMode; selection: Selection; clustered: boolean
+  onRevert(selection: Selection): void; canEdit: boolean; busy: boolean
+}) {
+  const anchor = part.kind === 'change' ? anchorRowOf(part) : -1
+  const rows = mode === 'unified' ? unifiedRowsOf(part) : splitRowsOf(part)
+  const info = part.kind === 'change' ? changeInfoOf(part) : null
+  return <div className="cstudio-diff-part" data-kind={part.kind} data-clustered={clustered || undefined}>
+    {rows.map((row, i) => {
+      if (mode === 'unified') {
+        const unified = row as { line: PatchLine; tone: DiffTone }
+        return <UnifiedRow key={i} line={unified.line} tone={unified.tone} />
+      }
+      const split = row as SplitRow
+      // 块内箭头：只在锚点行出现，指向左侧（把右侧工作区改动还原成左侧版本）。
+      const gutter = canEdit && part.kind === 'change' && i === anchor
+        ? <IconButton variant="revert" icon="arrowLeft" disabled={busy}
+            label={`还原第 ${info?.line ?? ''} 行附近的修改段（−${info?.removed ?? 0} / +${info?.added ?? 0}）`}
+            onClick={() => onRevert(selection)} />
+        : null
+      return <SplitRowView key={i} row={split} gutter={gutter} />
+    })}
+  </div>
 }
 
 export function GitDiffView(props: Props): React.ReactElement {
@@ -77,6 +111,11 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
   const canEdit = !staged && !!sessionId && !!state.revision && patch?.editable === true
   const left = staged ? 'HEAD' : '暂存区'
   const right = staged ? '暂存区' : '工作区'
+  const leftHint = staged ? '上次提交' : '已暂存的快照'
+  const rightHint = staged ? '待提交内容' : '当前文件内容'
+  const changes = React.useMemo(() => patch ? patch.hunks.reduce((sum, hunk) =>
+    sum + hunk.parts.filter(part => part.kind === 'change').length, 0) : 0, [patch])
+  const clustered = React.useMemo(() => patch ? patch.hunks.map(hunk => groupedPartsOf(hunk.parts)) : [], [patch])
 
   React.useEffect(() => { live.current = true; return () => { live.current = false } }, [])
   React.useEffect(() => {
@@ -132,12 +171,21 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
   function partControls(change: ChangePart, selection: Selection) {
     if (!canEdit) return null
     const editing = draft?.hunk === selection.hunk && draft.part === selection.part
-    const line = change.after[0]?.after ?? change.before[0]?.before
+    const info = changeInfoOf(change)
     return <>
-      <div className="cstudio-diff-part-tools">
-        <span>{change.after.length ? `工作区第 ${line} 行` : `原第 ${line} 行`}</span>
-        <button type="button" disabled={busy || !!draft} onClick={() => void apply(selection)}>还原此段</button>
-        <button type="button" disabled={busy || !!draft} onClick={() => setDraft({ ...selection, text: patchPartText(change.after) })}>替换此段</button>
+      <div className="cstudio-diff-part-bar">
+        <span className="cstudio-diff-part-info">
+          <span className="cstudio-diff-part-line">{change.after.length ? `工作区第 ${info.line} 行` : `原第 ${info.line} 行`}</span>
+          <span className="cstudio-diff-part-stat" aria-label={`删除 ${info.removed} 行，新增 ${info.added} 行`}>
+            <b>−{info.removed}</b><b>+{info.added}</b>
+          </span>
+        </span>
+        <span className="cstudio-diff-part-actions">
+          <IconButton label="还原此段到暂存区版本" icon="arrowLeft" variant="revert" disabled={busy || !!draft}
+            onClick={() => void apply(selection)} />
+          <IconButton label="编辑此段内容" icon="edit" disabled={busy || !!draft}
+            onClick={() => setDraft({ ...selection, text: patchPartText(change.after) })} />
+        </span>
       </div>
       {editing && <div className="cstudio-diff-replacement">
         <textarea aria-label="替换此段的内容" autoFocus spellCheck={false} value={draft.text} disabled={busy}
@@ -151,27 +199,34 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
     </>
   }
 
-  return <section className="cstudio-git-diff" aria-label="Git 修改差异">
+  return <section className="cstudio-git-diff" data-mode={mode} aria-label="Git 修改差异">
     <header className="cstudio-diff-toolbar">
       <span className="cstudio-diff-title" title={path}>{path}</span>
       {patch && <div className="cstudio-diff-modes" role="group" aria-label="对比布局">
-        {(['unified', 'split'] as const).map(item => <button key={item} type="button" aria-pressed={mode === item}
-          onClick={() => { preferredMode = item; setMode(item) }}>{item === 'unified' ? '单栏' : '双栏'}</button>)}
+        <IconButton label="单栏内联对比" icon="layoutInline" pressed={mode === 'unified'}
+          onClick={() => { preferredMode = 'unified'; setMode('unified') }} />
+        <IconButton label="双栏并排对比" icon="layoutSplit" pressed={mode === 'split'}
+          onClick={() => { preferredMode = 'split'; setMode('split') }} />
       </div>}
-      <button type="button" title="刷新差异" aria-label="刷新差异" disabled={busy || state.loading || !!draft}
-        onClick={() => { setFeedback(null); refresh() }}><StudioIcon name="refresh" /></button>
-      <button type="button" title="关闭 Git 差异" aria-label="关闭 Git 差异" onClick={onClose}><StudioIcon name="close" /></button>
+      {patch && <span className="cstudio-diff-summary" title={`${changes} 处修改段`}>{changes} 处改动</span>}
+      <IconButton label="刷新差异" icon="refresh" disabled={busy || state.loading || !!draft}
+        onClick={() => { setFeedback(null); refresh() }} />
+      <IconButton label="关闭 Git 差异" icon="close" onClick={onClose} />
     </header>
-    {patch && (mode === 'split'
-      ? <div className="cstudio-diff-labels cstudio-diff-split"><span>{left}</span><span>{right}</span></div>
-      : <div className="cstudio-diff-labels">{left} → {right}</div>)}
+    {patch && <div className="cstudio-diff-labels" data-mode={mode}>
+      <div className="cstudio-diff-label" data-side="before"><span className="cstudio-diff-label-title">{left}</span><span className="cstudio-diff-label-hint">{leftHint}</span></div>
+      <div className="cstudio-diff-label-caption" aria-hidden="true">→</div>
+      <div className="cstudio-diff-label" data-side="after"><span className="cstudio-diff-label-title">{right}</span><span className="cstudio-diff-label-hint">{rightHint}</span></div>
+    </div>}
     {feedback && <div className="cstudio-diff-feedback" role={feedback.error ? 'alert' : 'status'}>{feedback.text}</div>}
     {patch ? <div className="cstudio-diff-scroll" tabIndex={0} aria-label="差异内容" aria-busy={state.loading}>
-      {patch.hunks.map((hunk, h) => <section key={h}>
+      {patch.hunks.map((hunk, h) => <section className="cstudio-diff-hunk" key={h}>
         <div className="cstudio-diff-range">{hunk.title}</div>
         {hunk.parts.map((part, p) => <React.Fragment key={p}>
           {part.kind === 'change' && partControls(part, { hunk: h, part: p })}
-          <PartRows part={part} mode={mode} />
+          <PartRows part={part} mode={mode} selection={{ hunk: h, part: p }}
+            clustered={clustered[h]?.has(p) ?? false} onRevert={value => void apply(value)}
+            canEdit={canEdit} busy={busy || !!draft} />
         </React.Fragment>)}
       </section>)}
     </div> : state.text ? <pre className="cstudio-diff-raw" tabIndex={0}>{state.text}</pre>

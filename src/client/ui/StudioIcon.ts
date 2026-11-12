@@ -14,6 +14,12 @@ const paths = {
   check: 'm4 10 4 4 8-9',
   filter: 'M2 5h16M5 10h10M8 15h4',
   file: 'M4 2h8l4 4v12H4V2Zm8 0v5h4',
+  // 差异布局切换：单栏是整幅横排的层叠行，双栏是被竖线分开的左右两栏
+  layoutInline: 'M3 4h14v12H3zM5.5 8h9M5.5 11h9M5.5 14h6',
+  layoutSplit: 'M3 4h14v12H3zM10 4v12M5.5 8h2.5M12 8h2.5M5.5 11h2.5M12 11h2.5M5.5 14h2M12 14h2',
+  // 还原修改：从右侧（修改后）指回左侧（原始）的箭头，对齐 VSCode diff gutter
+  arrowLeft: 'M16 10H5m4-4-4 4 4 4',
+  edit: 'M4 16h3l9.5-9.5-3-3L4 13v3Zm9.5-12.5 3 3',
 } as const
 
 export function StudioIcon({ name, size = 16 }: { name: keyof typeof paths; size?: number }): React.ReactElement {
