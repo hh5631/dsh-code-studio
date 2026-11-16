@@ -243,7 +243,10 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
     const cached = workspace.documents.has(active)
     const reload = props.documentRevision !== undefined && lastLoad.current?.path === active
       && lastLoad.current.revision !== props.documentRevision
-    if (!cached) { instance.clear(); bound.current = null }
+    // 未命中缓存时保留上一帧内容（不清空视图）：本地读盘通常只有几十毫秒，
+    // 先清空会让切换瞬间变成一块空白，再叠一个整屏遮罩就是明显的白屏跳变。
+    // 只有还没有任何内容可留时（首次打开）才清空，让加载态占满这一屏。
+    if (!cached && !bound.current) instance.clear()
     setLoading(!cached); setError(''); setLargePath(null)
     void workspace.load(active, engine.createModel, reload).then(entry => {
       if (!alive) return
@@ -373,8 +376,13 @@ function WorkspaceEditor(props: Props & { cwd: string | null; scope: string }): 
         !active && !gitDiff ? React.createElement('div', { className: 'cstudio-minimal-empty' },
           embedded ? React.createElement('p', null, '从右侧文件树选择文件') : React.createElement(React.Fragment, null, React.createElement(IconFolderOpenOutline16, { size: 28 }),
             React.createElement('p', null, '从工作区打开文件'), button('工作区文件', '浏览文件', openFiles))) : null,
-        visible && !gitDiff && (loading || (needsEditor && !engine && !error))
-          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, engine ? '正在读取文件…' : '正在打开…') : null)),
+        // 编辑器模块就绪前用整屏提示（此时确实没有内容可显示）；
+        // 读盘阶段则只画一条顶部细进度条，正文沿用上一帧，避免整块白屏遮罩造成的切换跳变。
+        visible && !gitDiff && needsEditor && !engine && !error
+          ? React.createElement('div', { className: 'cstudio-minimal-loading', role: 'status' }, '正在打开…') : null,
+        visible && !gitDiff && loading && engine
+          ? React.createElement('div', { className: 'cstudio-minimal-progress', role: 'status', 'aria-busy': true },
+            React.createElement('span', { className: 'cstudio-visually-hidden' }, '正在读取文件…')) : null)),
     error || workspace.error ? React.createElement('div', { className: 'cstudio-minimal-error', role: 'alert' },
       React.createElement('span', null, error || workspace.error),
       active && workspace.documents.has(active) ? button('复制本地内容', '复制内容', () => { void copyText(workspace.documents.get(active)!.model.getValue(), '内容已复制', setError) }) : null,

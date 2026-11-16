@@ -94,28 +94,64 @@ export function upsertViewState(
   return next
 }
 
+// --region 内存镜像
+/**
+ * scope → 已解析的视图状态映射（内存镜像）。
+ *
+ * 为什么需要：切页签与保存都会走 load→upsert→save 一圈，原来每圈都要把
+ * localStorage 里的整串 JSON 重新 parse、再整串 stringify。页签越多、视图状态越大，
+ * 这段同步 IO + 解析就越容易在切换瞬间顶出一帧卡顿。改为镜像后，命中路径是纯内存读写，
+ * 只有首次读取和真正写入时才碰 localStorage。
+ * @author ddj 2026年11月16号
+ */
+const mirrors = new Map<string, Record<string, unknown>>()
+
+/** 某个 scope 的 localStorage 键。 */
+const keyOf = (scope: string): string => KEY_PREFIX + String(scope)
+// --endregion
+
 /**
  * 读取某作用域的视图状态缓存（localStorage 不可用 → 空映射）。
- * @author ddj 2026年08月28号
+ * 命中内存镜像时不重复解析；返回的是镜像内的只读快照引用，调用方不得原地修改。
+ * @author ddj 2026年08月28号（2026年11月16号：加内存镜像）
  * @param scope 作用域键（scopeStore.workspaceScopeOf 产物）
  * @returns path → viewState 映射
  */
 export function viewStatesLoad(scope: string): Record<string, unknown> {
+  const key = keyOf(scope)
+  const cached = mirrors.get(key)
+  if (cached) return cached
+  let states: Record<string, unknown> = {}
   try {
-    return parseViewStates(window.localStorage.getItem(KEY_PREFIX + String(scope))) ?? {}
+    states = parseViewStates(window.localStorage.getItem(key)) ?? {}
   } catch (error) {
-    return {}
+    states = {}
   }
+  mirrors.set(key, states)
+  return states
 }
 
 /**
  * 写入某作用域的视图状态缓存（损坏/配额满 → 忽略）。
- * @author ddj 2026年08月28号
+ * 同步刷新内存镜像，让下一次读取直接命中。
+ * @author ddj 2026年08月28号（2026年11月16号：同步镜像）
  * @param scope 作用域键（scopeStore.workspaceScopeOf 产物）
  * @param states path → viewState 映射
  */
 export function viewStatesSave(scope: string, states: Record<string, unknown>): void {
+  const key = keyOf(scope)
+  mirrors.set(key, states)
   try {
-    window.localStorage.setItem(KEY_PREFIX + String(scope), serializeViewStates(states))
+    window.localStorage.setItem(key, serializeViewStates(states))
   } catch (error) { /* 配额满/隐私模式忽略 */ }
+}
+
+/**
+ * 丢弃某作用域的内存镜像（外部直接改写了 localStorage 后重读用；当前无调用方，保留给测试与调试）。
+ * @author ddj 2026年11月16号
+ * @param scope 作用域键；缺省清空全部镜像
+ */
+export function viewStatesReset(scope?: string): void {
+  if (scope === undefined) { mirrors.clear(); return }
+  mirrors.delete(keyOf(scope))
 }

@@ -64,3 +64,6 @@ body[data-ds-dark-theme] [data-cstudio-workspace-tree] { --cstudio-git-modified:
 [data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-hit { color:inherit; background:color-mix(in srgb,var(--cstudio-git-modified) 20%,transparent); }
 [data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-line.alt { background:none; }
 [data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-empty { padding:24px 4px; font-size:1em; text-align:center; line-height:1.7; }
+/* 分批展开按钮：与命中行同宽、弱化，只在结果被截断时出现。 */
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-more { width:100%; margin:2px 0 4px; padding:5px 6px; border:0; border-radius:var(--dsw-radius-sm,4px); background:transparent; color:var(--cstudio-muted); font:inherit; font-size:.88em; text-align:center; cursor:pointer; }
+[data-cstudio-workspace-tree] .cstudio-side-panel .edrv-search-more:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }

@@ -21,8 +21,6 @@
 /* 特异性需盖过下面 .edrv-group .edrv-tabs 的 flex: 0 0 auto，页签区才能吃掉行走宽、把工具列压到行尾 */
 [data-edrv-view] .edrv-group .edrv-tabs-row > .edrv-tabs { flex: 1 1 auto; min-width: 0; background: transparent; }
 [data-edrv-view] .edrv-tabs-tools { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; padding: 0 6px 0 2px; }
-[data-edrv-view] .edrv-tab-add { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-left: 2px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary, #aaa); font-size: 14px; cursor: pointer; flex-shrink: 0; }
-[data-edrv-view] .edrv-tab-add:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
 [data-edrv-view] .edrv-pathbar { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; background: var(--dsw-alias-bg-layer-1, #ffffff); border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 12px; flex-shrink: 0; overflow: hidden; }
 [data-edrv-view] .edrv-pathbar .edrv-pb-name { font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
 [data-edrv-view] .edrv-pathbar .edrv-pb-full { flex: 1; min-width: 0; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
@@ -31,11 +29,7 @@
 /* 非焦点分组的静态路径条（GroupPathbar）：可点击聚焦所属组，悬停给反馈 @author ddj 2026-10-16 */
 [data-edrv-view] .edrv-pathbar[data-edrv-pb-static] { cursor: pointer; }
 [data-edrv-view] .edrv-pathbar[data-edrv-pb-static]:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.06)); }
-[data-edrv-view] .edrv-pb-update { display: inline-flex; align-items: center; gap: 4px; height: 20px; flex: none; padding: 0 6px; border: 1px solid var(--dsw-alias-border-l1, #d9e0e4); border-radius: 4px; background: var(--dsw-alias-bg-layer-2, #f1f4f5); color: var(--dsw-alias-label-secondary, #485762); font-size: 11px; cursor: pointer; }
-[data-edrv-view] .edrv-pb-update:hover { background: var(--dsw-alias-interactive-bg-hover, #e7edf0); }
-[data-edrv-view] .edrv-pb-update:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #2869b4); outline-offset: 1px; }
 @media (max-width: 620px) { [data-edrv-view] .edrv-pb-update { width: 24px; padding: 0 4px; overflow: hidden; font-size: 0; } }
-[data-edrv-view] .edrv-path-input { flex: 1; min-width: 140px; height: 24px; padding: 0 8px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 12px; outline: none; }
 [data-edrv-view] .edrv-search-wrap { position: relative; flex-shrink: 0; display: flex; align-items: center; padding: 2px 8px 2px 4px; }
 [data-edrv-view] .edrv-search { width: 190px; height: 24px; padding: 0 8px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 12px; outline: none; }
 [data-edrv-view] .edrv-search:focus { border-color: var(--dsw-alias-brand-primary, #4f8cff); }
@@ -47,82 +41,17 @@
 [data-edrv-view] .edrv-search-item .n { color: var(--dsw-alias-label-primary, #eee); font-size: 12px; word-break: break-all; }
 [data-edrv-view] .edrv-search-item .d { color: var(--dsw-alias-label-tertiary, #888); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-edrv-view] .edrv-search-empty { padding: 8px; font-size: 12px; color: var(--dsw-alias-label-tertiary, #888); }
-[data-edrv-view] .edrv-btn-mini { font-size: 11px; padding: 2px 9px; border: none; border-radius: 999px; cursor: pointer; color: var(--dsw-alias-label-primary-inverted, #fff); font-weight: 600; white-space: nowrap; }
-[data-edrv-view] .edrv-btn-keep { background: var(--dsw-alias-state-success-primary, #2e9e44); }
-[data-edrv-view] .edrv-btn-undo { background: var(--dsw-alias-state-warn-primary, #d97706); }
-[data-edrv-view] .edrv-btn-mini:disabled { opacity: .45; cursor: default; }
-[data-edrv-view] .edrv-statusbar { display: flex; align-items: center; gap: 10px; padding: 3px 10px; border-top: 1px solid var(--dsw-alias-border-l1, #333); background: var(--dsw-alias-bg-layer-1, transparent); font-size: 11px; color: var(--dsw-alias-label-tertiary, #888); flex-shrink: 0; white-space: nowrap; overflow: hidden; }
-[data-edrv-view] .edrv-statusbar .edrv-sp-path { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-statusbar .edrv-sp-lsp { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-statusbar .edrv-sp-progress-message { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-statusbar .edrv-sp-progress { flex: 0 0 auto; min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-lsp-status-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--dsw-alias-label-tertiary, #9aa5b1); }
 [data-edrv-view] .edrv-lsp-status-dot.ready { background: var(--dsw-alias-state-success-primary, #0f9d58); }
 [data-edrv-view] .edrv-lsp-status-dot.busy { background: var(--dsw-alias-state-warn-primary, #d97706); animation: edrv-lsp-pulse 1.2s ease-in-out infinite; }
 @keyframes edrv-lsp-pulse { 50% { opacity: .45; } }
-[data-edrv-view] .edrv-nav-underline { text-decoration: underline; text-decoration-color: var(--dsw-alias-interactive-primary, #4fc1ff); text-underline-offset: 1px; cursor: pointer; }
-/* 跳转目标区域高亮（LSP 定义/引用、搜索命中落点）：落点一眼可见，约 1.2s 后由 EditorView 自动清除。
-   用官方令牌并带回落值，不在插件作用域重定义 --dsw-* （否则永久脱离官方主题）。 */
-[data-edrv-view] .edrv-nav-target { background: var(--dsw-alias-interactive-bg-hover, rgba(79,193,255,.28)); border-radius: 2px; box-shadow: 0 0 0 1px var(--dsw-alias-interactive-primary, rgba(79,193,255,.55)); }
-[data-edrv-view] .edrv-diffchip { font-size: 11px; padding: 2px 10px; border: 1px solid var(--dsw-alias-border-l1, #333); border-radius: 999px; background: var(--dsw-alias-bg-layer-2, transparent); color: var(--dsw-alias-state-warn-primary, #b7791f); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-[data-edrv-view] .edrv-chip-btn { font-size: 12px; padding: 2px 6px; border: none; background: transparent; color: var(--dsw-alias-label-secondary, #aaa); cursor: pointer; border-radius: 4px; flex-shrink: 0; }
-[data-edrv-view] .edrv-chip-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
-[data-edrv-view] .edrv-chip-btn:disabled { opacity: .35; cursor: default; }
-[data-edrv-view] .edrv-chip-btn:disabled:hover { background: transparent; }
-[data-edrv-view] .edrv-mn-add-line { background: var(--edrv-diff-add, #e6f4e8); }
-[data-edrv-view] .edrv-mn-gutter-add { background: var(--edrv-diff-add, #e6f4e8); color: var(--dsw-alias-state-success-primary, #0f9d58) !important; display: flex !important; align-items: center; justify-content: center; }
-[data-edrv-view] .edrv-mn-gutter-add::before { content: "+"; }
-[data-edrv-view] .edrv-del-zone, [data-edrv-view] .edrv-del-margin { background: var(--edrv-diff-del, #fbe7e3); color: var(--edrv-diff-fg, #1e1e1e); }
-[data-edrv-view] .edrv-del-row { white-space: pre; height: var(--edrv-line-height, 20px); line-height: var(--edrv-line-height, 20px); }
-[data-edrv-view] .edrv-del-text { display: inline-block; white-space: pre; }
-[data-edrv-view] .edrv-del-margin-row { position: relative; height: var(--edrv-line-height, 20px); line-height: var(--edrv-line-height, 20px); }
-[data-edrv-view] .edrv-del-number { position: absolute; left: var(--edrv-number-left); width: var(--edrv-number-width); color: var(--edrv-diff-number, #6c6c6c); text-align: right; }
-[data-edrv-view] .edrv-del-marker { position: absolute; left: var(--edrv-marker-left); width: var(--edrv-marker-width); color: var(--dsw-alias-state-error-primary, #d9534f); text-align: center; }
-[data-edrv-view] .edrv-imgview { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-[data-edrv-view] .edrv-imgview-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; flex-shrink: 0; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, transparent); }
-[data-edrv-view] .edrv-imgview-meta { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; }
-/* 图片预览：居中交给子项 margin:auto（auto 外边距优先吃正向空闲空间；溢出时空闲为负 → 外边距归 0、
-   flex-start 起点对齐 → 放大后四边均可滚动到达，规避 justify-content:center 双侧溢出不可达问题） */
-[data-edrv-view] .edrv-imgview-stage { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; padding: 14px; background-color: var(--dsw-alias-bg-layer-1, #f0f4f4); background-image: conic-gradient(rgba(128,128,128,.14) 25%, transparent 0 50%, rgba(128,128,128,.14) 0 75%, transparent 0); background-size: 16px 16px; }
-[data-edrv-view] .edrv-imgview-img { max-width: 100%; max-height: 100%; flex-shrink: 0; margin: auto; align-self: flex-start; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 12px rgba(31,41,51,.18); }
-[data-edrv-view] .edrv-imgview-broken { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 13px; color: var(--dsw-alias-label-tertiary, #777); margin: auto; }
-[data-edrv-view] .edrv-pdf-host { flex: 1 1 auto; min-width: 0; min-height: 0; position: relative; overflow: hidden; }
 [data-edrv-view] .edrv-pdf-host > .edrv-pdf { position: absolute; inset: 0; }
 [data-edrv-view] .edrv-pdf { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-[data-edrv-view] .edrv-pdf-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; flex-shrink: 0; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, transparent); }
-[data-edrv-view] .edrv-pdf-page { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; min-width: 52px; text-align: center; }
-[data-edrv-view] .edrv-pdf-zoom { min-width: 26px; text-align: center; padding: 3px 7px; }
-[data-edrv-view] .edrv-pdf-sep { width: 1px; height: 16px; background: var(--dsw-alias-border-l1, #e0e6e8); margin: 0 2px; }
-[data-edrv-view] .edrv-pdf-mode-on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.12)); color: var(--dsw-alias-brand-primary, #0f9d58); border-color: var(--dsw-alias-brand-primary, #0f9d58); }
-[data-edrv-view] .edrv-pdf-dirty { color: var(--dsw-alias-state-warn-primary, #d97706); border-color: var(--dsw-alias-state-warn-primary, #d97706); }
-[data-edrv-view] .edrv-pdf-stage { position: absolute; top: 34px; left: 0; right: 0; bottom: 0; overflow: auto; }
-/* Markdown 预览（需求 4）：工具条 + 居中阅读栏；正文排版由官方 MarkdownText 自带的 --dsw-* 样式负责 */
-[data-edrv-view] .edrv-mdview { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-[data-edrv-view] .edrv-mdview-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; flex-shrink: 0; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, transparent); }
-[data-edrv-view] .edrv-mdview-meta { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; }
-[data-edrv-view] .edrv-mdview-stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px 20px 28px; }
-[data-edrv-view] .edrv-mdview-doc { max-width: 880px; margin: 0 auto; width: 100%; }
-[data-edrv-view] .edrv-mdview-fallback { font-size: 12px; line-height: 1.7; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-mdview-pre { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-primary, #1f2933); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-[data-edrv-view] .edrv-pb-mdbtn { height: 20px; padding: 0 8px; font-size: 11px; flex-shrink: 0; }
-[data-edrv-view] .edrv-pdf-stage .edrv-pdf-viewer { margin: 0 auto; }
 [data-edrv-view] .edrv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; color: var(--dsw-alias-label-tertiary, #777); font-size: 13px; }
-[data-edrv-view] .edrv-diffbar { position: absolute; left: 0; right: 0; bottom: 10px; margin: 0 auto; z-index: 25; width: fit-content; max-width: calc(100% - 20px); border-radius: 12px; background: var(--dsw-specific-tip, var(--dsw-alias-bg-layer-2, #f0f4f4)); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); box-shadow: none; overflow: visible; display: flex; flex-direction: column; }
-[data-edrv-view] .edrv-editor-area > .edrv-diffbar { max-height: calc(100% - 20px); }
-[data-edrv-view] .edrv-diffbar-row { display: flex; align-items: center; gap: 6px; height: 36px; padding: 4px 5px 4px 12px; flex-wrap: nowrap; }
-[data-edrv-view] .edrv-diffbar-count { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); min-width: 42px; text-align: center; white-space: nowrap; cursor: pointer; }
-[data-edrv-view] .edrv-diffbar-count.edrv-count-file { min-width: 64px; cursor: default; }
-[data-edrv-view] .edrv-diffbar-file { flex: 1; min-width: 0; font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-edrv-view] .edrv-pill { font-size: 11px; padding: 3px 10px; border: none; border-radius: 999px; cursor: pointer; white-space: nowrap; font-weight: 600; }
 [data-edrv-view] .edrv-pill-keep { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-state-success-primary, #0f7a45); border: 1px solid var(--dsw-alias-state-success-primary, rgba(15,157,88,.4)); }
-[data-edrv-view] .edrv-pill-undo { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217,83,79,.14)); color: var(--dsw-alias-state-error-primary, #c0392b); border: 1px solid var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); }
 [data-edrv-view] .edrv-pill-ghost { background: var(--dsw-alias-bg-layer-1, #ffffff); color: var(--dsw-alias-label-secondary, #52606d); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
 [data-edrv-view] .edrv-pill:disabled { opacity: .45; cursor: default; }
-[data-edrv-view] .edrv-diffbar-menu { position: absolute; right: 8px; bottom: calc(100% + 6px); z-index: 45; min-width: 160px; border-radius: 10px; background: var(--dsw-alias-bg-overlay, #ffffff); border: 1px solid var(--dsw-alias-border-l2, #cbd2d9); box-shadow: 0 6px 20px rgba(31,41,51,.16); padding: 4px; display: flex; flex-direction: column; gap: 2px; }
-[data-edrv-view] .edrv-diffmenu-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 10px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-primary, #1f2933); cursor: pointer; text-align: left; }
-[data-edrv-view] .edrv-diffmenu-item:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-diffmenu-item.danger { color: var(--dsw-alias-state-error-primary, #d9534f); }
-[data-edrv-view] .edrv-diffmenu-sep { height: 1px; margin: 2px 4px; background: var(--dsw-alias-border-l1, #e0e6e8); }
 /* 编辑区 / Tab 右键菜单（页签右键菜单 + 文件树右键菜单共用）。
    页签菜单 11 条 + 键位提示，故限高可滚（ContextMenu 以实测尺寸做 viewport clamp）。
    ⚠️ z-index 71 在既有浮层阶梯内（见文件末尾命令栏注释），不得上调越过命令栏/片段浮窗。 */
@@ -138,34 +67,8 @@
 [data-edrv-view] .edrv-ctxmenu-hint { flex: 0 0 auto; padding-left: 18px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; }
 [data-edrv-view] .edrv-ctxmenu-item:disabled .edrv-ctxmenu-hint,
 [data-edrv-view] .edrv-ctxmenu-item.edrv-ctxmenu-disabled .edrv-ctxmenu-hint { color: var(--dsw-alias-label-disabled, #b0b7c0); }
-[data-edrv-view] .edrv-diffbar-body { max-height: 130px; max-width: min(560px, calc(100vw - 40px)); overflow: auto; padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-diffrow { display: flex; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); cursor: pointer; flex-wrap: wrap; }
-[data-edrv-view] .edrv-diffrow:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-diffrow-l { font-size: 11px; color: var(--dsw-alias-label-primary, #1f2933); min-width: 74px; font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-diffrow-o { font-size: 11px; color: var(--dsw-alias-state-error-primary, #d9534f); font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-diffrow-n { font-size: 11px; color: var(--dsw-alias-state-success-primary, #0f9d58); font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-diffrow-tag { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-diffrow-stale { border-color: var(--dsw-alias-state-warn-primary, rgba(217,119,6,.5)); cursor: default; }
-[data-edrv-view] .edrv-diffbox-others { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 2px 0; border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); margin-top: 2px; }
-[data-edrv-view] .edrv-diffrow-file { font-size: 11px; padding: 2px 10px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); cursor: pointer; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-diffrow-file:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); color: var(--dsw-alias-label-primary, #1f2933); }
-/* 编辑区 hover 差异块的 Keep/Undo 浮层 */
-[data-edrv-view] .edrv-hoveract { position: absolute; z-index: 30; display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 8px; background: var(--dsw-alias-bg-overlay, #ffffff); border: 1px solid var(--dsw-alias-border-l2, #cbd2d9); box-shadow: 0 4px 14px rgba(31,41,51,.14); }
 [data-edrv-view] .edrv-launch { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 40; border-radius: 10px; background: var(--dsw-alias-bg-overlay, #1c1c1c); border: 1px solid var(--dsw-alias-border-l2, #555); box-shadow: 0 6px 24px rgba(0,0,0,.5); display: flex; flex-direction: column; max-height: 60%; overflow: hidden; }
-[data-edrv-view] .edrv-launch-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--dsw-alias-border-l1, #333); }
-[data-edrv-view] .edrv-launch-tab { font-size: 12px; padding: 3px 12px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary, #aaa); cursor: pointer; }
 [data-edrv-view] .edrv-launch-tab.on { background: var(--dsw-alias-bg-layer-2, transparent); color: var(--dsw-alias-label-primary, #eee); font-weight: 600; }
-[data-edrv-view] .edrv-launch-body { flex: 1; min-height: 0; overflow: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
-[data-edrv-view] .edrv-launch-row { display: flex; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid var(--dsw-alias-border-l1, #333); border-radius: 6px; cursor: pointer; flex-wrap: wrap; }
-[data-edrv-view] .edrv-launch-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
-[data-edrv-view] .edrv-launch-path { flex: 1; min-width: 0; font-size: 12px; color: var(--dsw-alias-label-primary, #eee); word-break: break-all; }
-[data-edrv-view] .edrv-launch-cnt { font-size: 11px; color: var(--dsw-alias-label-tertiary, #888); white-space: nowrap; }
-[data-edrv-view] .edrv-launch-arch { display: flex; flex-direction: column; gap: 6px; }
-[data-edrv-view] .edrv-loading { gap: 8px; padding: 20px; }
-[data-edrv-view] .edrv-loading-title { color: var(--dsw-alias-label-primary, #1f2933); font-size: 13px; }
-[data-edrv-view] .edrv-progress { width: min(360px, 72%); height: 6px; overflow: hidden; border-radius: 999px; background: var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-progress-value { height: 100%; border-radius: inherit; background: var(--dsw-alias-brand-primary, #0f9d58); transition: width .24s ease; }
-[data-edrv-view] .edrv-loading-percent { color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 11px; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
   [data-edrv-view] .edrv-progress-value { transition: none; }
 }
@@ -184,121 +87,20 @@
   box-shadow: none;
   overflow: hidden;
 }
-[data-edrv-diff-dock-shell] .edrv-diffbar-dock {
-  box-sizing: border-box;
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  z-index: auto;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-[data-edrv-diff-dock-shell] .edrv-diffbar-row { min-height: 36px; padding: 6px 12px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-dock-row { min-height: 36px; padding: 6px 12px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-body { max-height: 180px; overflow: auto; padding: 6px 12px 10px; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-edrv-diff-dock-shell] .edrv-diffbar-dock-button { box-sizing: border-box; display: flex; align-items: center; justify-content: center; width: 100%; height: 24px; border: none; border-radius: 8px; padding: 0 12px; background: transparent; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 500; line-height: 24px; text-align: center; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-dock-button:hover { background: var(--dsw-alias-interactive-bg-hover); }
-[data-edrv-diff-dock-shell] .edrv-diffbar-count { display: inline-flex; align-items: center; color: var(--dsw-alias-label-primary); font-family: Inter, var(--dsw-font-family); font-size: 13px; font-weight: 500; line-height: 24px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-file { display: inline-flex; align-items: center; color: var(--dsw-alias-label-tertiary); font-family: Inter, var(--dsw-font-family); font-size: 13px; font-weight: 400; line-height: 24px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-editor-row { display: flex; align-items: center; height: 36px; min-height: 36px; padding: 4px 12px; overflow-x: auto; scrollbar-width: thin; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-editor-content { display: flex; align-items: center; gap: 10px; width: 100%; min-width: max-content; min-height: 28px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-nav,
-[data-edrv-diff-dock-shell] .edrv-diffbar-files,
-[data-edrv-diff-dock-shell] .edrv-diffbar-actions { display: flex; align-items: center; gap: 6px; flex: none; height: 28px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-actions { margin-left: auto; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-details-toggle { display: inline-flex; align-items: center; justify-content: center; width: 28px; min-width: 28px; padding: 0; font-size: 13px; line-height: 24px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-details-toggle svg { width: 14px; height: 14px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-files { min-width: 0; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-files .edrv-diffbar-file { min-width: 72px; max-width: 240px; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-progress { min-width: 0; color: var(--dsw-alias-label-tertiary); font-family: Inter, var(--dsw-font-family); font-size: 13px; font-weight: 400; line-height: 24px; font-variant-numeric: tabular-nums; }
-[data-edrv-diff-dock-shell] .edrv-diffbar-summary { min-width: 0; color: var(--dsw-alias-label-tertiary); font-family: Inter, var(--dsw-font-family); font-size: 13px; font-weight: 400; line-height: 24px; }
 [data-edrv-diff-dock-shell] .edrv-pill { box-sizing: border-box; height: 28px; padding: 0 9px; border: none; border-radius: 999px; cursor: pointer; white-space: nowrap; font-size: 11px; line-height: 26px; font-weight: 600; }
 [data-edrv-diff-dock-shell] .edrv-pill-keep { background: var(--dsw-alias-state-success-tertiary); color: var(--dsw-alias-state-success-primary); border: 1px solid var(--dsw-alias-state-success-secondary); }
-[data-edrv-diff-dock-shell] .edrv-pill-undo { background: var(--dsw-alias-state-error-tertiary); color: var(--dsw-alias-state-error-primary); border: 1px solid var(--dsw-alias-state-error-secondary); }
 [data-edrv-diff-dock-shell] .edrv-pill-ghost { background: transparent; color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l1); }
 [data-edrv-diff-dock-shell] .edrv-pill:hover:not(:disabled) { background-color: var(--dsw-alias-interactive-bg-hover); }
 [data-edrv-diff-dock-shell] .edrv-pill:focus-visible { outline: 2px solid var(--dsw-alias-label-tertiary); outline-offset: -2px; }
 [data-edrv-diff-dock-shell] .edrv-pill:disabled { opacity: .45; cursor: default; }
-[data-edrv-diff-dock-shell] .edrv-diffrow { display: flex; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 6px; background: transparent; cursor: pointer; flex-wrap: wrap; }
-[data-edrv-diff-dock-shell] .edrv-diffrow:hover { background: var(--dsw-alias-interactive-bg-hover); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-l { color: var(--dsw-alias-label-primary); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-o { color: var(--dsw-alias-state-error-primary); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-n { color: var(--dsw-alias-state-success-primary); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-tag { color: var(--dsw-alias-label-tertiary); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-stale { border-color: var(--dsw-alias-state-warn-secondary); cursor: default; }
-[data-edrv-diff-dock-shell] .edrv-diffbox-others { border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-file { border-color: var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); }
-[data-edrv-diff-dock-shell] .edrv-diffrow-file:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-[data-edrv-diff-dock-shell] .edrv-diff-details { display: flex; flex-direction: column; gap: 2px; padding: 6px 12px 8px; border-top: 1px solid var(--dsw-alias-border-l1); }
-[data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-item { display: flex; align-items: center; width: 100%; min-height: 28px; gap: 8px; padding: 4px 8px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-primary); cursor: pointer; text-align: left; font-size: 12px; line-height: 20px; }
-[data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-item:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
 [data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-item.danger { color: var(--dsw-alias-state-error-primary); }
-[data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-item:disabled { opacity: .45; cursor: default; }
-[data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-sep { height: 1px; margin: 2px 4px; background: var(--dsw-alias-border-l1); }
 @media (max-width: 620px) {
   [data-edrv-diff-dock-shell] .edrv-diffbar-editor-content { width: max-content; }
   [data-edrv-diff-dock-shell] .edrv-diffbar-files .edrv-diffbar-file { max-width: 160px; }
 }
-/* 侧栏差异栏在编辑内容底部居中悬浮，按内容宽度收缩；窄栏只在工具条内横滚。@author ddj 2026年09月29号 */
-[data-edrv-view] .edrv-side-diff-dock[data-edrv-diff-dock-shell] { position: absolute; left: 50%; bottom: 28px; z-index: 25; width: max-content; max-width: calc(100% - 20px); max-height: min(300px, calc(100% - 38px)); margin: 0; transform: translateX(-50%); border-radius: 12px; background: var(--dsw-alias-bg-overlay, #fff); box-shadow: 0 6px 20px rgba(0,0,0,.18); overflow-x: hidden; overflow-y: auto; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-editor-row { padding-inline: 8px; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-editor-content { gap: 5px; width: max-content; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-nav,
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-files,
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-actions { gap: 3px; }
 [data-edrv-view] .edrv-side-diff-dock .edrv-pill { padding-inline: 5px; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-files .edrv-diffbar-file { min-width: 0; max-width: 72px; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-details-toggle { width: 26px; min-width: 26px; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diffbar-body { max-height: min(180px, 25vh); max-width: 100%; }
-[data-edrv-view] .edrv-side-diff-dock .edrv-diff-details { max-height: min(260px, 35vh); overflow-y: auto; }
-
-/* Official review: file context above, navigation/actions below. Theme-owned surfaces; no neon status outlines. @author ddj 2026年10月27号 */
-[data-edrv-diff-dock-shell] .edrv-reviewbar {
-  width: 520px; max-width: 100%; min-width: 0; box-sizing: border-box;
-  color: var(--dsw-alias-label-primary, #26313d); font-family: var(--dsw-font-family, sans-serif);
-  font-size: 12px; line-height: 1.4; container: edrv-review / inline-size;
-}
-[data-edrv-diff-dock-shell] .edrv-review-global { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e5e9ef); }
-[data-edrv-diff-dock-shell] .edrv-review-all-actions { display: flex; align-items: center; gap: 4px; }
-[data-edrv-diff-dock-shell] .edrv-review-total strong { font-variant-numeric: tabular-nums; }
-[data-edrv-diff-dock-shell] .edrv-review-heading {
-  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 10px 12px 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l1, #e5e9ef);
-}
-[data-edrv-diff-dock-shell] .edrv-review-filemark { display: inline-flex; flex: none; color: var(--dsw-alias-label-tertiary, #697586); }
-[data-edrv-diff-dock-shell] .edrv-review-filename { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
-[data-edrv-diff-dock-shell] .edrv-review-pending { flex: none; display: inline-flex; gap: 5px; align-items: center; color: var(--dsw-alias-label-secondary, #697586); font-size: 11px; white-space: nowrap; }
-[data-edrv-diff-dock-shell] .edrv-review-pending strong { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary, #26313d); }
-[data-edrv-diff-dock-shell] .edrv-review-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 8px; }
-[data-edrv-diff-dock-shell] .edrv-review-nav { display: flex; align-items: center; flex: none; gap: 1px; }
-[data-edrv-diff-dock-shell] .edrv-review-blocknav { border-left: 1px solid var(--dsw-alias-border-l1, #e5e9ef); padding-left: 6px; }
-[data-edrv-diff-dock-shell] .edrv-review-position { min-width: 32px; text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-secondary, #697586); }
-[data-edrv-diff-dock-shell] .edrv-review-actions { display: flex; align-items: center; flex: none; gap: 4px; margin-left: auto; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button { height: 28px; min-height: 28px; padding: 0 8px; border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 500; white-space: nowrap; gap: 5px; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-icon { width: 28px; min-width: 28px; padding: 0; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-record { padding: 0 6px; font-size: 11px; color: var(--dsw-alias-label-secondary, #697586); }
-[data-edrv-diff-dock-shell] .edrv-review-record svg { width: 12px; height: 12px; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-keep { background: var(--dsw-alias-brand-primary, #3b63d9); color: var(--dsw-alias-label-primary-inverted, #fff); border: 1px solid transparent; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-keep:hover:not(:disabled) { filter: brightness(.94); }
 [data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-undo:hover:not(:disabled) { color: var(--dsw-alias-state-error-primary, #b64043); }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button:disabled { opacity: .4; cursor: not-allowed; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #3b63d9); outline-offset: 2px; }
-[data-edrv-diff-dock-shell] .edrv-review-notice { padding: 7px 12px; border-top: 1px solid var(--dsw-alias-border-l1, #e5e9ef); color: var(--dsw-alias-label-secondary, #697586); font-size: 11px; overflow-wrap: anywhere; }
 [data-edrv-diff-dock-shell] .edrv-review-error { color: var(--dsw-alias-state-error-primary, #b64043); }
-[data-edrv-diff-dock-shell] .edrv-review-notice-warn { color: var(--dsw-alias-state-warning-primary, #a86a1f); }
-[data-edrv-diff-dock-shell] .edrv-review-source { flex: none; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-secondary, #d4dae3); color: var(--dsw-alias-label-secondary, #697586); font-size: 11px; line-height: 16px; white-space: nowrap; }
-[data-edrv-diff-dock-shell] .edrv-sidecar-down { display: flex; align-items: center; gap: 8px; }
-[data-edrv-diff-dock-shell] .edrv-sidecar-down-text { flex: 1; min-width: 0; }
-[data-edrv-diff-dock-shell] .edrv-review-body { border-top: 1px solid var(--dsw-alias-border-l1, #e5e9ef); max-height: min(240px, 30vh); overflow: auto; padding: 8px 12px; }
 @container edrv-review (max-width: 420px) {
   .edrv-reviewbar .edrv-review-heading { gap: 6px; padding-inline: 10px; }
   .edrv-reviewbar .edrv-review-actions { justify-content: flex-end; flex: 1 0 100%; border-top: 1px solid var(--dsw-alias-border-l1, #e5e9ef); padding-top: 6px; }
@@ -306,10 +108,8 @@
 
 /* ===== 侧边栏（活动栏 + 面板区 + 文件树） ===== */
 [data-edrv-view] .edrv-editor-row { display: flex; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
-[data-edrv-view] .edrv-main-col { box-sizing: border-box; min-width: 0; min-height: 0; overflow: hidden; }
 [data-edrv-view] .edrv-main-col > .edrv-pathbar,
 [data-edrv-view] .edrv-main-col > .edrv-tabs { flex: 0 0 auto; }
-[data-edrv-view] .edrv-editor-area { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 [data-edrv-view] .edrv-sidebar { display: flex; flex-direction: row; flex-shrink: 1; min-width: 0; height: 100%; background: var(--dsw-alias-bg-layer-1, #ffffff); border-right: 1px solid var(--dsw-alias-border-l1, #e0e6e8); overflow: hidden; }
 [data-edrv-view] .edrv-rail { display: flex; flex-direction: column; align-items: center; width: 44px; flex-shrink: 0; padding: 6px 0; background: var(--dsw-alias-bg-layer-2, #f0f4f4); border-right: 1px solid var(--dsw-alias-border-l1, #e0e6e8); gap: 4px; }
 [data-edrv-view] .edrv-rail-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary, #52606d); cursor: pointer; flex-shrink: 0; }
@@ -321,14 +121,6 @@
 [data-edrv-view] .edrv-tree-row.edrv-tree-active .edrv-tree-icon { color: var(--dsw-alias-label-secondary, #52606d); }
 /* SVN overlays: official file icon remains visible, independent local/remote signs. ddj 2026-10-09 */
 [data-edrv-view] .edrv-tree-iconbox { position: relative; display: inline-flex; width: 20px; height: 20px; align-items: center; flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-overlay { position: absolute; inset: 0; }
-[data-edrv-view] .edrv-svn-local { position: absolute; right: -1px; bottom: -2px; display: flex; border-radius: 50%; box-shadow: 0 0 0 1px var(--dsw-alias-bg-layer-1, #fff); }
-[data-edrv-view] .edrv-svn-icon-clean { color: #16853b; }
-[data-edrv-view] .edrv-svn-icon-modified, [data-edrv-view] .edrv-svn-icon-deleted { color: #d12e35; }
-[data-edrv-view] .edrv-svn-icon-conflict { color: #c27300; }
-[data-edrv-view] .edrv-svn-icon-added { color: #2465c9; }
-[data-edrv-view] .edrv-svn-icon-unversioned, [data-edrv-view] .edrv-svn-icon-ignored, [data-edrv-view] .edrv-svn-icon-external { color: #75808c; }
-[data-edrv-view] .edrv-svn-remote { position: absolute; right: -3px; top: -4px; color: #2465c9; background: var(--dsw-alias-bg-layer-1, #fff); border-radius: 3px; font-size: 11px; font-weight: 900; line-height: 12px; }
 [data-edrv-view] .edrv-rail-badge { position: absolute; top: 2px; right: 2px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: var(--dsw-alias-brand-primary, #0f9d58); color: var(--dsw-alias-label-primary-inverted, #fff); font-size: 9px; font-weight: 600; line-height: 14px; text-align: center; box-sizing: border-box; }
 [data-edrv-view] .edrv-side-body { flex: 1; min-width: 0; min-height: 0; display: flex; overflow: hidden; }
 [data-edrv-view] .edrv-side-panel { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
@@ -356,362 +148,18 @@
 [data-edrv-view] .edrv-tree-chev { width: 12px; flex-shrink: 0; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 10px; text-align: center; }
 [data-edrv-view] .edrv-tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 [data-edrv-view] .edrv-tree-name.edrv-tree-dim { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-tree-badge { min-width: 14px; height: 14px; padding: 0 4px; border-radius: 999px; background: var(--dsw-alias-state-warn-primary, #d97706); color: var(--dsw-alias-label-primary-inverted, #fff); font-size: 9px; font-weight: 600; line-height: 14px; text-align: center; box-sizing: border-box; flex-shrink: 0; }
 [data-edrv-view] .edrv-tree-loading { height: 22px; line-height: 22px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 11px; }
-/* SVN 状态独立占位：换行不覆盖文件树，长错误在栏内滚动。@author ddj 2026-10-12 */
-[data-edrv-view] .edrv-tree-status { flex: 0 0 auto; min-width: 0; max-height: 96px; overflow: auto; padding: 4px 8px; box-sizing: border-box; line-height: 18px; white-space: normal; overflow-wrap: anywhere; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 11px; }
 [data-edrv-view] .edrv-tree-error { display: flex; align-items: center; gap: 8px; margin: 4px 2px 6px; padding: 6px 8px; border: 1px solid var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217,83,79,.12)); color: var(--dsw-alias-state-error-primary, #d9534f); font-size: 11px; }
-/* 大纲面板：kind 字形 / detail / 行号 */
-[data-edrv-view] .edrv-outline-kind { display: inline-flex; align-items: center; justify-content: center; width: 14px; flex-shrink: 0; font-size: 12px; font-weight: 600; text-align: center; }
-[data-edrv-view] .edrv-outline-kind.edrv-ol-func { color: var(--dsw-alias-brand-primary, #0f9d58); }
-[data-edrv-view] .edrv-outline-kind.edrv-ol-type { color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-outline-kind.edrv-ol-data { color: var(--dsw-alias-state-warn-primary, #d97706); }
-[data-edrv-view] .edrv-outline-kind.edrv-ol-ns { color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-outline-kind.edrv-ol-key { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-outline-detail { flex-shrink: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 11px; }
-[data-edrv-view] .edrv-outline-ln { flex-shrink: 0; padding-right: 2px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 10px; font-variant-numeric: tabular-nums; }
 [data-edrv-view] .edrv-side-resize { width: 5px; flex-shrink: 0; cursor: col-resize; background: transparent; }
 [data-edrv-view] .edrv-side-resize:hover { background: var(--dsw-alias-brand-primary, #0f9d58); opacity: .35; }
-[data-edrv-view] .edrv-chip-btn.edrv-chip-on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.12)); color: var(--dsw-alias-label-primary, #1f2933); }
-
-/* ===== SVN 变更面板（工作副本状态列表；颜色分级对齐 TortoiseSVN 口径） @author ddj 2026-09-16 ===== */
-[data-edrv-view] .edrv-svn-toolbar { display: flex; align-items: center; gap: 12px; padding: 4px 10px 6px 12px; flex-shrink: 0; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-svn-check { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
-[data-edrv-view] .edrv-svn-check input { margin: 0; cursor: pointer; }
-[data-edrv-view] .edrv-svn-bulk { display: flex; align-items: center; gap: 6px; padding: 0 10px 6px 12px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-count { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-/* AI 助手 dock（12-panel-ai-bar 设计定稿）：manifest 分带之 assistant 带，accent 左竖轨为唯一记忆点。
-   AI 线程色三处同轨：竖轨 / dock 按钮描边 / 弹窗进度条（--dsw-alias-state-info-primary）。 @author ddj 2026-09-23 */
-[data-edrv-view] .edrv-svn-ai-bar { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 14px; background: var(--dsw-alias-bg-layer-2, #f7f9f9); border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-ai-rail { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--dsw-alias-state-info-primary, #2f6fed); }
-[data-edrv-view] .edrv-svn-ai-label { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
-[data-edrv-view] .edrv-svn-ai-btn { border-color: var(--dsw-alias-state-info-primary, #2f6fed); color: var(--dsw-alias-state-info-primary, #2f6fed); }
-[data-edrv-view] .edrv-svn-ai-btn:disabled { border-color: var(--dsw-alias-border-l1, #e0e6e8); color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-/* 状态位定宽右对齐（就绪/分析中…/等待助手投递…互换不跳版） */
-[data-edrv-view] .edrv-svn-ai-status { flex-shrink: 0; min-width: 88px; text-align: right; font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; }
-/* 批量条语义分隔（导出簇 ┊ 动作簇之间 1px 竖线） */
-[data-edrv-view] .edrv-svn-sep { width: 1px; height: 14px; background: var(--dsw-alias-border-l1, #e0e6e8); flex-shrink: 0; }
-/* 头部图标组（检查远端/刷新成组，gap 收紧） */
-[data-edrv-view] .edrv-svn-head-icons { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-list { flex: 1; min-height: 0; overflow: auto; padding: 2px 6px 12px; font-size: 12px; }
-[data-edrv-view] .edrv-svn-group { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px; margin: 2px 0; border-radius: 5px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); font-size: 10px; font-weight: 600; cursor: pointer; user-select: none; }
-[data-edrv-view] .edrv-svn-group:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-svn-fold-ch { width: 10px; flex-shrink: 0; text-align: center; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svn-group-n { margin-left: auto; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-weight: 400; }
-[data-edrv-view] .edrv-svn-row { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
-[data-edrv-view] .edrv-svn-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-svn-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-svn-acts { display: none; align-items: center; gap: 4px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-row:hover .edrv-svn-acts { display: inline-flex; }
-[data-edrv-view] .edrv-svn-act { border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 5px; padding: 1px 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-secondary, #52606d); font-size: 10px; line-height: 14px; cursor: pointer; white-space: nowrap; }
-[data-edrv-view] .edrv-svn-act:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-svn-act:disabled { opacity: .45; cursor: default; }
-[data-edrv-view] .edrv-svn-act-danger { color: var(--dsw-alias-state-error-primary, #d9534f); border-color: var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); }
-[data-edrv-view] .edrv-svn-ch { display: inline-flex; align-items: center; justify-content: center; width: 14px; flex-shrink: 0; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; font-weight: 700; }
-[data-edrv-view] .edrv-svn-ch-modified { color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svn-ch-added { color: var(--dsw-alias-state-warn-primary, #7c3aed); }
-[data-edrv-view] .edrv-svn-ch-deleted { color: var(--dsw-alias-label-secondary, #b91c1c); }
-[data-edrv-view] .edrv-svn-ch-conflict { color: var(--dsw-alias-state-error-primary, #d9534f); }
-[data-edrv-view] .edrv-svn-ch-plain { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-/* .edrv-svn-ch-* 动作词表补全：replaced（替换）= 琥珀；侧栏状态分级（SVN_STATUS_TONE）不受影响 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svn-ch-replaced { color: var(--dsw-alias-state-warn-primary, #d97706); }
-/* 文件树行尾 SVN 状态徽标（与差异角标并列；方形字母，区别圆形差异计数） */
-[data-edrv-view] .edrv-tree-svn { min-width: 14px; height: 14px; padding: 0 4px; border-radius: 4px; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; box-sizing: border-box; flex-shrink: 0; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-tree-svn.edrv-svn-ch-modified { color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-tree-svn.edrv-svn-ch-added { color: var(--dsw-alias-state-warn-primary, #7c3aed); }
-[data-edrv-view] .edrv-tree-svn.edrv-svn-ch-deleted { color: var(--dsw-alias-label-secondary, #b91c1c); }
-[data-edrv-view] .edrv-tree-svn.edrv-svn-ch-conflict { color: var(--dsw-alias-state-error-primary, #d9534f); }
-/* ===== SVN 基线差异视图（BASE 左 / 工作区右，只读并排） @author ddj 2026-09-16 ===== */
-[data-edrv-view] .edrv-svndiff { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
-[data-edrv-view] .edrv-svndiff-bar { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; flex-shrink: 0; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-svndiff-title { font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-svndiff-tag { padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svndiff-host { flex: 1 1 auto; min-height: 0; }
-[data-edrv-view] .edrv-svndiff-empty { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; padding: 24px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 12px; text-align: center; }
-/* 差异条快速跳转簇（对齐自研审查条 ↑ i/N ↓ 的形态） */
-[data-edrv-view] .edrv-svndiff-nav { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svndiff-nav-count { min-width: 36px; text-align: center; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); }
-/* W1-3 差异统计徽标（+新增/修改 −删除/修改；色相与行块绿红一致） @author ddj 2026-09-20 */
-[data-edrv-view] .edrv-svndiff-stat { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-svndiff-stat-add { color: var(--dsw-alias-state-success-primary, #0f9d58); }
-[data-edrv-view] .edrv-svndiff-stat-del { color: var(--dsw-alias-state-error-primary, #d9534f); }
-/* W1-1 差异视图选项条（右端开关组；复用 .edrv-svn-check 的 label 形态） */
-[data-edrv-view] .edrv-svndiff-opts { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-/* W1-2 变更面板名称过滤输入框（工具条行内，紧凑） @author ddj 2026-09-20 */
-[data-edrv-view] .edrv-svn-name-filter { width: 168px; padding: 1px 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 5px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; line-height: 14px; }
-[data-edrv-view] .edrv-svn-name-filter:focus { outline: none; border-color: var(--dsw-alias-brand-primary, #0f9d58); }
-[data-edrv-view] .edrv-svn-name-filter::placeholder { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-/* W2-3 远端更新提示条（工具条上方；warn = 失败降级） @author ddj 2026-09-20 */
-[data-edrv-view] .edrv-svn-hintbar { display: flex; align-items: center; gap: 6px; margin: 0 10px 4px 12px; padding: 3px 8px; border-radius: 5px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); font-size: 11px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svn-hintbar-warn { background: rgba(217, 83, 79, 0.12); color: var(--dsw-alias-state-error-primary, #d9534f); }
-/* W2-5 疑似改名标记（行内 ⇄；hover 见 tooltip） */
-[data-edrv-view] .edrv-svn-pair-mark { flex-shrink: 0; color: var(--dsw-alias-state-warn-primary, #7c3aed); font-size: 11px; cursor: help; }
-/* W2-1 补丁对话框 / W2-2 目录对比对话框 @author ddj 2026-09-20 */
-[data-edrv-view] .edrv-svn-patch-dialog { max-width: calc(100vw - 48px); }
-[data-edrv-view] .edrv-svn-patch-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
-[data-edrv-view] .edrv-svn-patch-notes { display: flex; flex-direction: column; gap: 4px; padding-bottom: 6px; }
-[data-edrv-view] .edrv-svn-patch-warn { color: var(--dsw-alias-state-error-primary, #d9534f); font-size: 11px; }
-[data-edrv-view] .edrv-svn-patch-pre { max-height: 46vh; overflow: auto; margin: 0 0 8px; padding: 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-2, #f7f9f9); color: var(--dsw-alias-label-primary, #1f2933); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; line-height: 1.5; white-space: pre; user-select: text; }
-[data-edrv-view] .edrv-svn-patch-foot { display: flex; align-items: center; gap: 8px; }
-/* AI 智能整理弹窗（11-ai-changelist-triage）：预览三分组卡 + 执行进度 @author ddj 2026-09-23 */
-[data-edrv-view] .edrv-svnplan-dialog { max-width: calc(100vw - 48px); }
-[data-edrv-view] .edrv-svnplan-head { display: flex; align-items: center; gap: 8px; padding-bottom: 4px; }
-[data-edrv-view] .edrv-svnplan-meta { display: flex; gap: 10px; padding-bottom: 6px; }
-[data-edrv-view] .edrv-svnplan-note { color: var(--dsw-alias-state-warn-primary, #b7791f); font-size: 10px; }
-[data-edrv-view] .edrv-svnplan-sec { border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px; }
-[data-edrv-view] .edrv-svnplan-sechead { display: flex; align-items: center; gap: 6px; }
-[data-edrv-view] .edrv-svnplan-sectitle { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
-[data-edrv-view] .edrv-svnplan-list { max-height: 26vh; overflow: auto; padding-left: 18px; }
-[data-edrv-view] .edrv-svnplan-card { border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); padding: 3px 0; }
-[data-edrv-view] .edrv-svnplan-row { display: flex; align-items: center; gap: 6px; }
-[data-edrv-view] .edrv-svnplan-item { display: flex; align-items: center; gap: 6px; padding-left: 18px; }
-[data-edrv-view] .edrv-svnplan-groupname { font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); cursor: pointer; white-space: nowrap; }
-[data-edrv-view] .edrv-svnplan-path { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
-[data-edrv-view] .edrv-svnplan-reason { font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30ch; }
-[data-edrv-view] .edrv-svnplan-stage { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
-[data-edrv-view] .edrv-svnplan-badge { border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 5px; padding: 1px 8px; font-size: 10px; color: var(--dsw-alias-label-secondary, #52606d); background: var(--dsw-alias-bg-layer-2, #f7f9f9); white-space: nowrap; }
-[data-edrv-view] .edrv-svnplan-badge-cur { font-family: var(--ds-font-family-code, ui-monospace, monospace); overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-svnplan-bar { height: 6px; border-radius: 3px; background: var(--dsw-alias-bg-layer-2, #f7f9f9); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); overflow: hidden; margin-bottom: 8px; }
-[data-edrv-view] .edrv-svnplan-bar-in { height: 100%; background: var(--dsw-alias-state-info-primary, #2f6fed); transition: width .2s; }
-[data-edrv-view] .edrv-svnplan-logwrap { max-height: 40vh; overflow: auto; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; padding: 6px 8px; background: var(--dsw-alias-bg-layer-2, #f7f9f9); }
-[data-edrv-view] .edrv-svnplan-log { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; line-height: 1.6; color: var(--dsw-alias-label-secondary, #52606d); user-select: text; }
-[data-edrv-view] .edrv-svnplan-log-bad { color: var(--dsw-alias-state-error-primary, #d9534f); }
-[data-edrv-view] .edrv-svnplan-foot { display: flex; align-items: center; gap: 8px; }
-[data-edrv-view] .edrv-svnplan-primary { font-weight: 600; border-color: var(--dsw-alias-state-info-primary, #2f6fed); }
-[data-edrv-view] .edrv-svn-sum-form { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; }
-[data-edrv-view] .edrv-svn-sum-list { max-height: 44vh; overflow: auto; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; padding: 2px; margin-bottom: 8px; }
-[data-edrv-view] .edrv-svnlog-path-kind { flex-shrink: 0; padding: 0 5px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 10px; }
 
 /* ===== 通用弹窗外壳（ModalShell）+ SVN 日志弹窗 @author ddj 2026-09-16 ===== */
 /* z-index 190：落在既有阶梯内（命令栏 200 > 片段二级 197 > 片段一级 195 > 190），
    不遮挡命令栏；既有浮层数值不受影响（见 tests/overlayZOrder.test.ts）。 */
 [data-edrv-view] .edrv-modal-mask { position: fixed; inset: 0; z-index: 190; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: var(--dsw-alias-bg-mask-drop, #000000aa); }
-[data-edrv-view] .edrv-svnlog-dialog { position: relative; display: flex; flex-direction: column; gap: 8px; }
-[data-edrv-view] .edrv-svnlog-head { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
-[data-edrv-view] .edrv-svnlog-title { margin: 0; font-size: 16px; font-weight: 650; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
-/* 头部目标路径 = 代码 chip（mono + 底色 + 全圆角；补丁/目录对比弹窗共用同视觉） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-target { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); }
-/* 关闭按钮图标化（透明底，hover 显形；dialog 前缀提高特异性，压过底部按钮统一尺寸） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-dialog .edrv-svnlog-head .edrv-svn-act { border-color: transparent; background: transparent; width: 24px; height: 24px; padding: 0; font-size: 12px; line-height: 1; }
-[data-edrv-view] .edrv-svnlog-dialog .edrv-svnlog-head .edrv-svn-act:hover { border-color: var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.10)); }
-/* 过滤栏：浅色表面条 + 统一 24px 控件 + 焦点边框变色 + 日期组靠右 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-filter { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 8px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); }
-[data-edrv-view] .edrv-svnlog-field { flex: 0 0 auto; height: 24px; box-sizing: border-box; padding: 0 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-svnlog-search { min-width: 160px; flex: 1 1 220px; height: 24px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-svnlog-field:focus, [data-edrv-view] .edrv-svnlog-search:focus, [data-edrv-view] .edrv-svnlog-date:focus { outline: none; border-color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-dates { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
-[data-edrv-view] .edrv-svnlog-date { height: 24px; box-sizing: border-box; padding: 0 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-svnlog-check { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); white-space: nowrap; cursor: pointer; }
-[data-edrv-view] .edrv-svnlog-check input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-error { padding: 4px 8px; border: 1px solid var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217,83,79,.12)); color: var(--dsw-alias-state-error-primary, #d9534f); font-size: 11px; }
-/* P0-14 上中下三段全宽：body 纵向铺满弹窗（外框高度由拖拽受控） */
-[data-edrv-view] .edrv-svnlog-body { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; }
-/* 上段修订列表（13-log-ui-polish 变更台账）：
-   1px 发丝边框 + 底色面 + 左侧时间脊线（每行 ::before 画节点圆点、行盒左缘 ::after 连线段，
-   行行相接即整列脊线；选中行节点实心着色 + 2px 左强调条）。列宽由 cell 类与 nth-child 对齐（P0-12/D30）。 */
-[data-edrv-view] .edrv-svnlog-list { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; overflow: auto; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 8px; padding: 0 4px 4px; background: var(--dsw-alias-bg-layer-1, #fff); }
-/* 列头 sticky：滚动常驻 + 实底防透；z-index 20 低于一切浮层（190 起），仅在列表滚动容器内生效 */
-[data-edrv-view] .edrv-svnlog-cols { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 16px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, #fff); font-size: 10px; font-weight: 600; letter-spacing: .04em; color: var(--dsw-alias-label-tertiary, #9aa5b1); flex-shrink: 0; }
-[data-edrv-view] .edrv-svnlog-cols .edrv-svnlog-col:nth-child(1) { width: 52px; flex: none; }
-[data-edrv-view] .edrv-svnlog-cols .edrv-svnlog-col:nth-child(2) { width: 52px; flex: none; }
-[data-edrv-view] .edrv-svnlog-cols .edrv-svnlog-col:nth-child(3) { width: 88px; flex: none; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-svnlog-cols .edrv-svnlog-col:nth-child(4) { width: 82px; flex: none; }
-[data-edrv-view] .edrv-svnlog-cols .edrv-svnlog-col:nth-child(5) { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-[data-edrv-view] .edrv-svnlog-col-sortable { cursor: pointer; }
-[data-edrv-view] .edrv-svnlog-col-sortable:hover { color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-svnlog-col-on { color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-sort-reset { flex: none; }
-/* 行：position:relative 承载脊线节点（::before）与连线段（::after）；选中 = 强调条 + 节点实心 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 3px 6px 3px 16px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
-[data-edrv-view] .edrv-svnlog-item::before { content: ''; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 7px; height: 7px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid var(--dsw-alias-border-l2, #cbd2d9); background: var(--dsw-alias-bg-layer-1, #fff); z-index: 1; }
-[data-edrv-view] .edrv-svnlog-item::after { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 1px; background: var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-svnlog-item:last-child::after { bottom: 50%; }
-[data-edrv-view] .edrv-svnlog-item:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-svnlog-item.edrv-svnlog-item-on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-item.edrv-svnlog-item-on::before { border-color: var(--dsw-alias-brand-primary, #2563eb); background: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-item-copied .edrv-svnlog-cell-msg,
-[data-edrv-view] .edrv-svnlog-item-copied .edrv-svnlog-rev { color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-cell { overflow: hidden; text-overflow: ellipsis; font-size: 11px; color: var(--dsw-alias-label-primary, #1f2933); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-svnlog-cell-rev { width: 52px; flex: none; }
-[data-edrv-view] .edrv-svnlog-cell-act { width: 52px; flex: none; display: inline-flex; gap: 3px; }
-[data-edrv-view] .edrv-svnlog-cell-author { width: 88px; flex: none; }
-[data-edrv-view] .edrv-svnlog-cell-date { width: 82px; flex: none; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svnlog-cell-msg { flex: 1 1 auto; }
-[data-edrv-view] .edrv-svnlog-rev { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-weight: 700; color: var(--dsw-alias-brand-primary, #2563eb); }
-[data-edrv-view] .edrv-svnlog-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 4px; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 9px; font-weight: 700; }
-/* 动作语义色（13-log-ui-polish 归位）：A=success 绿 · D=error 红 · M=brand 蓝 · R=warn 琥珀 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-badge-modified { color: var(--dsw-alias-state-info-primary, #2f6fed); background: rgba(47,111,237,.14); }
-[data-edrv-view] .edrv-svnlog-badge-added { color: var(--dsw-alias-state-success-primary, #0f9d58); background: rgba(15,157,88,.14); }
-[data-edrv-view] .edrv-svnlog-badge-deleted { color: var(--dsw-alias-state-error-primary, #d9534f); background: rgba(217,83,79,.14); }
-[data-edrv-view] .edrv-svnlog-badge-replaced { color: var(--dsw-alias-state-warn-primary, #d97706); background: rgba(217,119,6,.16); }
-[data-edrv-view] .edrv-svnlog-badge-plain { color: var(--dsw-alias-label-tertiary, #9aa5b1); background: var(--dsw-alias-bg-layer-2, #f0f4f4); }
-[data-edrv-view] .edrv-svnlog-more { padding: 6px 4px 2px; text-align: center; }
-/* P0-14 三段 pane 公共外观（13-log-ui-polish：2px 粗框 → 1px 发丝线 + 面板底色） */
-[data-edrv-view] .edrv-svnlog-pane { border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 8px; padding: 8px 10px; overflow: hidden; background: var(--dsw-alias-bg-layer-1, #fff); }
-[data-edrv-view] .edrv-svnlog-msgpane { flex: 0 0 auto; display: flex; flex-direction: column; }
-[data-edrv-view] .edrv-svnlog-pathspane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-/* P0-13/P0-14：分段横向拖拽分隔条 + 变更路径独立滚动容器 */
-[data-edrv-view] .edrv-svnlog-hsplit { flex: 0 0 6px; cursor: row-resize; margin: 2px 0; border-radius: 3px; touch-action: none; }
-[data-edrv-view] .edrv-svnlog-hsplit:hover, [data-edrv-view] .edrv-svnlog-hsplit:active { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.28)); }
-[data-edrv-view] .edrv-svnlog-paths-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
-/* 提交信息 meta 行：rev/日期 chip 化，author 常规字重（13-log-ui-polish） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); flex-wrap: wrap; }
-[data-edrv-view] .edrv-svnlog-meta .edrv-svnlog-rev { padding: 1px 8px; border-radius: 999px; background: var(--dsw-alias-state-info-primary, #2f6fed); color: var(--dsw-alias-label-primary-inverted, #fff); font-size: 11px; font-weight: 700; }
-[data-edrv-view] .edrv-svnlog-meta .edrv-svnlog-date { height: auto; padding: 1px 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-svnlog-date { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-/* 正文块：左侧品牌强调线 +1.7 行高（长提交信息可读性） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-msgpane pre.edrv-svnlog-body { margin: 8px 0 0; padding: 8px 10px; border-radius: 0 6px 6px 0; border-left: 2px solid var(--dsw-alias-state-info-primary, #2f6fed); background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11.5px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; overflow: auto; flex: 1 1 auto; min-height: 0; }
-/* P0-14 外框尺寸手柄（13-log-ui-polish 增量3 八向：n/s/w/e 四边 + nw/ne/sw/se 四角）；
-   热区避开内边距带（边8px/角14px 落在卡片22/24px padding 内不遮内容），角手柄后渲染盖过相邻边2px overlap。
-   chevron 角标四向各自朝向，hover 显形。 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-grip { position: absolute; z-index: 2; touch-action: none; }
-[data-edrv-view] .edrv-svnlog-grip-n { top: 0; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
-[data-edrv-view] .edrv-svnlog-grip-s { bottom: 0; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
-[data-edrv-view] .edrv-svnlog-grip-w { left: 0; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
-[data-edrv-view] .edrv-svnlog-grip-e { right: 0; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
-[data-edrv-view] .edrv-svnlog-grip-nw { left: 0; top: 0; width: 14px; height: 14px; cursor: nwse-resize; }
-[data-edrv-view] .edrv-svnlog-grip-ne { right: 0; top: 0; width: 14px; height: 14px; cursor: nesw-resize; }
-[data-edrv-view] .edrv-svnlog-grip-sw { left: 0; bottom: 0; width: 14px; height: 14px; cursor: nesw-resize; }
-[data-edrv-view] .edrv-svnlog-grip-se { right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; background: transparent; }
-[data-edrv-view] .edrv-svnlog-grip-nw::after,
-[data-edrv-view] .edrv-svnlog-grip-ne::after,
-[data-edrv-view] .edrv-svnlog-grip-sw::after,
-[data-edrv-view] .edrv-svnlog-grip-se::after { content: ''; position: absolute; width: 6px; height: 6px; opacity: .5; border-color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svnlog-grip-se::after { right: 3px; bottom: 3px; border-right: 1.5px solid; border-bottom: 1.5px solid; }
-[data-edrv-view] .edrv-svnlog-grip-sw::after { left: 3px; bottom: 3px; border-left: 1.5px solid; border-bottom: 1.5px solid; }
-[data-edrv-view] .edrv-svnlog-grip-ne::after { right: 3px; top: 3px; border-right: 1.5px solid; border-top: 1.5px solid; }
-[data-edrv-view] .edrv-svnlog-grip-nw::after { left: 3px; top: 3px; border-left: 1.5px solid; border-top: 1.5px solid; }
-[data-edrv-view] .edrv-svnlog-grip:hover, [data-edrv-view] .edrv-svnlog-grip:active { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.35)); }
-[data-edrv-view] .edrv-svnlog-grip:hover::after, [data-edrv-view] .edrv-svnlog-grip:active::after { opacity: 1; border-color: var(--dsw-alias-label-primary, #1f2933); }
-/* 行反馈微动效（仅 hover/选中背景过渡；用户要求减少动效时关闭） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-item { transition: background-color .12s ease, box-shadow .12s ease; }
 @media (prefers-reduced-motion: reduce) {
   [data-edrv-view] .edrv-svnlog-item { transition: none; }
 }
-/*13-log-ui-polish 增量：行容器可滚动（pane 仍 overflow:hidden 裁圆角），列头不被压缩 @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-paths-head { display: flex; align-items: center; gap: 6px; flex: none; font-size: 10px; font-weight: 600; letter-spacing: .04em; color: var(--dsw-alias-label-tertiary, #9aa5b1); margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-svnlog-hint { font-weight: 400; letter-spacing: 0; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svnlog-paths { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-height: 0; overflow: auto; }
-[data-edrv-view] .edrv-svnlog-path { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px; border-radius: 5px; cursor: default; white-space: nowrap; }
-[data-edrv-view] .edrv-svnlog-path:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-svnlog-path-dim .edrv-svnlog-pathtext,
-[data-edrv-view] .edrv-svnlog-path-dim .edrv-svnlog-copyfrom { opacity: .45; }
-[data-edrv-view] .edrv-svnlog-pathtext { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; color: var(--dsw-alias-label-primary, #1f2933); }
-/* 路径两段着色：目录段弱化 + 文件名加重（13-log-ui-polish） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-pdir { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svnlog-pbase { color: var(--dsw-alias-label-primary, #1f2933); font-weight: 600; }
-[data-edrv-view] .edrv-svnlog-copyfrom { flex: 0 1 160px; overflow: hidden; text-overflow: ellipsis; font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-svnlog-kind { font-size: 10px; padding: 0 5px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-svnlog-acts { display: none; align-items: center; gap: 4px; flex-shrink: 0; }
-[data-edrv-view] .edrv-svnlog-path:hover .edrv-svnlog-acts { display: inline-flex; }
-/* 底部：状态行与按钮组分层 + 组间发丝线（13-log-ui-polish） @author ddj 2026年09月24号 */
-[data-edrv-view] .edrv-svnlog-footwrap { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; padding-top: 6px; border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-svnlog-foot { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-svnlog-btns { display: flex; align-items: center; gap: 6px; }
-[data-edrv-view] .edrv-svnlog-btngroup { display: inline-flex; align-items: center; gap: 6px; }
-[data-edrv-view] .edrv-svnlog-btngroup + .edrv-svnlog-btngroup { margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-svnlog-dialog .edrv-svn-act,
-[data-edrv-view] .edrv-svnlog-range .edrv-svn-act,
-[data-edrv-view] .edrv-svnlog-stats .edrv-svn-act { font-size: 11px; padding: 2px 9px; }
-[data-edrv-view] .edrv-svnlog-dialog .edrv-svn-act:focus-visible,
-[data-edrv-view] .edrv-svnlog-range .edrv-svn-act:focus-visible,
-[data-edrv-view] .edrv-svnlog-stats .edrv-svn-act:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #2563eb); outline-offset: 1px; }
-/* ===== SVN 日志统计窗（P1-10）@author ddj 2026-09-17 ===== */
-[data-edrv-view] .edrv-svnlog-stats { display: flex; flex-direction: column; max-height: 82vh; }
-[data-edrv-view] .edrv-svnlog-stats-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; }
-[data-edrv-view] .edrv-svnlog-stats-body { display: flex; flex-direction: column; gap: 14px; padding: 10px 16px 16px; overflow: auto; }
-[data-edrv-view] .edrv-svnlog-stat-line { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-svnlog-stat-block { display: flex; flex-direction: column; gap: 8px; }
-[data-edrv-view] .edrv-svnlog-stat-label { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-svnlog-stat-duo { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
-[data-edrv-view] .edrv-svnlog-stat-hist { flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
-[data-edrv-view] .edrv-svnlog-stat-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-[data-edrv-view] .edrv-svnlog-stat-name { width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-svnlog-stat-barwrap { flex: 1; height: 12px; border-radius: 6px; background: rgba(127,127,127,.15); overflow: hidden; }
-[data-edrv-view] .edrv-svnlog-stat-bar { display: block; height: 100%; border-radius: 6px; }
-[data-edrv-view] .edrv-svnlog-stat-count { width: 36px; text-align: right; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-svnlog-stat-pie { width: 120px; height: 120px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-svnlog-stat-days { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); overflow-x: auto; }
-[data-edrv-view] .edrv-svnlog-stat-day { flex: 1 0 6px; min-width: 6px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
-[data-edrv-view] .edrv-svnlog-stat-seg { display: block; width: 100%; }
-/* ===== SVN 日志区间弹窗（P1-6）@author ddj 2026-09-17 ===== */
-[data-edrv-view] .edrv-svnlog-range-body { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
-[data-edrv-view] .edrv-svnlog-range-row { display: flex; gap: 14px; flex-wrap: wrap; }
-[data-edrv-view] .edrv-svnlog-range-input { width: 110px; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-svnlog-range-btns { display: flex; gap: 8px; justify-content: flex-end; }
-/* SVN 日志 WC 版号行加粗（P1-9） */
-[data-edrv-view] .edrv-svnlog-item-wc { font-weight: 700; }
-/* SVN 日志 merged 行（P1-5）：灰字 + 缩进（缩进量按层级内联），前置「↳」标记 */
-[data-edrv-view] .edrv-svnlog-item-merged { color: var(--dsw-alias-label-tertiary, #7b8794); }
-[data-edrv-view] .edrv-svnlog-item-merged .edrv-svnlog-merge-mark { flex: 0 0 auto; color: var(--dsw-alias-label-tertiary, #7b8794); }
-[data-edrv-view] .edrv-svnlog-item-merged .edrv-svnlog-cell-msg { font-style: italic; }
-/* ===== 诊断日志弹窗（LogDialog）@author ddj 2026-09-17 ===== */
-[data-edrv-view] .edrv-dlog-dialog { display: flex; flex-direction: column; gap: 8px; max-height: 88vh; }
-[data-edrv-view] .edrv-dlog-head { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
-[data-edrv-view] .edrv-dlog-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
-[data-edrv-view] .edrv-dlog-file { max-width: 200px; padding: 4px 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-dlog-level { padding: 4px 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-dlog-search { min-width: 120px; flex: 0 1 200px; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; }
-[data-edrv-view] .edrv-dlog-auto { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); white-space: nowrap; cursor: pointer; }
-[data-edrv-view] .edrv-dlog-error { padding: 4px 8px; border: 1px solid var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217,83,79,.12)); color: var(--dsw-alias-state-error-primary, #d9534f); font-size: 11px; }
-[data-edrv-view] .edrv-dlog-scroll { flex: 1 1 auto; min-height: 240px; overflow: auto; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 8px; padding: 4px 0; background: var(--dsw-alias-bg-layer-1, #fff); }
-[data-edrv-view] .edrv-dlog-row { display: flex; align-items: baseline; gap: 8px; padding: 1px 8px; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; line-height: 1.55; }
-[data-edrv-view] .edrv-dlog-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.06)); }
-[data-edrv-view] .edrv-dlog-at { flex-shrink: 0; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-dlog-lvl { flex-shrink: 0; width: 26px; text-align: center; font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-dlog-text { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-dlog-row-error .edrv-dlog-text { color: var(--dsw-alias-state-error-primary, #d9534f); }
-[data-edrv-view] .edrv-dlog-row-warn .edrv-dlog-text { color: var(--dsw-alias-state-warning-primary, #b45309); }
-[data-edrv-view] .edrv-dlog-row-debug .edrv-dlog-text { color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-dlog-foot { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); flex-shrink: 0; }
-[data-edrv-view] .edrv-dlog-path { font-family: var(--ds-font-family-code, ui-monospace, monospace); max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-dlog-stat { white-space: nowrap; }
-[data-edrv-view] .edrv-dlog-switch { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); white-space: nowrap; cursor: pointer; flex-shrink: 0; }
-/* 原生 SVN 更新窗口：逐条状态与路径是主信息；跟随 DSH 主题令牌。 */
-[data-edrv-view] .edrv-update-dialog { display: flex; flex-direction: column; padding: 0; border-radius: 8px; overflow: hidden; background: var(--dsw-alias-bg-overlay, #fff); }
-[data-edrv-view] .edrv-update-head { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; border-bottom: 1px solid var(--dsw-alias-border-l1, #d9e0e4); }
-[data-edrv-view] .edrv-update-heading { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
-[data-edrv-view] .edrv-update-heading h3 { margin: 0; flex: none; font-size: 15px; }
-[data-edrv-view] .edrv-update-target { min-width: 0; color: var(--dsw-alias-label-tertiary, #65737c); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-[data-edrv-view] .edrv-update-phase { flex: none; font-size: 12px; color: var(--dsw-alias-label-secondary, #485762); }
-[data-edrv-view] .edrv-update-close { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border: 0; border-radius: 4px; background: none; color: var(--dsw-alias-label-secondary, #485762); cursor: pointer; }
-[data-edrv-view] .edrv-update-close:disabled { opacity: .35; cursor: default; }
-[data-edrv-view] .edrv-update-close:not(:disabled):hover { background: var(--dsw-alias-interactive-bg-hover, #e7edf0); }
-[data-edrv-view] .edrv-update-table { display: flex; flex-direction: column; flex: 1; min-height: 0; margin: 12px 14px 0; border: 1px solid var(--dsw-alias-border-l1, #d9e0e4); border-radius: 5px; overflow: hidden; background: var(--dsw-alias-bg-layer-1, #fff); }
-[data-edrv-view] .edrv-update-cols, [data-edrv-view] .edrv-update-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 160px; align-items: center; }
-[data-edrv-view] .edrv-update-sort { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-[data-edrv-view] .edrv-update-sort:hover { color: var(--dsw-alias-brand-primary, #2869b4); }
-[data-edrv-view] .edrv-update-sort:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #2869b4); outline-offset: 2px; }
-[data-edrv-view] .edrv-update-jump { color: var(--dsw-alias-state-error-primary, #b93b43); }
-[data-edrv-view] .edrv-update-cols { flex: none; height: 30px; background: var(--dsw-alias-bg-layer-2, #f1f4f5); border-bottom: 1px solid var(--dsw-alias-border-l1, #d9e0e4); color: var(--dsw-alias-label-secondary, #485762); font-size: 11px; font-weight: 600; }
-[data-edrv-view] .edrv-update-cols > span, [data-edrv-view] .edrv-update-row > span { min-width: 0; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-update-cols > span + span, [data-edrv-view] .edrv-update-row > span + span { border-left: 1px solid var(--dsw-alias-border-l1, #d9e0e4); }
-[data-edrv-view] .edrv-update-list { position: relative; flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; }
-[data-edrv-view] .edrv-update-space { position: relative; }
-[data-edrv-view] .edrv-update-pos { position: absolute; left: 0; right: 0; }
-[data-edrv-view] .edrv-update-row { height: 100%; font-size: 11px; cursor: default; color: var(--dsw-alias-label-primary, #202932); }
-[data-edrv-view] .edrv-update-row:hover { background: var(--dsw-alias-interactive-bg-hover, #ecf3f9); }
-[data-edrv-view] .edrv-update-row.is-selected { background: var(--dsw-alias-interactive-bg-hover, #dceaf9); box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary, #2869b4); }
-[data-edrv-view] .edrv-update-action { font-weight: 600; }
-[data-edrv-view] .edrv-update-action.tone-added { color: var(--dsw-alias-state-success-primary, #23704e); }
-[data-edrv-view] .edrv-update-action.tone-deleted, [data-edrv-view] .edrv-update-action.tone-conflict { color: var(--dsw-alias-state-error-primary, #b93b43); }
-[data-edrv-view] .edrv-update-action.tone-merged { color: var(--dsw-alias-state-warn-primary, #a05d22); }
-[data-edrv-view] .edrv-update-action.tone-updated { color: var(--dsw-alias-state-info-primary, #2869b4); }
-[data-edrv-view] .edrv-update-path { font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-update-type { color: var(--dsw-alias-label-tertiary, #65737c); }
-[data-edrv-view] .edrv-update-empty { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); text-align: center; font-size: 12px; color: var(--dsw-alias-label-tertiary, #65737c); pointer-events: none; }
-[data-edrv-view] .edrv-update-telemetry { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; padding: 10px 15px; min-height: 43px; box-sizing: border-box; font-size: 11px; color: var(--dsw-alias-label-secondary, #485762); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-update-error { color: var(--dsw-alias-state-error-primary, #b93b43); overflow-wrap: anywhere; }
-[data-edrv-view] .edrv-update-warning { color: var(--dsw-alias-state-warn-primary, #a05d22); }
-[data-edrv-view] .edrv-update-locked { color: var(--dsw-alias-state-warn-primary, #a05d22); }
-[data-edrv-view] .edrv-update-foot .edrv-update-cleanup:not(:disabled) { color: var(--dsw-alias-state-warn-primary, #a05d22); }
-[data-edrv-view] .edrv-update-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--dsw-alias-border-l1, #d9e0e4); font-size: 11px; }
-[data-edrv-view] .edrv-update-counts { flex: 1; min-width: 0; color: var(--dsw-alias-label-secondary, #485762); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-update-foot .edrv-svn-act { flex: none; min-width: 74px; }
-[data-edrv-view] .edrv-update-foot .edrv-svn-act:focus-visible, [data-edrv-view] .edrv-update-close:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #2869b4); outline-offset: 2px; }
-[data-edrv-view] .edrv-update-foot .edrv-svn-act:disabled { opacity: .45; cursor: default; }
-[data-edrv-view] .edrv-update-raw { max-height: 120px; overflow: auto; padding: 0 14px 10px; font-size: 11px; }
-[data-edrv-view] .edrv-update-raw pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 5px 0; }
 @media (max-width: 620px) {
   [data-edrv-view] .edrv-update-head { gap: 6px; padding: 0 10px; }
   [data-edrv-view] .edrv-update-table { margin: 8px 8px 0; }
@@ -724,13 +172,6 @@
 
 /* ===== 侧栏形态（betterSidebar 面板内编辑区） ===== */
 [data-edrv-view][data-edrv-layout='side'] { box-sizing: border-box; height: 100%; }
-
-/* ===== 侧边栏引导条（旧页签形态、未装 betterSidebar 时） ===== */
-[data-edrv-view] .edrv-side-hint { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; flex-wrap: wrap; padding: 6px 12px; font-size: 12px; color: var(--dsw-alias-label-secondary, #52606d); background: var(--dsw-specific-tip, var(--dsw-alias-bg-layer-2, #f0f4f4)); border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
-[data-edrv-view] .edrv-side-hint-text { white-space: nowrap; }
-[data-edrv-view] .edrv-side-hint-cmd { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #ffffff); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
-[data-edrv-view] .edrv-side-hint-close { margin-left: auto; border: none; background: transparent; color: var(--dsw-alias-label-tertiary, #9aa5b1); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 6px; flex-shrink: 0; }
-[data-edrv-view] .edrv-side-hint-close:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); color: var(--dsw-alias-label-primary, #1f2933); }
 
 /* ===== search panel (sidebar, VSCode search view) ===== */
 [data-edrv-view] .edrv-search-panel { display: flex; flex-direction: column; min-height: 0; flex: 1; padding: 6px; gap: 4px; }
@@ -772,58 +213,10 @@
 [data-edrv-view] .edrv-search-toggle:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-search-toggle.on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-label-primary, #1f2933); border-color: var(--dsw-alias-brand-primary, #0f9d58); }
 [data-edrv-view] .edrv-search-toggle:disabled { opacity: .4; cursor: default; }
-
-/* ===== rules panel (sidebar, Codebuddy rules view) ===== */
-[data-edrv-view] .edrv-rules-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; flex: 1; padding: 6px; gap: 4px; }
-[data-edrv-view] .edrv-rules-tabs { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-tab { height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary, #52606d); font-size: 12px; cursor: pointer; }
-[data-edrv-view] .edrv-rules-tab:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-rules-tab.on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-label-primary, #1f2933); font-weight: 600; }
-[data-edrv-view] .edrv-rules-new { margin-left: auto; height: 24px; padding: 0 10px; border: 1px solid var(--dsw-alias-border-l2, #cbd2d9); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #fff); color: var(--dsw-alias-label-primary, #1f2933); font-size: 11px; cursor: pointer; flex-shrink: 0; }
-[data-edrv-view] .edrv-rules-new:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-rules-ws-line { font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 auto; user-select: none; }
-[data-edrv-view] .edrv-rules-hint { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); padding: 0 2px; flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-list { flex: 1; min-height: 0; overflow: auto; }
-[data-edrv-view] .edrv-rules-row { display: flex; align-items: center; gap: 4px; padding: 6px 4px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; }
-[data-edrv-view] .edrv-rules-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-rules-row.off .edrv-rules-main { opacity: .5; }
-[data-edrv-view] .edrv-rules-main { flex: 1; min-width: 0; cursor: pointer; overflow: hidden; }
-[data-edrv-view] .edrv-rules-line1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
-[data-edrv-view] .edrv-rules-sub { display: flex; align-items: center; gap: 5px; margin-top: 3px; min-width: 0; }
-[data-edrv-view] .edrv-rules-sublabel { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); flex-shrink: 0; }
-[data-edrv-view] .edrv-rules-file { font-weight: 600; font-size: 12px; color: var(--dsw-alias-label-primary, #1f2933); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-rules-path { font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-rules-type { flex-shrink: 0; height: 15px; padding: 0 5px; border-radius: 999px; font-size: 10px; line-height: 15px; }
-[data-edrv-view] .edrv-rules-type-always { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.15)); color: var(--dsw-alias-state-success-primary, #0b7c46); }
-[data-edrv-view] .edrv-rules-type-auto { background: var(--dsw-alias-interactive-bg-hover-accent, rgba(79,140,255,.16)); color: var(--dsw-alias-link, #3367c9); }
-[data-edrv-view] .edrv-rules-type-manual { background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-rules-offtag { font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); flex-shrink: 0; }
-[data-edrv-view] .edrv-rules-desc { font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 0 1 auto; }
-[data-edrv-view] .edrv-rules-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; margin-left: auto; }
-[data-edrv-view] .edrv-rules-act { min-width: 22px; height: 22px; padding: 0 4px; border: none; border-radius: 5px; background: transparent; font-size: 12px; line-height: 1; cursor: pointer; color: var(--dsw-alias-label-secondary, #52606d); display: inline-flex; align-items: center; justify-content: center; }
-[data-edrv-view] .edrv-rules-act:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
-[data-edrv-view] .edrv-rules-switch { position: relative; width: 30px; height: 16px; border-radius: 999px; border: none; background: var(--dsw-alias-border-l2, #b9c4cc); cursor: pointer; transition: background .15s; flex-shrink: 0; padding: 0; }
 [data-edrv-view] .edrv-rules-switch.on { background: var(--dsw-alias-brand-primary, #7c5cff); }
-[data-edrv-view] .edrv-rules-knob { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--dsw-alias-bg-layer-1, #fff); transition: left .15s; }
 [data-edrv-view] .edrv-rules-switch.on .edrv-rules-knob { left: 16px; }
-[data-edrv-view] .edrv-rules-empty { padding: 10px 4px; font-size: 12px; color: var(--dsw-alias-label-tertiary, #9aa5b1); line-height: 1.6; }
-[data-edrv-view] .edrv-rules-err { padding: 6px 8px; border: 1px solid var(--dsw-alias-state-error-primary, rgba(217,83,79,.4)); border-radius: 6px; background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217,83,79,.12)); color: var(--dsw-alias-state-error-primary, #d9534f); font-size: 11px; word-break: break-all; }
-[data-edrv-view] .edrv-rules-editor { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: 6px; }
-[data-edrv-view] .edrv-rules-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-rules-editor-ctl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-ctl-label { font-size: 11px; color: var(--dsw-alias-label-secondary, #52606d); flex-shrink: 0; }
-[data-edrv-view] .edrv-rules-select { height: 24px; padding: 0 4px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 11px; outline: none; cursor: pointer; flex-shrink: 0; }
-[data-edrv-view] .edrv-rules-select:focus { border-color: var(--dsw-alias-brand-primary, #4f8cff); }
-[data-edrv-view] .edrv-rules-desc-input { flex: 1; min-width: 0; }
-[data-edrv-view] .edrv-rules-input { flex: 1; min-width: 0; height: 24px; padding: 0 8px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 11px; outline: none; font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-rules-input:focus { border-color: var(--dsw-alias-brand-primary, #4f8cff); }
-[data-edrv-view] .edrv-rules-body { flex: 1; min-height: 0; resize: none; padding: 8px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 12px; line-height: 1.5; outline: none; font-family: var(--ds-font-family-code, ui-monospace, monospace); }
-[data-edrv-view] .edrv-rules-body:focus { border-color: var(--dsw-alias-brand-primary, #4f8cff); }
-[data-edrv-view] .edrv-rules-editor-hint { font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); line-height: 1.5; flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-editor-foot { display: flex; justify-content: flex-end; flex: 0 0 auto; }
-[data-edrv-view] .edrv-rules-save { height: 24px; padding: 0 14px; border: none; border-radius: 6px; background: var(--dsw-alias-brand-primary, #0f9d58); color: var(--dsw-alias-label-primary-inverted, #fff); font-size: 12px; cursor: pointer; }
-[data-edrv-view] .edrv-rules-save:disabled { opacity: .5; cursor: default; }
 
 /* 命令栏（Ctrl+Shift+P / F1）：body 级 portal 浮层，故不依赖编辑区几何。
    ⚠️ 浮层 z-index 阶梯（自下而上；改动务必保持顺序，tests/overlayZOrder.test.ts 守约）：
@@ -851,33 +244,10 @@
 /* 二级弹窗叠在一级浮窗之上（仍在命令栏之下，见上方阶梯说明） */
 [data-edrv-view] .edrv-snip-mask-top { z-index: 197; }
 [data-edrv-view] .edrv-snip-dialog { display: flex; flex-direction: column; overflow: hidden; width: min(620px, calc(100vw - 48px)); }
-[data-edrv-view] .edrv-snip-hint { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-snip-list { display: flex; flex-direction: column; gap: 1px; min-height: 0; max-height: 46vh; overflow: auto; }
-[data-edrv-view] .edrv-snip-group { padding: 12px 2px 4px; font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-secondary, #aaa); }
-[data-edrv-view] .edrv-snip-row { display: flex; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; padding: 2px; border: none; border-radius: 8px; background: transparent; text-align: left; color: var(--dsw-alias-label-primary, #e6e6e6); font: inherit; }
-[data-edrv-view] .edrv-snip-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, .06)); }
-[data-edrv-view] button.edrv-snip-row { cursor: pointer; }
-[data-edrv-view] .edrv-snip-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: none; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; color: inherit; font: inherit; }
-[data-edrv-view] .edrv-snip-label { font-size: 13px; font-weight: 600; color: var(--dsw-alias-label-primary, #e6e6e6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-snip-desc { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-snip-src { flex: 0 0 auto; padding-right: 6px; font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-snip-warn { flex: 0 0 auto; font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--dsw-alias-state-warn-tertiary, rgba(229, 185, 63, .16)); color: var(--dsw-alias-state-warn-primary, #e5b93f); white-space: nowrap; }
-[data-edrv-view] .edrv-snip-act { flex: 0 0 auto; width: 26px; height: 26px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 13px; line-height: 1; cursor: pointer; }
-[data-edrv-view] .edrv-snip-act:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217, 83, 79, .16)); color: var(--dsw-alias-state-error-primary, #f07878); }
-[data-edrv-view] .edrv-snip-empty { padding: 12px 4px; font-size: 12px; color: var(--dsw-alias-label-tertiary, #9aa5b1); line-height: 1.6; }
-/* 当前文件语言提示条（片段按语言绑定，明确告知生效范围） */
-[data-edrv-view] .edrv-snip-langbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px; border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #2b2b2b); font-size: 12px; color: var(--dsw-alias-label-secondary, #aaa); }
-[data-edrv-view] .edrv-snip-langbar b { color: var(--dsw-alias-label-primary, #e6e6e6); }
 /* 二级弹窗的动作按钮（原生 .vsm-mcp-dialog-actions 已提供排版与按钮样式） */
 [data-edrv-view] .edrv-snip-dialog .vsm-mcp-dialog-actions { flex-wrap: wrap; }
-/* 删除图标按钮：.vsm-danger 的规则全部限定在 .vsm-mcp-actions button 之下，裸用无样式，此处补自有类 */
-[data-edrv-view] .edrv-snip-act.edrv-snip-danger:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(217, 83, 79, .16)); color: var(--dsw-alias-state-error-primary, #f07878); }
 /* 浮窗内的原生空态（.vsm-mcp-empty 默认为整页尺寸）压缩为对话框尺寸 */
 [data-edrv-view] .edrv-snip-dialog .vsm-mcp-empty { padding: 26px 16px; border: 0; }
-
-
-
-
 
 /* 远程下载确认框（仅远程访问时由资源管理器右键打开）：懒加载目录树 + 文件勾选。
    卡片与遮罩由 ModalShell 提供（vsm-mcp-dialog / edrv-modal-mask，z-index 190），
@@ -902,111 +272,19 @@
 [data-edrv-view] .edrv-dl-foot button:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, .06)); }
 [data-edrv-view] .edrv-dl-foot button:disabled { opacity: .55; cursor: default; }
 [data-edrv-view] .edrv-dl-go { border-color: var(--dsw-alias-brand-primary, #6d55ff); }
-
-/* 断点圆点：装饰类占满整行，圆点经 ::before 在本行盒子内居中（行归属明确、不跨行界） */
-[data-edrv-view] .edrv-dap-bp { cursor: pointer; }
-[data-edrv-view] .edrv-dap-bp::before { content: ''; display: block; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; background: var(--dsw-alias-state-error-primary, #e51400); }
-[data-edrv-view] .edrv-dap-bp-off { cursor: pointer; }
-[data-edrv-view] .edrv-dap-bp-off::before { content: ''; display: block; box-sizing: border-box; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; border: 1px solid var(--dsw-alias-label-tertiary, #9aa5b1); opacity: .6; }
-/* 未验证断点（适配器真实回执 verified:false）：空心红圈，对齐 VS Code 空心圆语义 */
-[data-edrv-view] .edrv-dap-bp-unverified { cursor: pointer; }
-[data-edrv-view] .edrv-dap-bp-unverified::before { content: ''; display: block; box-sizing: border-box; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; border: 1px solid var(--dsw-alias-state-error-primary, #e51400); opacity: .75; }
-[data-edrv-view] .edrv-dap-paused-line { background: var(--dsw-alias-state-warn-tertiary, rgba(229, 185, 63, .22)); }
-[data-edrv-view] .edrv-dap-paused-glyph { cursor: pointer; }
-[data-edrv-view] .edrv-dap-paused-glyph::before { content: ''; display: block; width: 5px; height: 12px; margin: 4px auto 0; border-radius: 2px; background: var(--dsw-alias-state-warn-primary, #e5b93f); }
-[data-edrv-view] .edrv-editor-area { position: relative; }
 /* launch.json 右下角「添加配置」按钮（VSCode 同款形态）：仅 launch.json 打开时渲染 */
 [data-edrv-view] .edrv-addcfg { position: absolute; right: 14px; bottom: 10px; z-index: 13; padding: 4px 12px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #f7f9fa); color: var(--dsw-alias-label-secondary, #52606d); font-size: 12px; line-height: 18px; cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, .1); }
-[data-edrv-view] .edrv-addcfg:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .15)); color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] .edrv-dapbar { position: absolute; top: 6px; right: 14px; z-index: 12; display: none; align-items: center; gap: 3px; padding: 3px 5px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: var(--dsw-alias-bg-layer-1, #f7f9fa); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
 [data-edrv-view] .edrv-dapbar.on { display: flex; border-color: var(--dsw-alias-border-l2, #cdd6da); }
-[data-edrv-view] .edrv-dapbar-grip { flex: 0 0 auto; width: 16px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: grab; user-select: none; color: var(--dsw-alias-label-tertiary, #7b8794); font-size: 12px; }
 [data-edrv-view] .edrv-dapbar-grip:active, [data-edrv-view] .edrv-dapbar.dragging .edrv-dapbar-grip { cursor: grabbing; }
 [data-edrv-view] .edrv-dapbar.dragging { user-select: none; }
-[data-edrv-view] .edrv-dapbar-cfg { max-width: 220px; height: 22px; font-size: 11px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
-[data-edrv-view] .edrv-dapbar-btn { min-width: 24px; height: 22px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-primary, inherit); font-size: 12px; line-height: 1; cursor: pointer; }
-[data-edrv-view] .edrv-dapbar-btn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .15)); }
-[data-edrv-view] .edrv-dapbar-btn:disabled { opacity: .35; cursor: default; }
-[data-edrv-view] .edrv-dapbar-phase { padding: 0 4px; font-size: 11px; white-space: nowrap; color: var(--dsw-alias-label-secondary, #52606d); }
 [data-edrv-view] .edrv-dapbar-phase.paused { color: var(--dsw-alias-state-warn-primary, #b7791f); font-weight: 600; }
-[data-edrv-view] .edrv-dapbar-err { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--dsw-alias-state-error-primary, #e05252); }
-
-/* 调试面板（活动栏「调试」页签）：四段折叠区 + 断点列表 + REPL。 */
-[data-edrv-view] .edrv-dappanel { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; overflow: auto; padding: 2px 2px 8px; }
-[data-edrv-view] .edrv-dappanel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; row-gap: 4px; font-size: 12px; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-dappanel-phase { padding: 2px 8px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); }
 [data-edrv-view] .edrv-dappanel-phase.paused { background: var(--dsw-alias-state-warn-tertiary, rgba(229, 185, 63, .18)); color: var(--dsw-alias-state-warn-primary, #b7791f); font-weight: 600; }
-[data-edrv-view] .edrv-dappanel-cfg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-dappanel-pid { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; }
-[data-edrv-view] .edrv-dappanel-err { color: var(--dsw-alias-state-error-primary, #e05252); }
-[data-edrv-view] .edrv-dapseg { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
-[data-edrv-view] .edrv-dapseg-body { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
-/* 段间分隔条（splitview sash）：拖动调整相邻两段高度占比；各段高度由 DebugPanel 内联接管。 */
-[data-edrv-view] .edrv-dapseg-sash { flex: 0 0 auto; height: 4px; margin: 2px 0; border-radius: 2px; background: transparent; cursor: row-resize; }
 [data-edrv-view] .edrv-dapseg-sash:hover, [data-edrv-view] .edrv-dapseg-sash.dragging { background: var(--dsw-alias-border-l2, #cdd6da); }
-/* 折叠段头：chevron + 标题 + 悬浮动作区（动作 hover 显隐；REPL 头不参与折叠）。 */
-[data-edrv-view] .edrv-dapseg-head { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-tertiary, #7b8794); padding: 2px 2px; cursor: pointer; border-radius: 4px; }
-[data-edrv-view] .edrv-dapseg-head:hover { color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-daprepl .edrv-dapseg-head { cursor: default; padding: 2px 0; }
-[data-edrv-view] .edrv-dapseg-chevron { flex: 0 0 auto; width: 14px; text-align: center; font-size: 10px; }
-[data-edrv-view] .edrv-dapseg-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-dapseg-act { flex: 0 0 auto; min-width: 20px; height: 18px; padding: 0 4px; border: none; border-radius: 4px; background: transparent; color: var(--dsw-alias-label-tertiary, #7b8794); font-size: 11px; line-height: 1; cursor: pointer; opacity: 0; }
-[data-edrv-view] .edrv-dapseg-head:hover .edrv-dapseg-act { opacity: 1; }
-[data-edrv-view] .edrv-dapseg-act:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .15)); color: var(--dsw-alias-label-primary, inherit); }
-[data-edrv-view] .edrv-dapempty { font-size: 12px; color: var(--dsw-alias-label-tertiary, #9aa5b1); padding: 4px 2px; }
-[data-edrv-view] .edrv-dapframe { display: flex; align-items: baseline; gap: 8px; padding: 3px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-[data-edrv-view] .edrv-dapframe:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .12)); }
-[data-edrv-view] .edrv-dapframe-name { color: var(--dsw-alias-label-primary, inherit); font-weight: 600; }
-[data-edrv-view] .edrv-dapframe-loc { color: var(--dsw-alias-label-tertiary, #9aa5b1); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-dapscope { font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-secondary, #52606d); padding: 4px 2px 1px; }
-[data-edrv-view] .edrv-dapvar { display: flex; align-items: baseline; gap: 6px; width: 100%; box-sizing: border-box; font-size: 12px; padding: 1px 2px; min-width: 0; }
-[data-edrv-view] .edrv-dapvar-tw { flex: 0 0 auto; width: 14px; border: none; background: transparent; color: var(--dsw-alias-label-tertiary, #9aa5b1); cursor: pointer; font-size: 10px; padding: 0; }
-[data-edrv-view] span.edrv-dapvar-tw { cursor: default; }
-[data-edrv-view] .edrv-dapvar-name { flex: 0 1 34%; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-primary, inherit); font-family: var(--ds-font-family-code, ui-monospace, monospace); white-space: nowrap; }
-[data-edrv-view] .edrv-dapvar-val { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-dapvar-type { flex: 0 0 auto; font-size: 10px; color: var(--dsw-alias-label-tertiary, #9aa5b1); }
 [data-edrv-view] .edrv-dapframe.selected { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .16)); outline: 1px solid var(--dsw-alias-border-l2, #cdd6da); }
-[data-edrv-view] .edrv-dapwatch { display: flex; align-items: baseline; gap: 6px; width: 100%; box-sizing: border-box; min-width: 0; font-size: 12px; padding: 1px 2px; }
-[data-edrv-view] .edrv-dapwatch-x { border: none; background: transparent; color: var(--dsw-alias-label-tertiary, #9aa5b1); cursor: pointer; width: 14px; }
-[data-edrv-view] .edrv-dapwatch-x:hover { color: var(--dsw-alias-state-error-primary, #e05252); }
-[data-edrv-view] .edrv-dapwatch-add { padding: 2px 0; }
-[data-edrv-view] .edrv-dapbp { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 2px; border-radius: 6px; cursor: pointer; }
-[data-edrv-view] .edrv-dapbp:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .12)); }
-[data-edrv-view] .edrv-dapbp:active { background: var(--dsw-alias-interactive-bg-pressed, rgba(127, 127, 127, .2)); }
-[data-edrv-view] .edrv-dapbp-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--dsw-alias-state-error-primary, #e51400); }
 [data-edrv-view] .edrv-dapbp-dot.off { background: transparent; border: 1.5px solid var(--dsw-alias-label-tertiary, #9aa5b1); opacity: .6; }
-[data-edrv-view] .edrv-dapbp-file { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: none; background: transparent; color: var(--dsw-alias-label-primary, inherit); cursor: pointer; padding: 0; font-size: 12px; }
-[data-edrv-view] .edrv-dapbp-dir { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-size: 11px; text-align: right; }
-[data-edrv-view] .edrv-dapbp-line { flex: 0 0 auto; font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] .edrv-dapbp-x { flex: 0 0 auto; border: none; background: transparent; color: transparent; cursor: pointer; width: 14px; }
-[data-edrv-view] .edrv-dapbp:hover .edrv-dapbp-x { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-dapbp-x:hover { color: var(--dsw-alias-state-error-primary, #e05252) !important; }
-[data-edrv-view] .edrv-daprepl { display: flex; flex-direction: column; gap: 4px; }
-[data-edrv-view] .edrv-daprepl-log { display: flex; flex-direction: column; gap: 1px; max-height: 180px; overflow: auto; }
-[data-edrv-view] .edrv-daprepl-line { font-size: 11px; font-family: var(--ds-font-family-code, ui-monospace, monospace); color: var(--dsw-alias-label-secondary, #52606d); white-space: pre-wrap; word-break: break-all; display: flex; gap: 6px; }
 [data-edrv-view] .edrv-daprepl-line.out { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
-[data-edrv-view] .edrv-daprepl-in { width: 100%; box-sizing: border-box; height: 26px; padding: 0 8px; font-size: 12px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
-[data-edrv-view] .edrv-dappanel-run { flex: 0 0 auto; width: 24px; height: 24px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-primary, inherit); font-size: 13px; line-height: 1; cursor: pointer; }
-[data-edrv-view] .edrv-dappanel-run:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .15)); }
-[data-edrv-view] .edrv-dappanel-run:disabled { opacity: .35; cursor: default; background: transparent; }
-/* 面板顶部配置下拉（与编辑器浮动条 .edrv-dapbar-cfg 同视觉）。 */
-[data-edrv-view] .edrv-dappanel-cfg-select { max-width: 190px; height: 24px; padding: 0 4px; font-size: 11px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
-/* 断点行内编辑行（面板内展开编辑，控件复用 .edrv-bpwidget-* 视觉；左缩进对齐断点行文字列）。 */
-[data-edrv-view] .edrv-dapbp-edit { display: flex; align-items: center; gap: 6px; padding: 3px 2px 3px 20px; border-radius: 6px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); }
-[data-edrv-view] .edrv-dapbp-edit .edrv-bpwidget-mode { height: 20px; }
-[data-edrv-view] .edrv-dapbp-edit .edrv-bpwidget-input { height: 20px; }
 /* 断点回执：未验证空心红圈（须排在 .off 之后，禁用态优先展示灰圈语义）。 */
 [data-edrv-view] .edrv-dapbp-dot.unverified { background: transparent; border: 1.5px solid var(--dsw-alias-state-error-primary, #e51400); opacity: .75; }
-[data-edrv-view] .edrv-bpwidget { position: relative; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-top: 1px solid var(--dsw-alias-border-l2, #cdd6da); border-bottom: 1px solid var(--dsw-alias-border-l2, #cdd6da); background: var(--dsw-alias-bg-layer-1, #f7f9fa); }
-/* 断点编辑中的目标行高亮（浮层打开期间） */
-[data-edrv-view] .edrv-dap-editing-line { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .12)); }
-[data-edrv-view] .edrv-bpwidget-mode { flex: 0 0 auto; height: 22px; padding: 0 4px; font-size: 12px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 3px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); cursor: pointer; }
-[data-edrv-view] .edrv-bpwidget-input { flex: 1 1 auto !important; min-width: 0; width: auto !important; box-sizing: border-box; height: 22px; padding: 0 6px; font-size: 12px; font-family: var(--ds-font-family-code, ui-monospace, monospace); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 3px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
-[data-edrv-view] .edrv-bpwidget-input:focus { outline: 1px solid var(--dsw-alias-border-l2, #cdd6da); }
-
-/* 断点 hover 预览（glyph 区）：半透明小红点 + pointer 光标（对齐 VS Code .codicon-debug-hint）。 */
-[data-edrv-view] .edrv-dap-bp-hint { cursor: pointer; }
-[data-edrv-view] .edrv-dap-bp-hint::before { content: ''; display: block; width: 7px; height: 7px; margin: 6px auto 0; border-radius: 50%; background: var(--dsw-alias-state-error-primary, #e51400); opacity: .4; }
 /* 行号区也给出可点提示（与 VS Code 一致：glyph 区与行号区都可点/可 hover）；
    不拦截折叠箭头等自有控件的光标。 */
 
@@ -1034,33 +312,7 @@
 [data-edrv-view] .edrv-passive-view { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
 [data-edrv-view] .edrv-group { border: 0; }
 [data-edrv-view] .edrv-group .edrv-tabs { flex: 0 0 auto; touch-action: none; }
-[data-edrv-view] .edrv-group-tab-name { overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
-[data-edrv-view] .edrv-split { display: flex; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
-[data-edrv-view] .edrv-split-vertical { flex-direction: column; }
-[data-edrv-view] .edrv-split-child { display: flex; min-width: 0; min-height: 0; overflow: hidden; }
-[data-edrv-view] .edrv-split-handle { flex: 0 0 5px; background: var(--dsw-alias-border-l1, #e0e6e8); cursor: col-resize; touch-action: none; }
-[data-edrv-view] .edrv-split-vertical > .edrv-split-handle { cursor: row-resize; }
-[data-edrv-view] .edrv-split-handle:hover, [data-edrv-view] .edrv-split-handle:focus-visible { background: var(--dsw-alias-state-info-primary, #4d6bfe); }
-[data-edrv-view].edrv-floating { position: fixed; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; border: 1px solid var(--dsw-alias-border-l2, #cdd6da); background: var(--dsw-alias-bg-base, #fff); color: var(--dsw-alias-label-primary, #1f2933); box-shadow: 0 8px 28px rgba(0,0,0,.22); }
-[data-edrv-view] .edrv-floating-title { display: flex; align-items: center; gap: 8px; flex: 0 0 32px; padding: 0 8px; background: var(--dsw-alias-bg-layer-1, #f7f9fa); cursor: move; touch-action: none; user-select: none; }
-[data-edrv-view] .edrv-floating-title > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-edrv-view] .edrv-floating-content { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: auto; box-sizing: border-box; }
-[data-edrv-view] .edrv-floating-content.edrv-svnlog-dialog { padding: 12px; overflow: auto; }
-[data-edrv-view] .edrv-floating-content.edrv-svn-patch-dialog,
-[data-edrv-view] .edrv-floating-content.edrv-svn-sum-dialog,
-[data-edrv-view] .edrv-floating-content.edrv-svnplan-dialog { padding: 12px; max-width: none; gap: 8px; }
-[data-edrv-view] .edrv-floating-content.edrv-svnlog-stats { max-height: none; }
-[data-edrv-view] .edrv-floating-content .edrv-svn-patch-pre,
-[data-edrv-view] .edrv-floating-content .edrv-svn-sum-list { flex: 1; min-height: 0; max-height: none; }
-[data-edrv-view] .edrv-floating-content .edrv-svnlog-filter,
-[data-edrv-view] .edrv-floating-content .edrv-svn-sum-form { flex-wrap: wrap; }
-[data-edrv-view] .edrv-floating-content > .edrv-svnlog-head,
-[data-edrv-view] .edrv-floating-content > .edrv-svnlog-filter,
-[data-edrv-view] .edrv-floating-content > .edrv-svnlog-foot { flex-shrink: 0; }
-[data-edrv-view] .edrv-floating-title > button { border: 0; background: transparent; color: inherit; cursor: pointer; }
-[data-edrv-view] .edrv-floating-grip { position: absolute; width: 16px; height: 16px; bottom: 0; right: 0; cursor: nwse-resize; touch-action: none; border-right: 3px solid var(--dsw-alias-border-l2, #cdd6da); border-bottom: 3px solid var(--dsw-alias-border-l2, #cdd6da); }
 .edrv-drag-overlay { position: fixed; z-index: 150; pointer-events: none; box-sizing: border-box; border: 0; background: color-mix(in srgb, var(--dsw-alias-state-info-primary, #4d6bfe) 25%, transparent); }
 .edrv-drop-label, .edrv-drag-ghost { position: fixed; z-index: 151; pointer-events: none; padding: 4px 8px; background: var(--dsw-alias-bg-overlay, #fff); color: var(--dsw-alias-label-primary, #1f2933); border: 1px solid var(--dsw-alias-border-l2, #cdd6da); font-size: 12px; white-space: nowrap; }
-.edrv-drop-label { position: absolute; left: 4px; top: 4px; }
 [data-edrv-view] .edrv-tab:focus-visible { outline: 2px solid var(--dsw-alias-state-info-primary, #4d6bfe); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { .edrv-drag-overlay { transition: none; } }

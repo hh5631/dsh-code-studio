@@ -16,6 +16,12 @@ import { workspaceScopeOf } from '../../state/scopeStore.js'
 import { takeSearchSeed, takeSearchScope } from '../../searchSeed.js'
 
 const DEBOUNCE_MS = 250
+/** 首屏渲染上限：命中很多时先画这么多组/行，避免一次性铺满几千个 DOM 节点卡住主线程。 */
+const FIRST_RENDER_GROUPS = 40
+const FIRST_RENDER_LINES = 40
+/** 每次「显示更多」追加的数量。 */
+const MORE_GROUPS = 40
+const MORE_LINES = 100
 /** 文件变更后的重搜去抖：合并一次写盘的 refresh+file-changed 双事件与批量保存。 */
 const REFRESH_DEBOUNCE_MS = 300
 const INCLUDE_PLACEHOLDER = '例如 *.ts, src/**/include'
@@ -393,6 +399,12 @@ export function SearchPanel(props) {
   const totalMatches = Array.isArray(matches) ? matches.length : 0
   const toggleGroup = (path) => setCollapsed((prev) => Object.assign({}, prev, { [path]: prev[path] === true ? false : true }))
 
+  // 分批渲染：命中集变化时回到首屏上限，之后按需追加，避免大结果集一次性铺满 DOM。
+  const [renderLimits, setRenderLimits] = React.useState({ groups: FIRST_RENDER_GROUPS, lines: FIRST_RENDER_LINES })
+  React.useEffect(() => { setRenderLimits({ groups: FIRST_RENDER_GROUPS, lines: FIRST_RENDER_LINES }) }, [matches])
+  const visibleGroups = groups.slice(0, renderLimits.groups)
+  const hiddenGroups = groups.length - visibleGroups.length
+
   const optsBar = React.createElement('div', { className: 'edrv-search-opts' },
     React.createElement('button', { className: 'edrv-search-opt' + (matchCase ? ' on' : ''), title: '区分大小写', 'aria-label': '区分大小写', 'aria-pressed': matchCase, onClick: () => toggleOpt('matchCase', !matchCase) }, 'Aa'),
     React.createElement('button', { className: 'edrv-search-opt' + (wholeWord ? ' on' : ''), title: '全字匹配', 'aria-label': '全字匹配', 'aria-pressed': wholeWord, onClick: () => toggleOpt('wholeWord', !wholeWord) }, 'Ab'),
@@ -445,7 +457,7 @@ export function SearchPanel(props) {
     if (status === 'done' && !groups.length) return React.createElement('div', { className: 'edrv-search-empty' }, '无匹配结果')
     if (status !== 'done') return React.createElement('div', { className: 'edrv-search-empty' }, '输入至少 2 个字符开始搜索')
     return React.createElement('div', { className: 'edrv-search-results' },
-      groups.map((group) => {
+      visibleGroups.map((group) => {
         const open = collapsed[group.path] !== true
         return React.createElement('div', { key: group.path, className: 'edrv-search-group' },
           React.createElement('div', { className: 'edrv-search-file', title: group.path, role: 'button', tabIndex: 0, 'aria-expanded': open, onClick: () => toggleGroup(group.path), onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleGroup(group.path) } } },
@@ -453,7 +465,7 @@ export function SearchPanel(props) {
             React.createElement('span', { className: 'edrv-search-fname' }, String(group.path).split(/[\\/]/).pop() || group.path),
             React.createElement('span', { className: 'edrv-search-fdir' }, String(group.path).split(/[\\/]/).slice(0, -1).join('/')),
             React.createElement('span', { className: 'edrv-search-fcount' }, group.count)),
-          open ? group.matches.map((m, i) => {
+          open ? group.matches.slice(0, renderLimits.lines).map((m, i) => {
             const parts = splitHit(m.text, m.startColumn, m.endColumn)
             return React.createElement('div', { key: m.path + ':' + m.line + ':' + i, className: 'edrv-search-line' + (i % 2 ? ' alt' : ''), title: group.path + ':' + m.line, role: 'button', tabIndex: 0, 'aria-label': `${String(m.path).split(/[\\/]/).pop()}:${m.line} ${m.text}`, onClick: () => openFileAt(m.path, m.line, m.startColumn), onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openFileAt(m.path, m.line, m.startColumn) } } },
               React.createElement('span', { className: 'edrv-search-ln' }, m.line),
@@ -461,8 +473,21 @@ export function SearchPanel(props) {
                 React.createElement('span', null, parts.before),
                 React.createElement('mark', { className: 'edrv-search-hit' }, parts.hit),
                 React.createElement('span', null, parts.after)))
-          }) : null)
-      }))
+          }) : null,
+          // 单文件命中过多时按需展开，避免一个大文件把整屏 DOM 撑满。
+          open && group.matches.length > renderLimits.lines
+            ? React.createElement('button', {
+              type: 'button', className: 'edrv-search-more',
+              onClick: () => setRenderLimits((prev) => ({ ...prev, lines: prev.lines + MORE_LINES })),
+            }, `显示其余 ${group.matches.length - renderLimits.lines} 处匹配`)
+            : null)
+      }),
+      hiddenGroups > 0
+        ? React.createElement('button', {
+          type: 'button', className: 'edrv-search-more',
+          onClick: () => setRenderLimits((prev) => ({ ...prev, groups: prev.groups + MORE_GROUPS })),
+        }, `显示其余 ${hiddenGroups} 个文件`)
+        : null)
   })()
 
   return React.createElement('div', { className: 'edrv-search-panel' },
