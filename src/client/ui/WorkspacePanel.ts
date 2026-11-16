@@ -5,7 +5,7 @@ import { GitPanel } from '../sidebar/panels/GitPanel.js'
 import { SearchPanel } from '../sidebar/panels/SearchPanel.js'
 import { gitDecorations, absolutePath, repositoryDirectory } from '../state/gitPaths.js'
 import { useGitStore } from '../state/gitStore.js'
-import { CACHE_KEY } from '../paths.js'
+import { applyTreeSide, readTreeSide, subscribeTreeSide, writeTreeSide } from '../state/treeSide.js'
 import { StudioIcon } from './StudioIcon.js'
 import { IconSearchOutline16 } from './icons.js'
 import '../styles/workspace.css'
@@ -36,26 +36,6 @@ const modes = new Map<string, WorkspaceView>()
 const treeScroll = new Map<string, number>()
 const treeOwners = new WeakMap<HTMLElement, object>()
 const layoutOwners = new WeakMap<HTMLElement, object>()
-type TreeSide = 'left' | 'right'
-const sideListeners = new Set<() => void>()
-let treeSide: TreeSide | undefined
-
-function readTreeSide(): TreeSide {
-  if (treeSide) return treeSide
-  try { return localStorage.getItem(CACHE_KEY.fileTreeSide) === 'left' ? 'left' : 'right' }
-  catch { return 'right' }
-}
-
-function subscribeTreeSide(listener: () => void): () => void {
-  sideListeners.add(listener)
-  return () => { sideListeners.delete(listener) }
-}
-
-function writeTreeSide(side: TreeSide): void {
-  treeSide = side
-  try { localStorage.setItem(CACHE_KEY.fileTreeSide, side) } catch { /* Keep the preference for this page. */ }
-  for (const listener of sideListeners) listener()
-}
 
 export function WorkspacePanel(props: Props): React.ReactElement {
   const side = React.useSyncExternalStore(subscribeTreeSide, readTreeSide, () => 'right' as const)
@@ -97,7 +77,7 @@ export function WorkspacePanel(props: Props): React.ReactElement {
     if (!content || side !== 'left') return
     const ownership = {}
     layoutOwners.set(content, ownership)
-    content.setAttribute('data-cstudio-tree-side', side)
+    applyTreeSide(content, side)
     const isResizeHandle = (target: EventTarget | null) =>
       layoutOwners.get(content) === ownership
       && target instanceof Element && target.matches('[data-files-navigator] > [data-files-navigator-resize]')

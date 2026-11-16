@@ -22,8 +22,16 @@ body[data-ds-dark-theme] [data-cstudio-workspace-tree] { --cstudio-git-modified:
   .cstudio-workspace-switches { flex-direction:row-reverse; }
   > :is(.cstudio-native-path,[data-textpreview-path]) { margin-left:12px; }
 }
+/* 侧别有两处来源，优先级从高到低：
+   1) html 根节点上的镜像属性（treeSide.ts 在模块加载与切换时同步写入）；
+   2) 预览容器自身的属性（WorkspacePanel 的布局 effect 写入）。
+   html 那份是为了让「打开另一个文件、宿主换了容器节点」时首帧就已经在左侧 ——
+   只靠 2) 会有一帧按宿主默认（右）排好再被纠正，也就是"先右后左"的跳变。
+   两份指向同一结果，任意一份在手即可，不会互相打架。 */
 @media (min-width:768px) {
-  :is([data-cstudio-tree-side=left],[data-cstudio-dock-side=left] [data-textpreview-state=loading]>[data-textpreview-content]) {
+  :is([data-cstudio-tree-side=left],
+      html[data-cstudio-tree-side=left] [data-textpreview-content],
+      [data-cstudio-dock-side=left] [data-textpreview-state=loading]>[data-textpreview-content]) {
     > [data-files-navigator-mode=push] { order:-1; }
     > [data-files-navigator-mode=overlay] { left:8px; right:auto; }
     > [data-files-navigator] > [data-files-navigator-resize] { left:auto; right:-4px; }

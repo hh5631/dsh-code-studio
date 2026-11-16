@@ -7,6 +7,7 @@ import { buildPreviewFileAddress, parseOfficialFileAddress, resolveNavColumn, re
 import { navigateFile, type NativePreviewResources } from '../nativeFileNavigation.js'
 import { CACHE_KEY } from '../paths.js'
 import { workspaceScopeOf } from '../state/scopeStore.js'
+import { applyTreeSide } from '../state/treeSide.js'
 
 const initializedPanes = new Set<string>()
 const PathLabel = (Primitives as { PathLabel?: React.ComponentType<{ path: string; className?: string }> }).PathLabel
@@ -80,8 +81,12 @@ export function NativeFileTab(props: NativeProps): React.ReactElement {
     if (!nativeDocument || !root.current) return
     const preview = root.current.closest('[data-textpreview-state]')
     setPanelToolbar(preview?.querySelector<HTMLElement>('[data-textpreview-path]')?.parentElement ?? null)
-    setNativeContent(root.current.closest<HTMLElement>('[data-textpreview-content]'))
-  }, [nativeDocument])
+    const host = root.current.closest<HTMLElement>('[data-textpreview-content]')
+    // 打开另一个文件时宿主可能换掉这个容器节点；本 effect 在 DOM 插入之后、浏览器绘制
+    // 之前执行，所以在 这里补一次侧别属性，就能保证新容器首帧已经在正确的一侧。
+    applyTreeSide(host)
+    setNativeContent(host)
+  }, [nativeDocument, address])
 
   const sourceVersion = React.useMemo(() => props.documentVersion, [address, content?.revision])
   const onDocumentLoad = React.useCallback((ok: boolean) => {
