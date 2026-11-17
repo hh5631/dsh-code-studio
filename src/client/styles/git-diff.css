@@ -30,7 +30,7 @@
   min-width: 0;
   padding: 4px 8px;
 }
-.cstudio-diff-toolbar { min-height: 40px; gap: 6px; border-bottom: 1px solid var(--diff-line); background: var(--diff-soft); }
+.cstudio-diff-toolbar { min-height: 40px; gap: 6px; border-bottom: .5px solid var(--diff-line); background: var(--diff-soft); }
 .cstudio-diff-title {
   flex: 1;
   min-width: 0;
@@ -44,7 +44,7 @@
   flex: none;
   gap: 2px;
   padding: 2px;
-  border: 1px solid var(--diff-line);
+  border: .5px solid var(--diff-line);
   border-radius: 7px;
   background: var(--dsw-alias-bg-base, #fff);
 }
@@ -78,7 +78,7 @@
   flex: none;
   grid-template-columns: 1fr;
   background: var(--diff-panel);
-  border-bottom: 1px solid var(--diff-line-strong);
+  border-bottom: .5px solid var(--diff-line-strong);
 }
 .cstudio-diff-labels[data-mode=split] { grid-template-columns: minmax(0,1fr) var(--diff-gutter) minmax(0,1fr); }
 .cstudio-diff-label {
@@ -90,7 +90,7 @@
   overflow: hidden;
   white-space: nowrap;
 }
-.cstudio-diff-label[data-side=after] { border-left: 1px solid var(--diff-line-strong); }
+.cstudio-diff-label[data-side=after] { border-left: .5px solid var(--diff-line-strong); }
 .cstudio-diff-labels[data-mode=split] .cstudio-diff-label[data-side=after] { border-left: 0; }
 .cstudio-diff-label-title { font-weight: 600; letter-spacing: .01em; }
 .cstudio-diff-label-hint { color: var(--diff-muted); font-size: .85em; overflow: hidden; text-overflow: ellipsis; }
@@ -114,9 +114,9 @@
   padding: 5px 12px;
   color: var(--diff-muted);
   background: var(--diff-soft);
-  border-top: 1px solid var(--diff-line);
-  border-bottom: 1px solid var(--diff-line);
-  font: .88em/1.5 var(--diff-code);
+  border-top: .5px solid var(--diff-line);
+  border-bottom: .5px solid var(--diff-line);
+  font: .88em/1.65 var(--diff-code);
   overflow-wrap: anywhere;
 }
 .cstudio-diff-row { font: var(--cstudio-code-size, 13px)/1.65 var(--diff-code); tab-size: 4; }
@@ -158,8 +158,8 @@
   display: grid;
   place-items: center;
   background: var(--diff-panel);
-  border-left: 1px solid var(--diff-line-strong);
-  border-right: 1px solid var(--diff-line-strong);
+  border-left: .5px solid var(--diff-line-strong);
+  border-right: .5px solid var(--diff-line-strong);
 }
 /* 相邻修改块之间的连接竖线：让「连在一起的修改代码块」读成一整片 */
 .cstudio-diff-part[data-clustered=true][data-kind=change] .cstudio-diff-gutter::before {
@@ -217,8 +217,8 @@
   color: var(--diff-muted);
   font-size: .88em;
   background: var(--diff-soft);
-  border-top: 1px solid var(--diff-line);
-  border-bottom: 1px solid var(--diff-line);
+  border-top: .5px solid var(--diff-line);
+  border-bottom: .5px solid var(--diff-line);
 }
 .cstudio-diff-part-info { display: inline-flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .cstudio-diff-part-stat { display: inline-flex; gap: 6px; font-variant-numeric: tabular-nums; }
@@ -230,7 +230,7 @@
 .cstudio-diff-part-actions .cstudio-diff-revert { color: var(--diff-remove); }
 
 /* ── 替换编辑框 ───────────────────────────────────────────── */
-.cstudio-diff-replacement { padding: 6px 10px 4px; background: var(--diff-soft); border-bottom: 1px solid var(--diff-line); }
+.cstudio-diff-replacement { padding: 6px 10px 4px; background: var(--diff-soft); border-bottom: .5px solid var(--diff-line); }
 .cstudio-diff-replacement textarea {
   display: block;
   box-sizing: border-box;

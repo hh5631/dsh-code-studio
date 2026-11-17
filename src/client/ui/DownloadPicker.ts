@@ -13,7 +13,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { rpc } from '../rpc.js'
-import type { TreeEntry } from '../../shared/rpc.js'
 import { ModalShell } from './ModalShell.js'
 import {
   clearSelected, collapseDir, createDlState, expandDir, formatSize, hasLoaded, isOversized, markError, markLoading,

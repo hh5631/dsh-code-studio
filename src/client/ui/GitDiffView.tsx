@@ -68,12 +68,17 @@ function SplitRowView({ row, gutter }: { row: SplitRow; gutter?: React.ReactNode
   </div>
 }
 
-function PartRows({ part, mode, selection, clustered, onRevert, canEdit, busy }: {
-  part: PatchPart; mode: DiffMode; selection: Selection; clustered: boolean
-  onRevert(selection: Selection): void; canEdit: boolean; busy: boolean
+/**
+ * 一个修改块的行渲染。memo 化的收益点：在「替换此段」输入框里逐字输入时，父级 draft 状态
+ * 会让整份差异重渲染 —— 未 memo 时每个块都要重算 unifiedRowsOf/splitRowsOf（大差异上千行），
+ * 而实际只有被编辑的那一块变了。props 全部保持原始标量 + 稳定回调，memo 才能真正命中。
+ */
+const PartRows = React.memo(function PartRows({ part, mode, hunk, partIndex, clustered, onRevert, canEdit, busy }: {
+  part: PatchPart; mode: DiffMode; hunk: number; partIndex: number; clustered: boolean
+  onRevert(hunk: number, part: number): void; canEdit: boolean; busy: boolean
 }) {
   const anchor = part.kind === 'change' ? anchorRowOf(part) : -1
-  const rows = mode === 'unified' ? unifiedRowsOf(part) : splitRowsOf(part)
+  const rows = React.useMemo(() => mode === 'unified' ? unifiedRowsOf(part) : splitRowsOf(part), [part, mode])
   const info = part.kind === 'change' ? changeInfoOf(part) : null
   return <div className="cstudio-diff-part" data-kind={part.kind} data-clustered={clustered || undefined}>
     {rows.map((row, i) => {
@@ -86,12 +91,12 @@ function PartRows({ part, mode, selection, clustered, onRevert, canEdit, busy }:
       const gutter = canEdit && part.kind === 'change' && i === anchor
         ? <IconButton variant="revert" icon="arrowLeft" disabled={busy}
             label={`还原第 ${info?.line ?? ''} 行附近的修改段（−${info?.removed ?? 0} / +${info?.added ?? 0}）`}
-            onClick={() => onRevert(selection)} />
+            onClick={() => onRevert(hunk, partIndex)} />
         : null
       return <SplitRowView key={i} row={split} gutter={gutter} />
     })}
   </div>
-}
+})
 
 export function GitDiffView(props: Props): React.ReactElement {
   return <DiffFile key={JSON.stringify([props.sessionId, props.cwd, props.path, props.staged])} {...props} />
@@ -130,7 +135,7 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
     return () => controller.abort()
   }, [cwd, path, staged, sessionId, reload])
 
-  async function apply(selection: Selection, replacement?: string) {
+  const apply = React.useCallback(async (selection: Selection, replacement?: string) => {
     if (!sessionId || !canEdit || !state.revision || writing.current) return
     if (replacement === undefined && !window.confirm('将此修改段还原为暂存区内容？文件的其他修改会保留。')) return
     writing.current = true
@@ -164,7 +169,9 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
       writing.current = false
       if (live.current) setBusy(false)
     }
-  }
+  }, [sessionId, canEdit, state.revision, workspaceRoot, cwd, path, onApplied])
+  /** 稳定回调：交给 memo 化的 PartRows，否则逐字输入时每个块都会重渲染。 */
+  const revertPart = React.useCallback((hunk: number, part: number) => { void apply({ hunk, part }) }, [apply])
 
   function partControls(change: ChangePart, selection: Selection) {
     if (!canEdit) return null
@@ -222,8 +229,8 @@ function DiffFile({ cwd, path, staged, sessionId, workspaceRoot, onClose, onAppl
         <div className="cstudio-diff-range">{hunk.title}</div>
         {hunk.parts.map((part, p) => <React.Fragment key={p}>
           {part.kind === 'change' && partControls(part, { hunk: h, part: p })}
-          <PartRows part={part} mode={mode} selection={{ hunk: h, part: p }}
-            clustered={clustered[h]?.has(p) ?? false} onRevert={value => void apply(value)}
+          <PartRows part={part} mode={mode} hunk={h} partIndex={p}
+            clustered={clustered[h]?.has(p) ?? false} onRevert={revertPart}
             canEdit={canEdit} busy={busy || !!draft} />
         </React.Fragment>)}
       </section>)}

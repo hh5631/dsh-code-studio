@@ -18,7 +18,7 @@
 .cstudio-minimal button:hover { background: var(--dsw-alias-interactive-bg-hover, #f2f3f5); }
 .cstudio-minimal :is(button,[role=tab]):focus-visible,
 .cstudio-settings input:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset: -2px; box-shadow: none; }
-.cstudio-minimal-bar { min-height: 42px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: 1px solid var(--cstudio-border); background: var(--cstudio-raised); }
+.cstudio-minimal-bar { min-height: 42px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: .5px solid var(--cstudio-border); background: var(--cstudio-raised); }
 .cstudio-minimal .edrv-tabs { display: flex; align-items: center; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; gap: 3px; padding: 0; background: transparent; }
 .cstudio-minimal .edrv-tab { display: flex; align-items: center; gap: 8px; flex: none; max-width: 240px; min-height: 30px; padding: 3px 8px 3px 10px; cursor: pointer; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--cstudio-muted); font-size: 1em; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
 .cstudio-minimal .edrv-tab:hover { color: var(--dsw-alias-label-primary, #0f1115); }
@@ -38,9 +38,11 @@
 .cstudio-minimal-preview,.cstudio-git-diff,.cstudio-minimal-empty { position: absolute; inset: 0; background: var(--cstudio-surface); }
 .cstudio-minimal-preview { overflow: auto; padding: 24px clamp(16px,4vw,48px); overflow-wrap: anywhere; }
 .cstudio-minimal-preview :is(pre,code),.cstudio-minimal-preview .edrv-large-text-content { font-family: var(--cstudio-code-font, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: var(--cstudio-code-size, 1em); }
-.cstudio-minimal-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--cstudio-muted); }
-.cstudio-minimal-empty p { margin: 0 0 4px; }
-.cstudio-minimal-empty button { border: 1px solid var(--cstudio-border); padding: 6px 14px; }
+.cstudio-minimal-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--cstudio-muted); font-size: .95em; line-height: 1.6; }
+.cstudio-minimal-empty > svg { color: var(--dsw-alias-label-tertiary, #9298a0); opacity: .8; margin-bottom: 2px; }
+.cstudio-minimal-empty p { margin: 0; }
+.cstudio-minimal-empty button { margin-top: 6px; border: 1px solid var(--cstudio-border); padding: 5px 14px; color: var(--dsw-alias-label-primary, #0f1115); transition: background-color 140ms ease, border-color 140ms ease; }
+.cstudio-minimal-empty button:hover { border-color: var(--dsw-alias-border-l2, #dce0e5); }
 .cstudio-minimal-loading { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; background: var(--cstudio-surface); color: var(--cstudio-muted); }
 /* 切换文件时的顶部细进度条：只在读盘期间出现，不遮正文（避免整屏白/黑遮罩造成的闪烁跳变）。 */
 .cstudio-minimal-progress { position: absolute; top: 0; left: 0; right: 0; height: 2px; overflow: hidden; pointer-events: none; z-index: 3; background: color-mix(in srgb, var(--cstudio-accent) 16%, transparent); }
@@ -53,23 +55,23 @@
 @media (prefers-reduced-motion: reduce) { .cstudio-minimal-progress::after { animation: none; width: 100%; opacity: .5; } }
 /* 仅供读屏的文本：进度条本身没有可见文字，但读屏仍需播报状态。 */
 .cstudio-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.cstudio-minimal-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex: none; font-size: .85em; line-height: 1.6; min-height: 26px; min-width: 0; padding: 2px 12px; border-top: 1px solid var(--cstudio-border); color: var(--cstudio-muted); }
+.cstudio-minimal-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex: none; font-size: .85em; line-height: 1.6; min-height: 26px; font-variant-numeric: tabular-nums; min-width: 0; padding: 2px 12px; border-top: .5px solid var(--cstudio-border); color: var(--cstudio-muted); }
 .cstudio-minimal-status > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cstudio-minimal-status > span:last-child { white-space: nowrap; flex: none; }
-.cstudio-minimal-quick { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--cstudio-border); position: relative; z-index: 5; }
+.cstudio-minimal-quick { display: flex; align-items: center; padding: 8px 10px; border-bottom: .5px solid var(--cstudio-border); position: relative; z-index: 5; }
 .cstudio-minimal-quick .edrv-search-wrap { flex: 1; min-width: 0; }
 .cstudio-minimal-quick .edrv-search { width: 100%; height: 32px; min-width: 0; box-sizing: border-box; font: inherit; }
 .cstudio-minimal-quick .edrv-search-pop { left: 0; right: auto; width: min(460px,100%); box-sizing: border-box; box-shadow: 0 8px 24px #00000014; }
-.cstudio-minimal-error { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--dsw-alias-state-error-primary, #b23838); border-top: 1px solid var(--cstudio-border); }
+.cstudio-minimal-error { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--dsw-alias-state-error-primary, #b23838); border-top: .5px solid var(--cstudio-border); }
 .cstudio-minimal-error > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.cstudio-minimal-git { width: 260px; max-width: 40%; flex: none; min-width: 150px; border-right: 1px solid var(--cstudio-border); overflow: hidden; }
+.cstudio-minimal-git { width: 260px; max-width: 40%; flex: none; min-width: 150px; border-right: .5px solid var(--cstudio-border); overflow: hidden; }
 
 /* 设置与 DSH 设置页面使用同一文案层级。 */
 .cstudio-settings { max-width: 640px; padding: 28px 32px; color: var(--dsw-alias-label-primary, #0f1115); }
 .cstudio-settings h2 { margin: 0 0 8px; font-size: 1.4em; font-weight: 600; }
 .cstudio-settings-intro,.cstudio-settings-hint { color: var(--dsw-alias-label-secondary, #61666b); line-height: 1.7; }
 .cstudio-settings fieldset { margin: 28px 0 0; padding: 0; border: 0; }
-.cstudio-settings legend { width: 100%; box-sizing: border-box; padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--dsw-alias-border-l3, #e8eaed); font-weight: 600; }
+.cstudio-settings legend { width: 100%; box-sizing: border-box; padding: 0 0 10px; margin-bottom: 4px; border-bottom: .5px solid var(--dsw-alias-border-l3, #e8eaed); font-weight: 600; }
 .cstudio-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 0; }
 .cstudio-setting-row label { flex: 1; }
 .cstudio-setting-input { display: flex; align-items: center; gap: 8px; width: min(280px,60%); }

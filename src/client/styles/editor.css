@@ -10,27 +10,21 @@
 @media (prefers-reduced-motion: reduce) { [data-edrv-view] .edrv-tab { transition: none; } }
 [data-edrv-view] .edrv-tab:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
 [data-edrv-view] .edrv-tab.edrv-tab-active { background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); box-shadow: inset 0 -2px 0 var(--dsw-alias-brand-primary, #4f8cff); }
-[data-edrv-view] .edrv-tab .edrv-tab-star { color: var(--dsw-alias-brand-primary, #4f8cff); font-size: 13px; font-weight: 700; line-height: 1; flex-shrink: 0; } /* 未保存修改星号 @author ddj 2026年09月09号 */
 [data-edrv-view] .edrv-tab .edrv-tab-x { appearance: none; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 16px; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: transparent; box-shadow: none; color: var(--dsw-alias-label-tertiary, #888); font-family: inherit; font-size: 11px; line-height: 1; cursor: pointer; }
 [data-edrv-view] .edrv-tab .edrv-tab-x:focus-visible { outline: 1px solid var(--dsw-alias-state-info-primary, #4d6bfe); outline-offset: 1px; }
 [data-edrv-view] .edrv-tab .edrv-tab-x:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.12)); color: var(--dsw-alias-label-primary, #eee); }
 /* 固定页签：📌 标记 + 免关闭按钮（固定页签不渲染 ×，仅可经右键菜单取消固定） */
-[data-edrv-view] .edrv-tab .edrv-tab-pin { flex-shrink: 0; font-size: 10px; line-height: 1; opacity: .85; }
-[data-edrv-view] .edrv-tab.edrv-tab-pinned { background: var(--dsw-alias-bg-layer-2, rgba(255,255,255,.04)); }
 /* 页签行 = 可横滚的页签区 + 行尾固定工具列（计划预览页签与磁盘页签同处这一行的滚动区）@author ddj 2026年10月20号 */
 [data-edrv-view] .edrv-tabs-row { display: flex; align-items: center; min-width: 0; flex: 0 0 auto; background: var(--dsw-alias-bg-layer-1, transparent); }
 /* 特异性需盖过下面 .edrv-group .edrv-tabs 的 flex: 0 0 auto，页签区才能吃掉行走宽、把工具列压到行尾 */
 [data-edrv-view] .edrv-group .edrv-tabs-row > .edrv-tabs { flex: 1 1 auto; min-width: 0; background: transparent; }
 [data-edrv-view] .edrv-tabs-tools { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; padding: 0 6px 0 2px; }
-[data-edrv-view] .edrv-pathbar { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; background: var(--dsw-alias-bg-layer-1, #ffffff); border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 12px; flex-shrink: 0; overflow: hidden; }
+[data-edrv-view] .edrv-pathbar { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; background: var(--dsw-alias-bg-layer-1, #ffffff); border-bottom: .5px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 12px; flex-shrink: 0; overflow: hidden; }
 [data-edrv-view] .edrv-pathbar .edrv-pb-name { font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
 [data-edrv-view] .edrv-pathbar .edrv-pb-full { flex: 1; min-width: 0; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
-[data-edrv-view] .edrv-pathbar .edrv-pb-meta { flex-shrink: 0; font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); font-variant-numeric: tabular-nums; }
-[data-edrv-view] .edrv-pathbar .edrv-pb-status { color: var(--dsw-alias-label-secondary, #52606d); }
 /* 非焦点分组的静态路径条（GroupPathbar）：可点击聚焦所属组，悬停给反馈 @author ddj 2026-10-16 */
 [data-edrv-view] .edrv-pathbar[data-edrv-pb-static] { cursor: pointer; }
 [data-edrv-view] .edrv-pathbar[data-edrv-pb-static]:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.06)); }
-@media (max-width: 620px) { [data-edrv-view] .edrv-pb-update { width: 24px; padding: 0 4px; overflow: hidden; font-size: 0; } }
 [data-edrv-view] .edrv-search-wrap { position: relative; flex-shrink: 0; display: flex; align-items: center; padding: 2px 8px 2px 4px; }
 [data-edrv-view] .edrv-search { width: 190px; height: 24px; padding: 0 8px; border: 1px solid var(--dsw-alias-border-l2, #555); border-radius: 6px; background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); font-size: 12px; outline: none; }
 [data-edrv-view] .edrv-search:focus { border-color: var(--dsw-alias-brand-primary, #4f8cff); }
@@ -52,7 +46,6 @@
 [data-edrv-view] .edrv-pill-keep { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-state-success-primary, #0f7a45); border: 1px solid var(--dsw-alias-state-success-primary, rgba(15,157,88,.4)); }
 [data-edrv-view] .edrv-pill-ghost { background: var(--dsw-alias-bg-layer-1, #ffffff); color: var(--dsw-alias-label-secondary, #52606d); border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
 [data-edrv-view] .edrv-pill:disabled { opacity: .45; cursor: default; }
-[data-edrv-view] .edrv-diffmenu-item.danger { color: var(--dsw-alias-state-error-primary, #d9534f); }
 /* 编辑区 / Tab 右键菜单（页签右键菜单 + 文件树右键菜单共用）。
    页签菜单 11 条 + 键位提示，故限高可滚（ContextMenu 以实测尺寸做 viewport clamp）。
    ⚠️ z-index 71 在既有浮层阶梯内（见文件末尾命令栏注释），不得上调越过命令栏/片段浮窗。 */
@@ -69,10 +62,6 @@
 [data-edrv-view] .edrv-ctxmenu-item:disabled .edrv-ctxmenu-hint,
 [data-edrv-view] .edrv-ctxmenu-item.edrv-ctxmenu-disabled .edrv-ctxmenu-hint { color: var(--dsw-alias-label-disabled, #b0b7c0); }
 [data-edrv-view] .edrv-launch { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 40; border-radius: 10px; background: var(--dsw-alias-bg-overlay, #1c1c1c); border: 1px solid var(--dsw-alias-border-l2, #555); box-shadow: 0 6px 24px rgba(0,0,0,.5); display: flex; flex-direction: column; max-height: 60%; overflow: hidden; }
-[data-edrv-view] .edrv-launch-tab.on { background: var(--dsw-alias-bg-layer-2, transparent); color: var(--dsw-alias-label-primary, #eee); font-weight: 600; }
-@media (prefers-reduced-motion: reduce) {
-  [data-edrv-view] .edrv-progress-value { transition: none; }
-}
 
 /* ===== 唯一会话级差异 dock（遵循 DSH todo/queue 原生布局） ===== */
 [data-edrv-diff-dock-shell] {
@@ -82,7 +71,7 @@
   margin: 0 auto;
   padding: 0;
   flex: none;
-  border: 1px solid var(--dsw-alias-border-l1, #e0e6e8);
+  border: .5px solid var(--dsw-alias-border-l1, #e0e6e8);
   border-radius: 12px;
   background: var(--dsw-specific-tip, var(--dsw-alias-bg-layer-2, transparent));
   box-shadow: none;
@@ -94,25 +83,14 @@
 [data-edrv-diff-dock-shell] .edrv-pill:hover:not(:disabled) { background-color: var(--dsw-alias-interactive-bg-hover); }
 [data-edrv-diff-dock-shell] .edrv-pill:focus-visible { outline: 2px solid var(--dsw-alias-label-tertiary); outline-offset: -2px; }
 [data-edrv-diff-dock-shell] .edrv-pill:disabled { opacity: .45; cursor: default; }
-[data-edrv-diff-dock-shell] .edrv-diff-details .edrv-diffmenu-item.danger { color: var(--dsw-alias-state-error-primary); }
-@media (max-width: 620px) {
-  [data-edrv-diff-dock-shell] .edrv-diffbar-editor-content { width: max-content; }
-  [data-edrv-diff-dock-shell] .edrv-diffbar-files .edrv-diffbar-file { max-width: 160px; }
-}
-[data-edrv-view] .edrv-side-diff-dock .edrv-pill { padding-inline: 5px; }
-[data-edrv-diff-dock-shell] .edrv-reviewbar button.edrv-review-undo:hover:not(:disabled) { color: var(--dsw-alias-state-error-primary, #b64043); }
 [data-edrv-diff-dock-shell] .edrv-review-error { color: var(--dsw-alias-state-error-primary, #b64043); }
-@container edrv-review (max-width: 420px) {
-  .edrv-reviewbar .edrv-review-heading { gap: 6px; padding-inline: 10px; }
-  .edrv-reviewbar .edrv-review-actions { justify-content: flex-end; flex: 1 0 100%; border-top: 1px solid var(--dsw-alias-border-l1, #e5e9ef); padding-top: 6px; }
-}
 
 /* ===== 侧边栏（活动栏 + 面板区 + 文件树） ===== */
 [data-edrv-view] .edrv-editor-row { display: flex; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
 [data-edrv-view] .edrv-main-col > .edrv-pathbar,
 [data-edrv-view] .edrv-main-col > .edrv-tabs { flex: 0 0 auto; }
-[data-edrv-view] .edrv-sidebar { display: flex; flex-direction: row; flex-shrink: 1; min-width: 0; height: 100%; background: var(--dsw-alias-bg-layer-1, #ffffff); border-right: 1px solid var(--dsw-alias-border-l1, #e0e6e8); overflow: hidden; }
-[data-edrv-view] .edrv-rail { display: flex; flex-direction: column; align-items: center; width: 44px; flex-shrink: 0; padding: 6px 0; background: var(--dsw-alias-bg-layer-2, #f0f4f4); border-right: 1px solid var(--dsw-alias-border-l1, #e0e6e8); gap: 4px; }
+[data-edrv-view] .edrv-sidebar { display: flex; flex-direction: row; flex-shrink: 1; min-width: 0; height: 100%; background: var(--dsw-alias-bg-layer-1, #ffffff); border-right: .5px solid var(--dsw-alias-border-l1, #e0e6e8); overflow: hidden; }
+[data-edrv-view] .edrv-rail { display: flex; flex-direction: column; align-items: center; width: 44px; flex-shrink: 0; padding: 6px 0; background: var(--dsw-alias-bg-layer-2, #f0f4f4); border-right: .5px solid var(--dsw-alias-border-l1, #e0e6e8); gap: 4px; }
 [data-edrv-view] .edrv-rail-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary, #52606d); cursor: pointer; flex-shrink: 0; }
 [data-edrv-view] .edrv-rail-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-rail-btn.edrv-rail-on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.12)); color: var(--dsw-alias-label-primary, #1f2933); box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary, #0f9d58); }
@@ -125,7 +103,7 @@
 [data-edrv-view] .edrv-rail-badge { position: absolute; top: 2px; right: 2px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: var(--dsw-alias-brand-primary, #0f9d58); color: var(--dsw-alias-label-primary-inverted, #fff); font-size: 9px; font-weight: 600; line-height: 14px; text-align: center; box-sizing: border-box; }
 [data-edrv-view] .edrv-side-body { flex: 1; min-width: 0; min-height: 0; display: flex; overflow: hidden; }
 [data-edrv-view] .edrv-side-panel { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
-[data-edrv-view] .edrv-side-head { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 12px; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); flex-shrink: 0; }
+[data-edrv-view] .edrv-side-head { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 12px; border-bottom: .5px solid var(--dsw-alias-border-l1, #e0e6e8); flex-shrink: 0; }
 [data-edrv-view] .edrv-side-title { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); white-space: nowrap; }
 [data-edrv-view] .edrv-side-root { font-size: 11px; color: var(--dsw-alias-label-tertiary, #9aa5b1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 [data-edrv-view] .edrv-side-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-secondary, #52606d); font-size: 12px; cursor: pointer; flex-shrink: 0; }
@@ -160,18 +138,6 @@
 /* z-index 190：落在既有阶梯内（命令栏 200 > 片段二级 197 > 片段一级 195 > 190），
    不遮挡命令栏；既有浮层数值不受影响（见 tests/overlayZOrder.test.ts）。 */
 [data-edrv-view] .edrv-modal-mask { position: fixed; inset: 0; z-index: 190; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: var(--dsw-alias-bg-mask-drop, #000000aa); }
-@media (prefers-reduced-motion: reduce) {
-  [data-edrv-view] .edrv-svnlog-item { transition: none; }
-}
-@media (max-width: 620px) {
-  [data-edrv-view] .edrv-update-head { gap: 6px; padding: 0 10px; }
-  [data-edrv-view] .edrv-update-table { margin: 8px 8px 0; }
-  [data-edrv-view] .edrv-update-cols, [data-edrv-view] .edrv-update-row { grid-template-columns: 76px minmax(0, 1fr); }
-  [data-edrv-view] .edrv-update-cols > span:nth-child(3), [data-edrv-view] .edrv-update-row > span:nth-child(3) { display: none; }
-  [data-edrv-view] .edrv-update-path { white-space: normal !important; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  [data-edrv-view] .edrv-update-foot { flex-wrap: wrap; padding: 8px; }
-  [data-edrv-view] .edrv-update-counts { flex-basis: 100%; }
-}
 
 /* ===== 侧栏形态（betterSidebar 面板内编辑区） ===== */
 [data-edrv-view][data-edrv-layout='side'] { box-sizing: border-box; height: 100%; }
@@ -216,10 +182,6 @@
 [data-edrv-view] .edrv-search-toggle:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-search-toggle.on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-label-primary, #1f2933); border-color: var(--dsw-alias-brand-primary, #0f9d58); }
 [data-edrv-view] .edrv-search-toggle:disabled { opacity: .4; cursor: default; }
-[data-edrv-view] .edrv-rules-tab.on { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); color: var(--dsw-alias-label-primary, #1f2933); font-weight: 600; }
-[data-edrv-view] .edrv-rules-row.off .edrv-rules-main { opacity: .5; }
-[data-edrv-view] .edrv-rules-switch.on { background: var(--dsw-alias-brand-primary, #7c5cff); }
-[data-edrv-view] .edrv-rules-switch.on .edrv-rules-knob { left: 16px; }
 
 /* 命令栏（Ctrl+Shift+P / F1）：body 级 portal 浮层，故不依赖编辑区几何。
    ⚠️ 浮层 z-index 阶梯（自下而上；改动务必保持顺序，tests/overlayZOrder.test.ts 守约）：
@@ -230,7 +192,7 @@
    命令栏被整体盖住，按 Ctrl+Shift+P 因「已打开即早退」而毫无反应（表现为快捷键失效）。 */
 [data-edrv-view] .edrv-palette-mask { position: fixed; inset: 0; z-index: 190; background: rgba(0, 0, 0, .28); }
 [data-edrv-view] .edrv-palette { position: fixed; top: 12vh; left: 50%; transform: translateX(-50%); z-index: 200; width: min(580px, calc(100vw - 32px)); max-height: 64vh; display: flex; flex-direction: column; border-radius: 10px; background: var(--dsw-alias-bg-overlay, #ffffff); border: 1px solid var(--dsw-alias-border-l2, #cbd2d9); box-shadow: 0 12px 34px rgba(31, 41, 51, .24); overflow: hidden; }
-[data-edrv-view] .edrv-palette-input { height: 38px; flex: 0 0 auto; padding: 0 12px; border: none; border-bottom: 1px solid var(--dsw-alias-border-l1, #e0e6e8); background: transparent; color: var(--dsw-alias-label-primary, #1f2933); font-size: 13px; outline: none; }
+[data-edrv-view] .edrv-palette-input { height: 38px; flex: 0 0 auto; padding: 0 12px; border: none; border-bottom: .5px solid var(--dsw-alias-border-l1, #e0e6e8); background: transparent; color: var(--dsw-alias-label-primary, #1f2933); font-size: 13px; outline: none; }
 [data-edrv-view] .edrv-palette-list { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 4px; }
 [data-edrv-view] .edrv-palette-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; color: var(--dsw-alias-label-primary, #1f2933); cursor: pointer; }
 [data-edrv-view] .edrv-palette-row.edrv-palette-sel { background: var(--dsw-alias-interactive-bg-hover, rgba(15, 157, 88, .10)); }
@@ -238,7 +200,7 @@
 [data-edrv-view] .edrv-palette-cat { flex: 0 0 auto; font-size: 10px; padding: 1px 7px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2, #f0f4f4); color: var(--dsw-alias-label-tertiary, #7b8794); }
 [data-edrv-view] .edrv-palette-key { flex: 0 0 auto; font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 10px; padding: 1px 6px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 5px; background: var(--dsw-alias-bg-layer-1, #f7f9fa); color: var(--dsw-alias-label-secondary, #52606d); }
 [data-edrv-view] .edrv-palette-empty { padding: 14px 10px; font-size: 12px; color: var(--dsw-alias-label-tertiary, #7b8794); text-align: center; }
-[data-edrv-view] .edrv-palette-notice { flex: 0 0 auto; padding: 6px 10px; border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 11px; color: var(--dsw-alias-state-warn-primary, #b7791f); }
+[data-edrv-view] .edrv-palette-notice { flex: 0 0 auto; padding: 6px 10px; border-top: .5px solid var(--dsw-alias-border-l1, #e0e6e8); font-size: 11px; color: var(--dsw-alias-state-warn-primary, #b7791f); }
 
 /* 代码片段选择器（配置 / 插入）：居中浮窗 + 新建二级弹窗。
    卡片复用 mcp.css 的 .vsm-mcp-dialog（与「添加 MCP」「工作区选择」同一视觉语言），
@@ -276,43 +238,13 @@
 [data-edrv-view] .edrv-dl-foot button:disabled { opacity: .55; cursor: default; }
 [data-edrv-view] .edrv-dl-go { border-color: var(--dsw-alias-brand-primary, #6d55ff); }
 /* launch.json 右下角「添加配置」按钮（VSCode 同款形态）：仅 launch.json 打开时渲染 */
-[data-edrv-view] .edrv-addcfg { position: absolute; right: 14px; bottom: 10px; z-index: 13; padding: 4px 12px; border: 1px solid var(--dsw-alias-border-l1, #e0e6e8); border-radius: 6px; background: var(--dsw-alias-bg-layer-1, #f7f9fa); color: var(--dsw-alias-label-secondary, #52606d); font-size: 12px; line-height: 18px; cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, .1); }
-[data-edrv-view] .edrv-dapbar.on { display: flex; border-color: var(--dsw-alias-border-l2, #cdd6da); }
-[data-edrv-view] .edrv-dapbar-grip:active, [data-edrv-view] .edrv-dapbar.dragging .edrv-dapbar-grip { cursor: grabbing; }
-[data-edrv-view] .edrv-dapbar.dragging { user-select: none; }
-[data-edrv-view] .edrv-dapbar-phase.paused { color: var(--dsw-alias-state-warn-primary, #b7791f); font-weight: 600; }
-[data-edrv-view] .edrv-dappanel-phase.paused { background: var(--dsw-alias-state-warn-tertiary, rgba(229, 185, 63, .18)); color: var(--dsw-alias-state-warn-primary, #b7791f); font-weight: 600; }
-[data-edrv-view] .edrv-dapseg-sash:hover, [data-edrv-view] .edrv-dapseg-sash.dragging { background: var(--dsw-alias-border-l2, #cdd6da); }
-[data-edrv-view] .edrv-dapframe.selected { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .16)); outline: 1px solid var(--dsw-alias-border-l2, #cdd6da); }
-[data-edrv-view] .edrv-dapbp-dot.off { background: transparent; border: 1.5px solid var(--dsw-alias-label-tertiary, #9aa5b1); opacity: .6; }
-[data-edrv-view] .edrv-daprepl-line.out { color: var(--dsw-alias-label-tertiary, #9aa5b1); }
 /* 断点回执：未验证空心红圈（须排在 .off 之后，禁用态优先展示灰圈语义）。 */
-[data-edrv-view] .edrv-dapbp-dot.unverified { background: transparent; border: 1.5px solid var(--dsw-alias-state-error-primary, #e51400); opacity: .75; }
 /* 行号区也给出可点提示（与 VS Code 一致：glyph 区与行号区都可点/可 hover）；
    不拦截折叠箭头等自有控件的光标。 */
 
-[data-edrv-view] [data-edrv-dap] { display: block; min-width: 0; }
-[data-edrv-view] [data-edrv-head] { display: flex; align-items: baseline; gap: 2px; }
-[data-edrv-view] [data-edrv-head] [data-edrv-expr] { font-weight: 600; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] [data-edrv-head] [data-edrv-val] { font-family: var(--ds-font-family-code, ui-monospace, monospace); word-break: break-all; }
-[data-edrv-view] [data-edrv-type] { margin-top: 2px; font-size: 12px; color: var(--dsw-alias-label-tertiary, #8a949b); }
-[data-edrv-view] [data-edrv-tree] { margin: 2px 0 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
-[data-edrv-view] [data-edrv-line] { display: flex; align-items: baseline; gap: 4px; padding: 1px 2px; border-radius: 3px; white-space: nowrap; }
-[data-edrv-view] [data-edrv-line]:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .12)); }
 /* 折叠按钮（对齐 CodeBuddy 调试浮窗变量树的 twist）：热区 14px + hover 反馈，未可展开时留空占位 */
-[data-edrv-view] [data-edrv-twist] { flex: 0 0 auto; box-sizing: border-box; width: 14px; height: 14px; line-height: 13px; text-align: center; border-radius: 3px; color: var(--dsw-alias-label-tertiary, #8a949b); }
-[data-edrv-view] [data-edrv-twist]:not(:empty) { cursor: pointer; user-select: none; }
-[data-edrv-view] [data-edrv-twist]:not(:empty):hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, .2)); color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] [data-edrv-name] { flex: 0 0 auto; color: var(--dsw-alias-label-primary, #1f2933); }
-[data-edrv-view] [data-edrv-line] [data-edrv-eq] { flex: 0 0 auto; color: var(--dsw-alias-label-tertiary, #8a949b); }
-[data-edrv-view] [data-edrv-line] [data-edrv-val] { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dsw-alias-label-secondary, #52606d); }
-[data-edrv-view] [data-edrv-note] { color: var(--dsw-alias-label-tertiary, #8a949b); font-style: italic; }
-[data-edrv-view] [data-edrv-hint="1"] { position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; height: 22px; padding: 2px 8px; font-size: 11px; line-height: 18px; color: var(--dsw-alias-label-tertiary, #8a949b); background: var(--dsw-alias-bg-overlay, #ffffff); border-top: 1px solid var(--dsw-alias-border-l1, #e0e6e8); }
 
 /* Workbench panes: existing theme, action-driven drop previews. ddj 2026年10月14号 */
-[data-edrv-view] .edrv-group, [data-edrv-view] .edrv-group-body,
-[data-edrv-view] .edrv-full-slot, [data-edrv-view] .edrv-full-view,
-[data-edrv-view] .edrv-passive-view { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
 [data-edrv-view] .edrv-group { border: 0; }
 [data-edrv-view] .edrv-group .edrv-tabs { flex: 0 0 auto; touch-action: none; }
 .edrv-drag-overlay { position: fixed; z-index: 150; pointer-events: none; box-sizing: border-box; border: 0; background: color-mix(in srgb, var(--dsw-alias-state-info-primary, #4d6bfe) 25%, transparent); }
