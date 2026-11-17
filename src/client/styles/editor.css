@@ -6,7 +6,8 @@
 [data-edrv-view] { box-sizing: border-box; --edrv-tab-h: 34px; }
 
 [data-edrv-view] .edrv-tabs { display: flex; align-items: center; gap: 2px; padding: 2px 8px 0; background: var(--dsw-alias-bg-layer-1, transparent); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; flex-shrink: 0; overscroll-behavior-x: contain; } /* overscroll-behavior-x: 横滚到边界不把滚动链传给页面（滚轮横滚接管更可控）@author ddj 2026年09月18号 */
-[data-edrv-view] .edrv-tab { user-select: none; -webkit-user-select: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 12px; border: none; border-radius: 6px 6px 0 0; background: transparent; color: var(--dsw-alias-label-secondary, #aaa); font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+[data-edrv-view] .edrv-tab { user-select: none; -webkit-user-select: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 12px; border: none; border-radius: 6px 6px 0 0; background: transparent; color: var(--dsw-alias-label-secondary, #aaa); font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease; }
+@media (prefers-reduced-motion: reduce) { [data-edrv-view] .edrv-tab { transition: none; } }
 [data-edrv-view] .edrv-tab:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.06)); }
 [data-edrv-view] .edrv-tab.edrv-tab-active { background: var(--dsw-alias-bg-base, #111); color: var(--dsw-alias-label-primary, #eee); box-shadow: inset 0 -2px 0 var(--dsw-alias-brand-primary, #4f8cff); }
 [data-edrv-view] .edrv-tab .edrv-tab-star { color: var(--dsw-alias-brand-primary, #4f8cff); font-size: 13px; font-weight: 700; line-height: 1; flex-shrink: 0; } /* 未保存修改星号 @author ddj 2026年09月09号 */
@@ -138,9 +139,11 @@
 [data-edrv-view] .edrv-large-text { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 [data-edrv-view] .edrv-large-text-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 [data-edrv-view] .edrv-large-text-content { margin: 0; flex: 1; min-height: 0; overflow: auto; white-space: pre; font-family: var(--ds-font-family-code, ui-monospace, monospace); user-select: text; }
-[data-edrv-view] .edrv-tree-row { display: flex; align-items: center; gap: 4px; height: 22px; padding-right: 6px; border-radius: 5px; color: var(--dsw-alias-label-primary, #1f2933); cursor: pointer; white-space: nowrap; }
+[data-edrv-view] .edrv-tree-row { display: flex; align-items: center; gap: 4px; height: 22px; padding-right: 6px; border-radius: 5px; color: var(--dsw-alias-label-primary, #1f2933); cursor: pointer; white-space: nowrap; transition: background-color 140ms ease, box-shadow 140ms ease; }
 [data-edrv-view] .edrv-tree-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.08)); }
 [data-edrv-view] .edrv-tree-row.edrv-tree-active { background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.14)); }
+[data-edrv-view] .edrv-tree-row:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #0f9d58); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { [data-edrv-view] .edrv-tree-row { transition: none; } }
 [data-edrv-view] .edrv-tree-row.edrv-tree-context { box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary, #0f9d58); background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.12)); }
 /* 「在资源管理器视图中显示」的定位高亮（短时淡出，区别于常驻的 active 态） */
 [data-edrv-view] .edrv-tree-row.edrv-tree-reveal { box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary, #0f9d58); background: var(--dsw-alias-interactive-bg-hover, rgba(15,157,88,.18)); animation: edrv-tree-reveal-fade 2s ease-out; }

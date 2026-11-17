@@ -1,4 +1,4 @@
-import { Compartment, EditorSelection, EditorState, Prec } from '@codemirror/state'
+import { Compartment, EditorSelection, EditorState, Prec, type Extension } from '@codemirror/state'
 import {
   EditorView, drawSelection, dropCursor, highlightActiveLine, highlightActiveLineGutter,
   highlightSpecialChars, keymap, lineNumbers,
@@ -100,10 +100,16 @@ export async function loadEditorEngine(): Promise<EditorEngine> {
         view.dispatch({ effects: locations.reconfigure(panel) })
       }
 
+      // editorFont() 会两次 getComputedStyle（同步样式/布局），detectColorScheme() 也读属性。
+      // configure() 在每次 bind（切文件）时都会跑，逐次重算会在切换瞬间制造可感知的同步读开销。
+      // 主题/排版变化都由 updateAppearance 显式通知，所以这里按需失效即可。
+      let styled: Extension | null = null
       function style() {
+        if (styled) return styled
         const { fontSize, fontFamily, lineHeight } = editorFont()
         const dark = detectColorScheme() === 'dark'
-        return EditorView.theme({ '&': { fontSize: fontSize + 'px', fontFamily, lineHeight: lineHeight + 'px', colorScheme: dark ? 'dark' : 'light' } }, { dark })
+        styled = EditorView.theme({ '&': { fontSize: fontSize + 'px', fontFamily, lineHeight: lineHeight + 'px', colorScheme: dark ? 'dark' : 'light' } }, { dark })
+        return styled
       }
 
       const shortcuts = Prec.highest(keymap.of([
@@ -127,6 +133,7 @@ export async function loadEditorEngine(): Promise<EditorEngine> {
         ] })
       }
       function updateAppearance() {
+        styled = null
         view.dispatch({ effects: appearance.reconfigure(style()) })
       }
       const stopTheme = observeScheme(updateAppearance)

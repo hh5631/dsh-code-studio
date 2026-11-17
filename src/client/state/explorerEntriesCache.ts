@@ -166,7 +166,10 @@ export function entriesCachePut(scope: string | undefined, rel: string, entries:
   if (!scope) return
   const data = mirrorOf(scope)
   data.dirs[rel] = { ts: nextTs(), entries: entries.slice(0, CACHE_DIR_ENTRIES) }
-  const trimmed = entriesTrim(data)
-  data.dirs = trimmed.dirs
+  // 只有超出容量才需要逐出：entriesTrim 会对全部目录排序（O(n log n)）并重建字典。
+  // 文件树展开态刷新（预取、跟随、外部变更）会连续 put 很多目录，逐次 trim 是纯浪费。
+  if (Object.keys(data.dirs).length > CACHE_MAX_DIRS) {
+    data.dirs = entriesTrim(data).dirs
+  }
   scheduleSave(scope)
 }

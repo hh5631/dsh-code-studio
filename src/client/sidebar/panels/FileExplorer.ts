@@ -156,6 +156,23 @@ export function FileExplorer(props) {
   const entriesOf = (rel) => dirsRef.current[rel] ?? entriesCacheGet(scope, rel) ?? null
 
   /**
+   * 目录条目是否与已渲染的一致（name/path/type/size 逐项比对）。
+   * 稳定态的后台刷新不应触发重挂：否则整棵树重 flatten、全部可见行重建 DOM。
+   * @author ddj 2026年11月17号
+   * @param previous 已渲染条目（undefined = 尚未加载过）
+   * @param next 本轮实列结果
+   * @returns 完全一致返回 true
+   */
+  function sameEntries(previous, next) {
+    if (!Array.isArray(previous) || previous.length !== next.length) return false
+    for (let i = 0; i < next.length; i++) {
+      const a = previous[i], b = next[i]
+      if (a?.path !== b?.path || a?.name !== b?.name || a?.type !== b?.type || a?.size !== b?.size) return false
+    }
+    return true
+  }
+
+  /**
    * @private
    * @author ddj 2026年10月23号
    * @description 移除已删除目录的展开记录，经现有防抖持久化自愈；不改请求 token，保留 finally 的加载态清理。
@@ -210,7 +227,11 @@ export function FileExplorer(props) {
     rpc('cstudio.listDir', args).then((res) => {
       if (scopeRef.current !== scope || tokensRef.current !== tokens || tokens[rel] !== token) return
       if (res && res.ok && Array.isArray(res.entries)) {
-        setDirs((prev) => Object.assign({}, prev, { [rel]: res.entries }))
+        // 轮询跟随（10s）与预取经常拿到与上一轮完全相同的条目；此时若照常 setDirs，
+        // 会整棵重 flatten 并重挂全部行。只在指纹变化时写入，稳定态刷新变成零渲染。
+        if (!sameEntries(dirsRef.current[rel], res.entries)) {
+          setDirs((prev) => Object.assign({}, prev, { [rel]: res.entries }))
+        }
         if (res.root) setRoot((prev) => prev || res.root)
         entriesCachePut(scope, rel, res.entries)
         if (doPrefetch) prefetchDirs(rel, res.entries)

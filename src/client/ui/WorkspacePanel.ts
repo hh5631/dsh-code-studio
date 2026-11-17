@@ -118,8 +118,10 @@ export function WorkspacePanel(props: Props): React.ReactElement {
     for (const row of Array.from(tree.querySelectorAll<HTMLElement>('[data-files-path]'))) {
       const path = row.getAttribute('data-files-path')
       const tone = path ? decorationRef.current.get(absolutePath(props.cwd, path)) : undefined
-      if (tone) row.setAttribute('data-cstudio-git', tone)
-      else row.removeAttribute('data-cstudio-git')
+      // 只在值真的变化时写 DOM：无改动时留空实现，避免每次 Git 快照都触碰全部行的属性
+      // （属性写会引起样式重算，展开的大目录上这是逐帧成本）。
+      if (tone) { if (row.getAttribute('data-cstudio-git') !== tone) row.setAttribute('data-cstudio-git', tone) }
+      else if (row.hasAttribute('data-cstudio-git')) row.removeAttribute('data-cstudio-git')
     }
   }, [props.cwd])
   React.useLayoutEffect(() => decorate(body), [body, decorations, decorate])
