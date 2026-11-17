@@ -24,9 +24,17 @@ const listeners = new Set<() => void>()
 let cached: TreeSide | undefined
 
 export function readTreeSide(): TreeSide {
+  // 缓存命中即返回；未命中时**必须回填**——本函数是 WorkspacePanel 里
+  // useSyncExternalStore 的 getSnapshot，React 会在每次渲染/一致性检查时调用它，
+  // 不回填就等于每次渲染同步读一遍 localStorage（跨进程锁 + 反序列化）。
+  // 只有 writeTreeSide 与模块加载首帧会走到未命中分支。
   if (cached) return cached
-  try { return localStorage.getItem(CACHE_KEY.fileTreeSide) === 'left' ? 'left' : 'right' }
-  catch { return 'right' }
+  try {
+    cached = localStorage.getItem(CACHE_KEY.fileTreeSide) === 'left' ? 'left' : 'right'
+  } catch {
+    cached = 'right'
+  }
+  return cached
 }
 
 export function subscribeTreeSide(listener: () => void): () => void {

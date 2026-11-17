@@ -20,7 +20,9 @@
 .cstudio-settings input:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset: -2px; box-shadow: none; }
 .cstudio-minimal-bar { min-height: 42px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: 1px solid var(--cstudio-border); background: var(--cstudio-raised); }
 .cstudio-minimal .edrv-tabs { display: flex; align-items: center; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; gap: 3px; padding: 0; background: transparent; }
-.cstudio-minimal .edrv-tab { display: flex; align-items: center; gap: 8px; flex: none; max-width: 240px; min-height: 30px; padding: 3px 8px 3px 10px; cursor: pointer; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--cstudio-muted); font-size: 1em; }
+.cstudio-minimal .edrv-tab { display: flex; align-items: center; gap: 8px; flex: none; max-width: 240px; min-height: 30px; padding: 3px 8px 3px 10px; cursor: pointer; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--cstudio-muted); font-size: 1em; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
+.cstudio-minimal .edrv-tab:hover { color: var(--dsw-alias-label-primary, #0f1115); }
+@media (prefers-reduced-motion: reduce) { .cstudio-minimal .edrv-tab { transition: none; } }
 .cstudio-minimal .edrv-tab > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cstudio-minimal .edrv-tab.edrv-tab-active { border-color: var(--cstudio-border); background: var(--cstudio-surface); color: var(--dsw-alias-label-primary, #0f1115); box-shadow: 0 1px 2px #00000004; }
 .cstudio-minimal .edrv-tab-close { flex: none; width: 20px; height: 20px; padding: 0; opacity: 0; color: var(--cstudio-muted); }
@@ -45,7 +47,7 @@
 .cstudio-minimal-progress::after {
   content: ''; position: absolute; inset: 0; width: 40%;
   background: linear-gradient(90deg, transparent, var(--cstudio-accent), transparent);
-  animation: cstudio-progress-slide 1s var(--cs-ease-out, ease-out) infinite;
+  animation: cstudio-progress-slide 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 @keyframes cstudio-progress-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) { .cstudio-minimal-progress::after { animation: none; width: 100%; opacity: .5; } }
