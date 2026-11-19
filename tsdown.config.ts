@@ -97,7 +97,7 @@ function clientConfig(panel?: 'editor'): UserConfig {
     outDir: 'lib',
     format: 'cjs',
     platform: 'browser',
-    minify: panel === 'editor' ? { mangle: { reserved: ['require'] } } : false,
+    minify: { mangle: { reserved: ['require'] } },
     dts: false,
     clean: false,
     sourcemap: true,
