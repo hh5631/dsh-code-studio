@@ -14,8 +14,19 @@ body[data-ds-dark-theme] [data-cstudio-workspace-tree] { --cstudio-git-modified:
 .cstudio-workspace-switches button svg { width:15px; height:15px; }
 .cstudio-workspace-switches button:is(:hover,[aria-pressed=true]) { color:var(--dsw-alias-label-primary); background:var(--dsw-alias-interactive-bg-hover); }
 .cstudio-workspace-switches button:focus-visible { outline:2px solid var(--dsw-alias-brand-primary, #4d6bfe); outline-offset:-2px; }
-/* Keep the shared actions against the same edge when file-specific actions mount. */
-[data-cstudio-dock-side=left] :is(.cstudio-native-header,[data-textpreview-state]>div:has(>[data-textpreview-path])) {
+/* Keep the shared actions against the same edge when file-specific actions mount.
+   侧别同样有两处来源，与下面文件树那段同样的道理：
+   1) dock 上的属性（WorkspacePanel 的 useLayoutEffect 写入）；
+   2) html 根节点镜像（treeSide.ts 在模块加载与切换时同步写入）。
+   打开另一个文件时宿主可能换掉 dock/pane 节点，新节点上 1) 要等一轮 effect 才写上，
+   那一帧工具栏就会按默认（右）排好再被纠正 —— 也就是"工具栏先右后左"的跳变。
+   把 2) 也接进来，首帧就已经是左侧顺序，不依赖任何 effect 时序。
+   镜像那一路要求 pane 里有 `.cstudio-native-panel-tools`（本插件工具栏自己的标记），
+   保证不会波及没有本插件工具栏的普通预览面。 */
+:is([data-cstudio-dock-side=left],
+    html[data-cstudio-tree-side=left] [data-dockkit-pane]:has(.cstudio-native-panel-tools),
+    html[data-cstudio-tree-side=left] [data-dockkit-float]:has(.cstudio-native-panel-tools))
+  :is(.cstudio-native-header,[data-textpreview-state]>div:has(>[data-textpreview-path])) {
   padding-left:6px;
   [data-files-navigator-toggle] { order:-2; }
   .cstudio-native-panel-tools { order:-1; }
