@@ -1,10 +1,8 @@
 import { openEditorView } from './events.js'
 import { createRequestId } from './requestId.js'
 
-import type { PlanDocument } from './planState.js'
-
-export interface EditorRequest { requestId: string; sessionId: string; path: string | null; line?: number; column?: number; preview?: boolean; plan?: PlanDocument }
-export interface OpenOptions { preview?: boolean; plan?: PlanDocument; signal?: AbortSignal; timeoutMs?: number }
+export interface EditorRequest { requestId: string; sessionId: string; path: string | null; line?: number; column?: number; preview?: boolean }
+export interface OpenOptions { preview?: boolean; signal?: AbortSignal; timeoutMs?: number }
 interface Waiter { request: EditorRequest; finish: (success: boolean) => void; claimed?: boolean }
 const waiters = new Map<string, Waiter>()
 
@@ -37,7 +35,7 @@ export function finishOpen(requestId: string, success: boolean, error?: string):
  * @param line Optional target line.
  * @param column Optional target column.
  * @param sessionId Owning session, required for routing.
- * @param options Explicit preview, read-only plan document, cancellation signal and receipt deadline.
+ * @param options Explicit preview, cancellation signal and receipt deadline.
  * @returns Actual completion; timeout and disposal are false.
  */
 export function requestOpen(path: string | null, line?: number, column?: number, sessionId = '', options: OpenOptions = {}): Promise<boolean> {
@@ -46,7 +44,6 @@ export function requestOpen(path: string | null, line?: number, column?: number,
   if (!requestId) return Promise.resolve(false)
   const request: EditorRequest = { requestId, sessionId, path, line, column }
   if (options.preview !== undefined) request.preview = options.preview
-  if (options.plan) request.plan = options.plan
   return new Promise((resolve) => {
     let timer: ReturnType<typeof setTimeout>
     /** @private @author ddj 2026年09月28号 Complete once and release the deadline. */
@@ -56,7 +53,7 @@ export function requestOpen(path: string | null, line?: number, column?: number,
       waiters.delete(request.requestId)
       resolve(success)
     }
-    /** @private @author ddj 2026年10月08号 Cancel a stale plan open on scope change or disposal. */
+    /** @private @author ddj 2026年10月08号 Cancel a stale open on scope change or disposal. */
     function abort(): void { finish(false) }
     options.signal?.addEventListener('abort', abort, { once: true })
     waiters.set(request.requestId, { request, finish })

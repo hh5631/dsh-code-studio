@@ -60,7 +60,6 @@ const EDITS = [
   { file: 'src/client/officialSidebar.ts', from: "export const OFFICIAL_FILE_TAB_ID = 'dsh-vscode-mode/file'", to: `export const OFFICIAL_FILE_TAB_ID = '${NEW}/file'`, note: '侧栏文件 Tab id' },
   { file: 'src/client/ui/PluginDetailSection.ts', from: "export const SELF_ID = 'dsh-vscode-mode'", to: `export const SELF_ID = '${NEW}'`, note: '设置页自身 id' },
   { file: 'src/client/fileOpeners.ts', from: "export const VSCODE_OPEN_TOOL = 'dsh-vscode-mode'", to: `export const VSCODE_OPEN_TOOL = '${NEW}'`, note: '文件打开工具名' },
-  { file: 'src/client/planBridge.ts', from: "const CLAIM_ID = 'dsh-vscode-mode/plan'", to: `const CLAIM_ID = '${NEW}/plan'`, note: '计划声明 id' },
   { file: 'src/client/shortcutsOfficial.ts', from: "const MIGRATION_KEY = 'dsh-vscode-mode.shortcuts-migrated.v1.'", to: `const MIGRATION_KEY = '${NEW}.shortcuts-migrated.v1.'`, note: '快捷键迁移标记' },
   { file: 'src/client/svnStore.ts', from: "plugin: 'dsh-vscode-mode'", to: `plugin: '${NEW}'`, note: 'SVN 事件流来源标记' },
   { file: 'src/client/dap/trace.ts', from: "plugin: 'dsh-vscode-mode'", to: `plugin: '${NEW}'`, note: 'DAP 事件流来源标记' },

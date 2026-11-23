@@ -4,7 +4,6 @@ import ts from 'typescript'
 import { acceptsLoad, receiptErrorFor, receiptPath, receiptReadyFor, receiptTabPath } from '../src/client/receiptState.js'
 import type { ReceiptView } from '../src/client/receiptState.js'
 import type { EditorRequest } from '../src/client/openReceipt.js'
-import { planDocument } from '../src/client/planState.js'
 
 const request: EditorRequest = { requestId: 'request-b', sessionId: 's', path: '/work/B.ts', line: 10, column: 2 }
 
@@ -149,51 +148,6 @@ describe('actual EditorView receipt adapters', () => {
   it('requires the exact cached model instance, even for similarly cased POSIX names', () => {
     const state = editorState({ modelsRef: { current: new Map([['B.ts', {}]]) } })
     expect(editorFunction('receiptReady', state)(request)).toBe(false)
-  })
-
-  it('opens virtual plans without any disk load, save target, LSP model or SVN path', () => {
-    let plans: any[] = []
-    const scope = { active: 'dirty.ts', flushSave: vi.fn(), saveViewState: vi.fn(), setSvnDiff: vi.fn(), setDiskActive: vi.fn(),
-      setPlanTabs: (update: (prev: any[]) => any[]) => { plans = update(plans) }, setPlanActive: vi.fn(), setError: vi.fn(), setStatus: vi.fn(), planDocument,
-      planActiveRef: { current: null }, planReturnRef: { current: null } }
-    const open = editorFunction('openPlanDoc', scope)
-    const plan = { address: 'dsh-resource://plan/s/c', markdown: '# Plan\nbody', title: 'Plan' }
-    open(plan)
-    open(plan)
-    expect(plans).toHaveLength(1)
-    expect(scope.flushSave).toHaveBeenCalledTimes(2)
-    expect(scope.saveViewState).toHaveBeenCalledWith('dirty.ts')
-    expect(scope.setDiskActive).toHaveBeenCalledWith(null)
-    expect(scope.setPlanActive).toHaveBeenCalledWith(plan.address)
-  })
-
-  it('records the pre-plan return path once and keeps it across later previews', () => {
-    let plans: any[] = []
-    const planActiveRef: { current: string | null } = { current: null }
-    const planReturnRef: { current: string | null } = { current: null }
-    const scope = { active: 'a.ts', flushSave: vi.fn(), saveViewState: vi.fn(), setSvnDiff: vi.fn(), setDiskActive: vi.fn(),
-      setPlanTabs: (update: (prev: any[]) => any[]) => { plans = update(plans) }, setError: vi.fn(), setStatus: vi.fn(), planDocument,
-      planActiveRef, planReturnRef, setPlanActive: (address: string) => { planActiveRef.current = address } }
-    const open = editorFunction('openPlanDoc', scope)
-    const first = { address: 'dsh-resource://plan/s/1', markdown: '# Plan\none', title: 'One' }
-    const second = { address: 'dsh-resource://plan/s/2', markdown: '# Plan\ntwo', title: 'Two' }
-    open(first)
-    expect(planReturnRef.current).toBe('a.ts')
-    open(second)
-    // 计划态内再次打开另一份计划，不得把返回目标改成中间态
-    expect(planReturnRef.current).toBe('a.ts')
-    expect(plans.map((item) => item.address)).toEqual([first.address, second.address])
-  })
-
-  it('requires the actual virtual plan DOM and matching content/session before acknowledgement', () => {
-    const plan = { address: 'dsh-resource://plan/s/c', markdown: '# Plan', title: 'Plan' }
-    const scope = { sessionId: 's', planActive: plan.address, planTabs: [plan], svnDiff: null,
-      planHostRef: { current: { getAttribute: () => plan.address } } }
-    expect(editorFunction('receiptReady', scope)({ ...request, path: null, plan })).toBe(true)
-    expect(editorFunction('receiptReady', { ...scope, svnDiff: { path: 'other.ts' } })({ ...request, path: null, plan })).toBe(true)
-    expect(editorFunction('receiptReady', { ...scope, sessionId: 'other' })({ ...request, path: null, plan })).toBe(false)
-    expect(editorFunction('receiptReady', { ...scope, planHostRef: { current: null } })({ ...request, path: null, plan })).toBe(false)
-    expect(editorFunction('receiptReady', scope)({ ...request, path: null, plan: { ...plan, markdown: '# Changed' } })).toBe(false)
   })
 
   it('preserves explicit preview on disk receipts and switches to source for positioned plans', () => {

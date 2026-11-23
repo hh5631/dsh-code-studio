@@ -65,7 +65,6 @@ import { appearanceApply, initAppearance } from './appearance.js'
 import { log } from './log.js'
 import { installLocale } from './localeClient.js'
 import { readSessionScope, subscribeScope } from './sessionScope.js'
-import { installPlanBridge } from './planBridge.js'
 import { installPageReload } from './pageReload.js'
 import { flushPageState, flushUiState, hydrateUiState, installUiStatePersist, reportUiStateEvent, uiStateSettled } from './state/uiStatePersist.js'
 import { workspaceScopeOf } from './state/scopeStore.js'
@@ -229,7 +228,6 @@ export async function apply(ctx: any): Promise<void> {
   const registry: FileOpenerRegistry = createFileOpenerRegistry()
   const workspaces = ctx.get('workspaces')
   const sessions = ctx.get('sessions')
-  ctx.effect(() => installPlanBridge(ctx, schedule), 'code-studio: plan integration')
 
   // 外部深链落地：Windows 右键菜单 / Unity 外部编辑器 → 浏览器 URL 参数 → 打开规则路由
   ctx.effect(() => setupExtOpen(ctx), 'code-studio: external open')
@@ -509,12 +507,24 @@ export async function apply(ctx: any): Promise<void> {
     window.dispatchEvent(new CustomEvent('edrv:theme-change', { detail: { scheme: schemeOfSnapshot(snapshot) } }))
   }
   ctx.effect(() => {
-    if (!themeService || typeof ctx.on !== 'function') return undefined
-    const disposer = ctx.on('theme/change', emitTheme)
-    return typeof disposer === 'function' ? disposer : undefined
-  }, 'code-studio: official theme event')
-  ctx.effect(() => observeScheme(emitTheme), 'code-studio: theme attribute watch')
-  emitTheme()
+    let frame: number | undefined
+    const scheduleTheme = () => {
+      if (frame !== undefined) return
+      frame = requestAnimationFrame(() => {
+        frame = undefined
+        emitTheme()
+      })
+    }
+    const offTheme = themeService && typeof ctx.on === 'function'
+      ? ctx.on('theme/change', scheduleTheme) : undefined
+    const offAttributes = observeScheme(scheduleTheme)
+    emitTheme()
+    return () => {
+      if (frame !== undefined) cancelAnimationFrame(frame)
+      if (typeof offTheme === 'function') offTheme()
+      offAttributes()
+    }
+  }, 'code-studio: theme sync')
 
   // 中央「文件编辑」页签（旧形态回退）：类 VSCode 编辑器；侧边栏形态（官方/better-sidebar）可用时
   // 编辑器住侧边栏 Tab，本页签不注册（避免双实例：双编辑器 + diff dock 每会话单源抢占）。

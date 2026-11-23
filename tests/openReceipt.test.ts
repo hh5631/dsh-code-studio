@@ -48,11 +48,10 @@ describe('actual editor receipt bridge', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('carries explicit preview and virtual payload without passing an address as a file path', async () => {
-    const plan = { address: 'dsh-resource://plan/s/c', markdown: '# Plan', title: 'Plan' }
-    const result = requestOpen(null, undefined, undefined, 's', { preview: true, plan })
+  it('carries explicit preview when opening the editor without a file', async () => {
+    const result = requestOpen(null, undefined, undefined, 's', { preview: true })
     const request = peekOpen('s')!
-    expect(request).toMatchObject({ path: null, plan, preview: true })
+    expect(request).toMatchObject({ path: null, preview: true })
     finishOpen(request.requestId, true)
     expect(await result).toBe(true)
   })
